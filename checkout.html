@@ -10,7 +10,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="categories-shared.css" />
-<link rel="icon" type="image/jpeg" href="LOVARA.jpeg">
+  <link rel="icon" type="image/jpeg" href="LOVARA.jpeg">
+
+  <!-- Firebase SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- Firebase Config -->
+  <script src="js/firebase-config.js"></script>
+
   <style>
     :root {
       --primary: #c9a87c;
@@ -233,6 +242,7 @@
     }
   </style>
 
+<base target="_blank">
 </head>
 <body>
 
@@ -418,12 +428,30 @@
     const CheckoutApp = {
       cart: [],
       currentLang: localStorage.getItem('lovara_lang') || 'en',
+      db: null,
 
       init() {
         this.cart = JSON.parse(localStorage.getItem('lovara_cart')) || [];
         this.loadOrderItems();
         this.setupPaymentMethods();
         this.applyLang(this.currentLang);
+        this.initFirebase();
+      },
+
+      initFirebase() {
+        let attempts = 0;
+        const check = () => {
+          attempts++;
+          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0 && firebase.firestore) {
+            this.db = firebase.firestore();
+            console.log('[LOVARA Checkout] Firebase ready');
+          } else if (attempts < 30) {
+            setTimeout(check, 300);
+          } else {
+            console.warn('[LOVARA Checkout] Firebase not loaded, will use localStorage fallback');
+          }
+        };
+        setTimeout(check, 200);
       },
 
       loadOrderItems() {
@@ -506,7 +534,7 @@
         });
       },
 
-      placeOrder() {
+      async placeOrder() {
         const form = document.getElementById('checkoutForm');
         if (!form.checkValidity()) {
           form.reportValidity();
@@ -548,9 +576,11 @@
         const shippingText = document.getElementById('shipping').textContent;
         const totalText = document.getElementById('total').textContent;
 
+        const orderNumber = 'LOV-' + Date.now().toString(36).toUpperCase();
+
         const orderData = {
-          orderNumber: 'LOV-' + Date.now().toString(36).toUpperCase(),
-          date: new Date().toISOString(),
+          orderNumber: orderNumber,
+          date: firebase.firestore ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString(),
           status: 'pending',
           customer: {
             firstName: document.getElementById('firstName').value.trim(),
@@ -583,58 +613,79 @@
           }
         };
 
-        // Save to orders in localStorage (for admin to view on orders.html)
-        const existingOrders = JSON.parse(localStorage.getItem('lovara_orders')) || [];
-        existingOrders.unshift(orderData);
-        localStorage.setItem('lovara_orders', JSON.stringify(existingOrders));
+        try {
+          // Try Firestore first
+          if (this.db) {
+            await this.db.collection('orders').add(orderData);
+            console.log('[LOVARA Checkout] Order saved to Firestore:', orderNumber);
+          } else {
+            // Fallback to localStorage
+            const existingOrders = JSON.parse(localStorage.getItem('lovara_orders')) || [];
+            existingOrders.unshift(orderData);
+            localStorage.setItem('lovara_orders', JSON.stringify(existingOrders));
+            console.log('[LOVARA Checkout] Order saved to localStorage:', orderNumber);
+          }
 
-        setTimeout(() => {
-          const orderNumber = orderData.orderNumber;
+          this.showSuccess(orderNumber);
+        } catch (err) {
+          console.error('[LOVARA Checkout] Save error:', err);
+          // Fallback to localStorage on Firestore error
+          try {
+            const existingOrders = JSON.parse(localStorage.getItem('lovara_orders')) || [];
+            existingOrders.unshift(orderData);
+            localStorage.setItem('lovara_orders', JSON.stringify(existingOrders));
+            console.log('[LOVARA Checkout] Fallback: saved to localStorage');
+            this.showSuccess(orderNumber);
+          } catch (fallbackErr) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> <span data-i18n="placeOrder">Place Order</span>';
+            this.showToast('Failed to place order. Please try again.', 'error');
+          }
+        }
+      },
 
-          localStorage.removeItem('lovara_cart');
-          window.dispatchEvent(new StorageEvent('storage', {
-            key: 'lovara_cart',
-            newValue: '[]'
-          }));
+      showSuccess(orderNumber) {
+        const btn = document.getElementById('placeOrderBtn');
+        localStorage.removeItem('lovara_cart');
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'lovara_cart',
+          newValue: '[]'
+        }));
 
-          let countdown = 4;
-          const t = translations[this.currentLang];
+        let countdown = 4;
+        const t = translations[this.currentLang];
 
-          const updateSuccessMessage = () => {
-            document.getElementById('checkoutContent').innerHTML = `
-              <div class="success-message">
-                <i class="fas fa-check-circle"></i>
-                <h2 data-i18n="orderPlaced">${t.orderPlaced}</h2>
-                <p data-i18n="orderThankYou">${t.orderThankYou}</p>
-                <div class="order-number">${orderNumber}</div>
-                <p class="redirect-timer">
-                  <span data-i18n="redirecting">${t.redirecting}</span> <span id="countdown">${countdown}</span>...
-                </p>
-              </div>
-            `;
-          };
+        const updateSuccessMessage = () => {
+          document.getElementById('checkoutContent').innerHTML = `
+            <div class="success-message">
+              <i class="fas fa-check-circle"></i>
+              <h2 data-i18n="orderPlaced">${t.orderPlaced}</h2>
+              <p data-i18n="orderThankYou">${t.orderThankYou}</p>
+              <div class="order-number">${orderNumber}</div>
+              <p class="redirect-timer">
+                <span data-i18n="redirecting">${t.redirecting}</span> <span id="countdown">${countdown}</span>...
+              </p>
+            </div>
+          `;
+        };
 
-          updateSuccessMessage();
+        updateSuccessMessage();
 
-          const timer = setInterval(() => {
-            countdown--;
-            const countdownEl = document.getElementById('countdown');
-            if (countdownEl) countdownEl.textContent = countdown;
+        const timer = setInterval(() => {
+          countdown--;
+          const countdownEl = document.getElementById('countdown');
+          if (countdownEl) countdownEl.textContent = countdown;
 
-            if (countdown <= 0) {
-              clearInterval(timer);
-              // Store success message to show on index page
-              localStorage.setItem('lovara_order_success', JSON.stringify({
-                message: t.orderSuccessMessage,
-                orderNumber: orderNumber,
-                timestamp: Date.now()
-              }));
-              // Redirect customer back to home page
-              window.location.href = 'index.html';
-            }
-          }, 1000);
-
-        }, 2000);
+          if (countdown <= 0) {
+            clearInterval(timer);
+            localStorage.setItem('lovara_order_success', JSON.stringify({
+              message: t.orderSuccessMessage,
+              orderNumber: orderNumber,
+              timestamp: Date.now()
+            }));
+            window.location.href = 'index.html';
+          }
+        }, 1000);
       },
 
       getPaymentMethodName(method) {
@@ -666,11 +717,16 @@
         html.setAttribute('lang', lang);
       },
 
-      showToast(message) {
+      showToast(message, type = 'success') {
         const toast = document.getElementById('toast');
         const toastMsg = document.getElementById('toastMsg');
         if (toast && toastMsg) {
           toastMsg.textContent = message;
+          const icon = toast.querySelector('i');
+          if (icon) {
+            icon.className = type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
+            icon.style.color = type === 'error' ? '#e74c3c' : '#4CAF50';
+          }
           toast.classList.add('show');
           setTimeout(() => toast.classList.remove('show'), 3000);
         }
