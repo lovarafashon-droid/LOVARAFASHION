@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" id="htmlRoot">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="pageTitle">LOVARA – Checkout</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="categories-shared.css" />
+<link rel="icon" type="image/jpeg" href="LOVARA.jpeg">
+  <style>
+    :root {
+      --primary: #c9a87c;
+      --primary-dark: #b8956a;
+      --secondary: #1a1a1a;
+      --text: #333;
+      --text-light: #777;
+      --bg: #f8f6f3;
+      --white: #fff;
+      --border: #e8e4e0;
+      --shadow: 0 4px 20px rgba(0,0,0,0.06);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --transition: all 0.3s ease;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Jost', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+    .navbar {
+      position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border); transition: var(--transition);
+    }
+    .nav-container {
+      max-width: 1200px; margin: 0 auto; padding: 15px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo {
+      font-family: 'Cormorant Garamond', serif; font-size: 28px;
+      font-weight: 600; color: var(--secondary); text-decoration: none; letter-spacing: 2px;
+    }
+    .nav-links { display: flex; gap: 30px; }
+    .nav-link {
+      text-decoration: none; color: var(--text); font-size: 14px;
+      font-weight: 500; transition: var(--transition); position: relative;
+    }
+    .nav-link:hover { color: var(--primary); }
+    .nav-actions { display: flex; align-items: center; gap: 15px; }
+    .cart-btn {
+      background: none; border: none; font-size: 18px; color: var(--secondary);
+      cursor: pointer; width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transition: var(--transition);
+    }
+    .cart-btn:hover { background: var(--bg); color: var(--primary); }
+
+    .checkout-page { padding: 100px 0 60px; background: var(--bg); min-height: 100vh; }
+    .checkout-header { text-align: center; margin-bottom: 50px; }
+    .checkout-header h1 {
+      font-family: 'Cormorant Garamond', serif; font-size: 42px;
+      color: var(--secondary); margin-bottom: 10px;
+    }
+    .checkout-header p { color: var(--text-light); }
+
+    .checkout-grid {
+      display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: start;
+    }
+
+    .checkout-form-wrapper {
+      background: var(--white); padding: 35px; border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .checkout-form-wrapper h2 {
+      font-family: 'Cormorant Garamond', serif; font-size: 24px;
+      margin-bottom: 25px; color: var(--secondary); display: flex; align-items: center; gap: 10px;
+    }
+    .checkout-form-wrapper h2 i { color: var(--primary); }
+
+    .form-section { margin-bottom: 30px; }
+    .form-section-title {
+      font-size: 14px; font-weight: 600; color: var(--secondary);
+      margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .checkout-form .form-group { margin-bottom: 18px; }
+    .checkout-form .form-group label {
+      display: block; font-size: 13px; font-weight: 500;
+      margin-bottom: 6px; color: var(--secondary);
+    }
+    .checkout-form .form-group input,
+    .checkout-form .form-group select,
+    .checkout-form .form-group textarea {
+      width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); font-family: 'Jost', sans-serif; font-size: 14px;
+      transition: var(--transition); background: var(--bg); color: var(--text);
+    }
+    .checkout-form .form-group input:focus,
+    .checkout-form .form-group select:focus,
+    .checkout-form .form-group textarea:focus {
+      outline: none; border-color: var(--primary); background: var(--white);
+      box-shadow: 0 0 0 3px rgba(201,168,124,0.1);
+    }
+    .checkout-form .form-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+    }
+
+    .payment-methods { display: flex; flex-direction: column; gap: 12px; }
+    .payment-method {
+      display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition); background: var(--white);
+    }
+    .payment-method:hover { border-color: var(--primary); }
+    .payment-method input { width: 18px; height: 18px; accent-color: var(--primary); }
+    .payment-method label {
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      flex: 1; font-size: 14px; color: var(--text);
+    }
+    .payment-method label i { font-size: 20px; color: var(--primary); width: 30px; text-align: center; }
+    .payment-method.selected { border-color: var(--primary); background: rgba(201,168,124,0.05); }
+
+    .order-summary {
+      background: var(--white); padding: 35px; border-radius: var(--radius);
+      box-shadow: var(--shadow); position: sticky; top: 90px;
+    }
+    .order-summary h2 {
+      font-family: 'Cormorant Garamond', serif; font-size: 24px;
+      margin-bottom: 25px; color: var(--secondary); display: flex; align-items: center; gap: 10px;
+    }
+    .order-summary h2 i { color: var(--primary); }
+
+    .order-items { margin-bottom: 25px; max-height: 300px; overflow-y: auto; }
+    .order-item {
+      display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .order-item:last-child { border-bottom: none; }
+    .order-item img {
+      width: 60px; height: 60px; object-fit: cover; border-radius: var(--radius-sm);
+    }
+    .order-item-info { flex: 1; }
+    .order-item-info h4 { font-size: 14px; color: var(--secondary); margin-bottom: 4px; }
+    .order-item-info p { font-size: 12px; color: var(--text-light); }
+    .order-item-price { font-weight: 600; color: var(--primary); font-size: 14px; }
+
+    .order-totals { border-top: 2px solid var(--border); padding-top: 20px; }
+    .order-total-row {
+      display: flex; justify-content: space-between; margin-bottom: 10px;
+      font-size: 14px; color: var(--text-light);
+    }
+    .order-total-row.total {
+      font-size: 18px; font-weight: 600; color: var(--secondary);
+      border-top: 1px solid var(--border); padding-top: 15px; margin-top: 15px;
+    }
+    .order-total-row.total span:last-child { color: var(--primary); }
+
+    .btn-place-order {
+      width: 100%; padding: 16px; background: var(--primary); color: var(--white);
+      border: none; border-radius: var(--radius-sm); font-size: 16px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 10px; transition: var(--transition); font-family: 'Jost', sans-serif; margin-top: 25px;
+    }
+    .btn-place-order:hover {
+      background: var(--primary-dark); transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(201,168,124,0.4);
+    }
+    .btn-place-order:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .empty-cart-message { text-align: center; padding: 40px 0; color: var(--text-light); }
+    .empty-cart-message i { font-size: 48px; color: var(--border); margin-bottom: 15px; display: block; }
+    .btn-continue-shopping {
+      display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px;
+      background: var(--secondary); color: var(--white); border: none;
+      border-radius: 30px; font-size: 14px; font-weight: 500; text-decoration: none;
+      cursor: pointer; transition: var(--transition); font-family: 'Jost', sans-serif; margin-top: 15px;
+    }
+    .btn-continue-shopping:hover { background: var(--primary); transform: translateY(-2px); }
+
+    .success-message { text-align: center; padding: 60px 20px; }
+    .success-message i { font-size: 64px; color: #4CAF50; margin-bottom: 20px; }
+    .success-message h2 {
+      font-family: 'Cormorant Garamond', serif; font-size: 32px;
+      color: var(--secondary); margin-bottom: 10px;
+    }
+    .success-message p { color: var(--text-light); margin-bottom: 10px; }
+    .order-number {
+      display: inline-block; background: var(--bg); padding: 10px 20px;
+      border-radius: var(--radius-sm); font-size: 14px; color: var(--secondary);
+      font-weight: 600; margin-bottom: 20px;
+    }
+    .redirect-timer { font-size: 14px; color: var(--primary); margin-top: 15px; }
+    .redirect-timer span { font-weight: 600; font-size: 18px; }
+
+    .payment-details {
+      margin-top: 12px; padding: 14px; background: #f5f0eb;
+      border-radius: 10px; border: 1px solid #e8e4e0;
+    }
+    .payment-details .info-text { margin: 0 0 10px; font-size: 0.9rem; color: #555; }
+    .payment-details .number-box {
+      font-size: 1.3rem; font-weight: 600; color: #1a1a1a; letter-spacing: 1px;
+      padding: 10px 14px; background: #fff; border-radius: 8px; text-align: center;
+      direction: ltr; margin-bottom: 12px;
+    }
+    .payment-details .vodafone-box { border: 1px dashed #e60000; }
+    .payment-details .instapay-box { border: 1px dashed #c8a48c; }
+    .payment-details .help-text { font-size: 0.8rem; color: #888; margin-top: 6px; margin-bottom: 0; }
+    .payment-error { display: none; color: #e74c3c; font-size: 13px; margin-top: 8px; }
+
+    .footer { background: var(--secondary); color: #aaa; padding: 30px 0; text-align: center; margin-top: 60px; }
+    .footer-bottom p { font-size: 13px; }
+
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: var(--secondary); color: #fff; padding: 14px 28px; border-radius: 50px;
+      display: flex; align-items: center; gap: 10px; font-size: 14px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2); opacity: 0; transition: all 0.4s ease; z-index: 9999;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 992px) {
+      .checkout-grid { grid-template-columns: 1fr; }
+      .order-summary { position: static; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 768px) {
+      .checkout-page { padding: 80px 0 40px; }
+      .checkout-header h1 { font-size: 32px; }
+      .checkout-form-wrapper, .order-summary { padding: 25px; }
+      .checkout-form .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+
+</head>
+<body>
+
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="logo">LOVARA</a>
+      <nav class="nav-links" id="navLinks">
+        <a href="index.html" class="nav-link" data-i18n="navHome">Home</a>
+        <a href="index.html#shop" class="nav-link" data-i18n="navShop">Shop</a>
+        <a href="index.html#categories" class="nav-link" data-i18n="navCategories">Categories</a>
+        <a href="index.html#about" class="nav-link" data-i18n="navAbout">About</a>
+        <a href="index.html#contact" class="nav-link" data-i18n="navContact">Contact</a>
+      </nav>
+      <div class="nav-actions">
+        <button type="button" class="cart-btn" onclick="window.location.href='index.html'" aria-label="Back">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <section class="checkout-page">
+    <div class="container">
+      <div class="checkout-header">
+        <h1 data-i18n="checkoutTitle">Checkout</h1>
+        <p data-i18n="checkoutDesc">Complete your order details below</p>
+      </div>
+
+      <div id="checkoutContent">
+        <div class="checkout-grid">
+          <div class="checkout-form-wrapper">
+            <h2><i class="fas fa-truck"></i> <span data-i18n="shippingInfo">Shipping Information</span></h2>
+
+            <form class="checkout-form" id="checkoutForm">
+              <div class="form-section">
+                <div class="form-section-title" data-i18n="personalDetails">Personal Details</div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label data-i18n="firstName">First Name *</label>
+                    <input type="text" id="firstName" required autocomplete="given-name" />
+                  </div>
+                  <div class="form-group">
+                    <label data-i18n="lastName">Last Name *</label>
+                    <input type="text" id="lastName" required autocomplete="family-name" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label data-i18n="email">Email *</label>
+                    <input type="email" id="email" required autocomplete="email" />
+                  </div>
+                  <div class="form-group">
+                    <label data-i18n="phone">Phone *</label>
+                    <input type="tel" id="phone" required autocomplete="tel" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <div class="form-section-title" data-i18n="shippingAddress">Shipping Address</div>
+                <div class="form-group">
+                  <label data-i18n="address">Address *</label>
+                  <input type="text" id="address" required autocomplete="street-address" />
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label data-i18n="city">City *</label>
+                    <input type="text" id="city" required autocomplete="address-level2" />
+                  </div>
+                  <div class="form-group">
+                    <label data-i18n="postalCode">Postal Code</label>
+                    <input type="text" id="postalCode" autocomplete="postal-code" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label data-i18n="country">Country *</label>
+                  <select id="country" required autocomplete="country">
+                    <option value="">Select Country</option>
+                    <option value="EG">Egypt</option>
+                    <option value="SA">Saudi Arabia</option>
+                    <option value="AE">UAE</option>
+                    <option value="KW">Kuwait</option>
+                    <option value="QA">Qatar</option>
+                    <option value="BH">Bahrain</option>
+                    <option value="JO">Jordan</option>
+                    <option value="LB">Lebanon</option>
+                    <option value="IQ">Iraq</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <div class="form-section-title" data-i18n="paymentMethod">Payment Method *</div>
+                <div class="payment-methods" id="paymentMethods">
+                  <label class="payment-method" data-method="cod">
+                    <input type="radio" name="payment" value="cod" required />
+                    <span><i class="fas fa-money-bill-wave"></i> <span data-i18n="cashOnDelivery">Cash on Delivery</span></span>
+                  </label>
+                  <label class="payment-method" data-method="vodafone">
+                    <input type="radio" name="payment" value="vodafone" required />
+                    <span><i class="fas fa-mobile-alt"></i> <span data-i18n="vodafoneCash">Vodafone Cash</span></span>
+                  </label>
+                  <label class="payment-method" data-method="instapay">
+                    <input type="radio" name="payment" value="instapay" required />
+                    <span><i class="fas fa-mobile-alt"></i> <span data-i18n="instaPay">InstaPay</span></span>
+                  </label>
+                </div>
+
+                <div class="payment-details" id="vodafoneDetails" style="display:none;">
+                  <p class="info-text"><i class="fas fa-info-circle" style="color:#e60000; margin-right:6px;"></i> <span data-i18n="vodafoneDesc">Send the full amount to this Vodafone Cash number:</span></p>
+                  <div class="number-box vodafone-box">0106 6730 225</div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:13px; font-weight:500; margin-bottom:6px; color:var(--secondary);" data-i18n="transactionIdLabel">Transaction Reference Number *</label>
+                    <input type="text" id="vodafoneTransactionId" placeholder="e.g. TXN123456789" />
+                    <p class="help-text" data-i18n="transactionIdHelp">Find this in your Vodafone Cash app after sending</p>
+                  </div>
+                </div>
+
+                <div class="payment-details" id="instaPayDetails" style="display:none;">
+                  <p class="info-text"><i class="fas fa-info-circle" style="color:#a67c52; margin-right:6px;"></i> <span data-i18n="instaPayDesc">Transfer the full amount to this number via InstaPay:</span></p>
+                  <div class="number-box instapay-box">0128 845 2212</div>
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label style="font-size:13px; font-weight:500; margin-bottom:6px; color:var(--secondary);" data-i18n="transactionIdLabel">Transaction Reference Number *</label>
+                    <input type="text" id="instaPayTransactionId" placeholder="e.g. INST-123456789" />
+                    <p class="help-text" data-i18n="transactionIdHelp">Find this in your InstaPay app after transfer</p>
+                  </div>
+                </div>
+
+                <p class="payment-error" id="paymentError"><i class="fas fa-exclamation-circle"></i> <span data-i18n="paymentRequired">Please select a payment method</span></p>
+                <p class="payment-error" id="transactionError"><i class="fas fa-exclamation-circle"></i> <span data-i18n="transactionRequired">Please enter the transaction reference number</span></p>
+              </div>
+
+              <div class="form-section">
+                <div class="form-group">
+                  <label data-i18n="orderNotes">Order Notes (Optional)</label>
+                  <textarea id="orderNotes" rows="3" placeholder="Any special instructions..."></textarea>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div class="order-summary">
+            <h2><i class="fas fa-shopping-bag"></i> <span data-i18n="orderSummary">Order Summary</span></h2>
+            <div class="order-items" id="orderItems"></div>
+            <div class="order-totals">
+              <div class="order-total-row">
+                <span data-i18n="subtotal">Subtotal</span>
+                <span id="subtotal">EGP 0.00</span>
+              </div>
+              <div class="order-total-row">
+                <span data-i18n="shipping">Shipping</span>
+                <span id="shipping">EGP 0.00</span>
+              </div>
+              <div class="order-total-row total">
+                <span data-i18n="total">Total</span>
+                <span id="total">EGP 0.00</span>
+              </div>
+            </div>
+            <button type="button" class="btn-place-order" id="placeOrderBtn" onclick="CheckoutApp.placeOrder()" disabled>
+              <i class="fas fa-check-circle"></i> <span data-i18n="placeOrder">Place Order</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <p data-i18n="footerCopyright">© 2027 LOVARA. All rights reserved. | Women's Luxury Fashion</p>
+      </div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastMsg">Action completed!</span>
+  </div>
+
+  <script>
+    const CheckoutApp = {
+      cart: [],
+      currentLang: localStorage.getItem('lovara_lang') || 'en',
+
+      init() {
+        this.cart = JSON.parse(localStorage.getItem('lovara_cart')) || [];
+        this.loadOrderItems();
+        this.setupPaymentMethods();
+        this.applyLang(this.currentLang);
+      },
+
+      loadOrderItems() {
+        const container = document.getElementById('orderItems');
+        const checkoutContent = document.getElementById('checkoutContent');
+
+        if (this.cart.length === 0) {
+          checkoutContent.innerHTML = `
+            <div class="empty-cart-message">
+              <i class="fas fa-shopping-bag"></i>
+              <h3 data-i18n="cartEmpty">Your cart is empty</h3>
+              <p data-i18n="cartEmptyDesc">Add some products to your cart first!</p>
+              <a href="index.html" class="btn-continue-shopping">
+                <i class="fas fa-arrow-left"></i> <span data-i18n="continueShopping">Continue Shopping</span>
+              </a>
+            </div>
+          `;
+          this.applyLang(this.currentLang);
+          return;
+        }
+
+        let subtotal = 0;
+
+        container.innerHTML = this.cart.map(item => {
+          const price = parseFloat(item.price) || 0;
+          const qty = item.quantity || 1;
+          const itemTotal = price * qty;
+          subtotal += itemTotal;
+
+          const sizeText = item.size ? ` | Size: ${item.size}` : '';
+          const colorText = item.color ? ` | Color: ${item.color}` : '';
+
+          return `
+            <div class="order-item">
+              <img src="${item.imageUrl || 'https://via.placeholder.com/60x60/c9a87c/ffffff?text=LOVARA'}" 
+                   alt="${item.name}" 
+                   onerror="this.onerror=null; this.src='https://via.placeholder.com/60x60/c9a87c/ffffff?text=LOVARA';" />
+              <div class="order-item-info">
+                <h4>${item.name || 'Product'}</h4>
+                <p>Qty: ${qty}${sizeText}${colorText}</p>
+              </div>
+              <div class="order-item-price">EGP ${itemTotal.toFixed(2)}</div>
+            </div>
+          `;
+        }).join('');
+
+        const shipping = subtotal > 2000 ? 0 : 50;
+        const total = subtotal + shipping;
+
+        document.getElementById('subtotal').textContent = `EGP ${subtotal.toFixed(2)}`;
+        document.getElementById('shipping').textContent = shipping === 0 ? 'FREE' : `EGP ${shipping.toFixed(2)}`;
+        document.getElementById('total').textContent = `EGP ${total.toFixed(2)}`;
+      },
+
+      setupPaymentMethods() {
+        const placeOrderBtn = document.getElementById('placeOrderBtn');
+        const paymentError = document.getElementById('paymentError');
+        const transactionError = document.getElementById('transactionError');
+        const vodafoneDetails = document.getElementById('vodafoneDetails');
+        const instaPayDetails = document.getElementById('instaPayDetails');
+
+        document.querySelectorAll('.payment-method input').forEach(input => {
+          input.addEventListener('change', (e) => {
+            document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
+            e.target.closest('.payment-method').classList.add('selected');
+
+            placeOrderBtn.disabled = false;
+            paymentError.style.display = 'none';
+            transactionError.style.display = 'none';
+
+            vodafoneDetails.style.display = 'none';
+            instaPayDetails.style.display = 'none';
+
+            if (e.target.value === 'vodafone') {
+              vodafoneDetails.style.display = 'block';
+            } else if (e.target.value === 'instapay') {
+              instaPayDetails.style.display = 'block';
+            }
+          });
+        });
+      },
+
+      placeOrder() {
+        const form = document.getElementById('checkoutForm');
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        const selectedPayment = document.querySelector('input[name="payment"]:checked');
+        if (!selectedPayment) {
+          document.getElementById('paymentError').style.display = 'block';
+          document.getElementById('paymentMethods').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+
+        const paymentMethod = selectedPayment.value;
+        let transactionId = '';
+
+        if (paymentMethod === 'vodafone') {
+          transactionId = document.getElementById('vodafoneTransactionId').value.trim();
+          if (!transactionId) {
+            document.getElementById('transactionError').style.display = 'block';
+            document.getElementById('vodafoneDetails').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+        } else if (paymentMethod === 'instapay') {
+          transactionId = document.getElementById('instaPayTransactionId').value.trim();
+          if (!transactionId) {
+            document.getElementById('transactionError').style.display = 'block';
+            document.getElementById('instaPayDetails').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+        }
+
+        const btn = document.getElementById('placeOrderBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+        // Gather all order data
+        const subtotalText = document.getElementById('subtotal').textContent;
+        const shippingText = document.getElementById('shipping').textContent;
+        const totalText = document.getElementById('total').textContent;
+
+        const orderData = {
+          orderNumber: 'LOV-' + Date.now().toString(36).toUpperCase(),
+          date: new Date().toISOString(),
+          status: 'pending',
+          customer: {
+            firstName: document.getElementById('firstName').value.trim(),
+            lastName: document.getElementById('lastName').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            address: document.getElementById('address').value.trim(),
+            city: document.getElementById('city').value.trim(),
+            postalCode: document.getElementById('postalCode').value.trim(),
+            country: document.getElementById('country').value,
+            notes: document.getElementById('orderNotes').value.trim()
+          },
+          payment: {
+            method: paymentMethod,
+            transactionId: transactionId,
+            methodName: this.getPaymentMethodName(paymentMethod)
+          },
+          items: this.cart.map(item => ({
+            name: item.name || 'Product',
+            price: parseFloat(item.price) || 0,
+            quantity: item.quantity || 1,
+            size: item.size || '-',
+            color: item.color || '-',
+            imageUrl: item.imageUrl || ''
+          })),
+          totals: {
+            subtotal: subtotalText,
+            shipping: shippingText,
+            total: totalText
+          }
+        };
+
+        // Save to orders in localStorage (for admin to view on orders.html)
+        const existingOrders = JSON.parse(localStorage.getItem('lovara_orders')) || [];
+        existingOrders.unshift(orderData);
+        localStorage.setItem('lovara_orders', JSON.stringify(existingOrders));
+
+        setTimeout(() => {
+          const orderNumber = orderData.orderNumber;
+
+          localStorage.removeItem('lovara_cart');
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'lovara_cart',
+            newValue: '[]'
+          }));
+
+          let countdown = 4;
+          const t = translations[this.currentLang];
+
+          const updateSuccessMessage = () => {
+            document.getElementById('checkoutContent').innerHTML = `
+              <div class="success-message">
+                <i class="fas fa-check-circle"></i>
+                <h2 data-i18n="orderPlaced">${t.orderPlaced}</h2>
+                <p data-i18n="orderThankYou">${t.orderThankYou}</p>
+                <div class="order-number">${orderNumber}</div>
+                <p class="redirect-timer">
+                  <span data-i18n="redirecting">${t.redirecting}</span> <span id="countdown">${countdown}</span>...
+                </p>
+              </div>
+            `;
+          };
+
+          updateSuccessMessage();
+
+          const timer = setInterval(() => {
+            countdown--;
+            const countdownEl = document.getElementById('countdown');
+            if (countdownEl) countdownEl.textContent = countdown;
+
+            if (countdown <= 0) {
+              clearInterval(timer);
+              // Store success message to show on index page
+              localStorage.setItem('lovara_order_success', JSON.stringify({
+                message: t.orderSuccessMessage,
+                orderNumber: orderNumber,
+                timestamp: Date.now()
+              }));
+              // Redirect customer back to home page
+              window.location.href = 'index.html';
+            }
+          }, 1000);
+
+        }, 2000);
+      },
+
+      getPaymentMethodName(method) {
+        const names = {
+          cod: 'Cash on Delivery',
+          vodafone: 'Vodafone Cash',
+          instapay: 'InstaPay'
+        };
+        return names[method] || method;
+      },
+
+      applyLang(lang) {
+        const t = translations[lang];
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          const key = el.getAttribute('data-i18n');
+          if (t[key]) {
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+              if (el.hasAttribute('placeholder')) {
+                el.placeholder = t[key];
+              }
+            } else {
+              el.textContent = t[key];
+            }
+          }
+        });
+
+        const html = document.documentElement;
+        html.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+        html.setAttribute('lang', lang);
+      },
+
+      showToast(message) {
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMsg');
+        if (toast && toastMsg) {
+          toastMsg.textContent = message;
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+      }
+    };
+
+    const translations = {
+      en: {
+        pageTitle: 'LOVARA – Checkout',
+        checkoutTitle: 'Checkout',
+        checkoutDesc: 'Complete your order details below',
+        shippingInfo: 'Shipping Information',
+        personalDetails: 'Personal Details',
+        firstName: 'First Name *',
+        lastName: 'Last Name *',
+        email: 'Email *',
+        phone: 'Phone *',
+        shippingAddress: 'Shipping Address',
+        address: 'Address *',
+        city: 'City *',
+        postalCode: 'Postal Code',
+        country: 'Country *',
+        paymentMethod: 'Payment Method',
+        cashOnDelivery: 'Cash on Delivery',
+        creditCard: 'Credit Card',
+        vodafoneCash: 'Vodafone Cash',
+        orderNotes: 'Order Notes (Optional)',
+        orderSummary: 'Order Summary',
+        subtotal: 'Subtotal',
+        shipping: 'Shipping',
+        total: 'Total',
+        placeOrder: 'Place Order',
+        cartEmpty: 'Your cart is empty',
+        cartEmptyDesc: 'Add some products to your cart first!',
+        continueShopping: 'Continue Shopping',
+        orderPlaced: 'Order Placed Successfully!',
+        orderThankYou: 'Thank you for your purchase. We will contact you soon.',
+        redirecting: 'Redirecting to home in',
+        orderSuccessMessage: 'Your order has been placed successfully!',
+        backToHome: 'Back to Home',
+        navHome: 'Home',
+        navShop: 'Shop',
+        navCategories: 'Categories',
+        navAbout: 'About',
+        navContact: 'Contact',
+        vodafoneDesc: 'Send the full amount to this Vodafone Cash number:',
+        instaPayDesc: 'Transfer the full amount to this number via InstaPay:',
+        transactionIdLabel: 'Transaction Reference Number *',
+        transactionIdHelp: 'Find this in your app after sending the payment',
+        transactionRequired: 'Please enter the transaction reference number',
+        instaPay: 'InstaPay',
+        paymentRequired: 'Please select a payment method',
+        footerCopyright: "© 2027 LOVARA. All rights reserved. | Women's Luxury Fashion"
+      },
+      ar: {
+        pageTitle: 'لوڤارا – إتمام الشراء',
+        checkoutTitle: 'إتمام الشراء',
+        checkoutDesc: 'أكملي بيانات طلبك أدناه',
+        shippingInfo: 'معلومات الشحن',
+        personalDetails: 'البيانات الشخصية',
+        firstName: 'الاسم الأول *',
+        lastName: 'الاسم الأخير *',
+        email: 'البريد الإلكتروني *',
+        phone: 'رقم الهاتف *',
+        shippingAddress: 'عنوان الشحن',
+        address: 'العنوان *',
+        city: 'المدينة *',
+        postalCode: 'الرمز البريدي',
+        country: 'الدولة *',
+        paymentMethod: 'طريقة الدفع',
+        cashOnDelivery: 'الدفع عند الاستلام',
+        creditCard: 'بطاقة ائتمان',
+        vodafoneCash: 'فودافون كاش',
+        orderNotes: 'ملاحظات الطلب (اختياري)',
+        orderSummary: 'ملخص الطلب',
+        subtotal: 'المجموع الفرعي',
+        shipping: 'الشحن',
+        total: 'الإجمالي',
+        placeOrder: 'تأكيد الطلب',
+        cartEmpty: 'السلة فارغة',
+        cartEmptyDesc: 'أضيفي بعض المنتجات للسلة أولاً!',
+        continueShopping: 'مواصلة التسوق',
+        orderPlaced: 'تم تأكيد الطلب بنجاح!',
+        orderThankYou: 'شكراً لشرائكِ. سنتواصل معكِ قريباً.',
+        redirecting: 'العودة للرئيسية خلال',
+        orderSuccessMessage: 'تم طلبك بنجاح!',
+        backToHome: 'العودة للرئيسية',
+        navHome: 'الرئيسية',
+        navShop: 'المتجر',
+        navCategories: 'التصنيفات',
+        navAbout: 'من نحن',
+        navContact: 'تواصل معنا',
+        vodafoneDesc: 'ابعتي المبلغ كامل على رقم فودافون كاش ده:',
+        instaPayDesc: 'حوّلي المبلغ كامل على الرقم ده عن طريق انستا باي:',
+        transactionIdLabel: 'رقم العملية (Reference) *',
+        transactionIdHelp: 'لقيه في التطبيق بعد ما تبعتي الفلوس',
+        transactionRequired: 'من فضلك اكتبي رقم العملية',
+        instaPay: 'انستا باي',
+        paymentRequired: 'من فضلك اختاري طريقة الدفع',
+        footerCopyright: '© 2027 لوڤارا. جميع الحقوق محفوظة. | أزياء نسائية فاخرة'
+      }
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => CheckoutApp.init());
+    } else {
+      CheckoutApp.init();
+    }
+  </script>
+
+  <script src="categories-shared.js"></script>
+</body>
+</html>

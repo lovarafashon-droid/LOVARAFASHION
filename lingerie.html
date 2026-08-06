@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" id="htmlRoot">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="pageTitle">LOVARA – Lingerie</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="categories-shared.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+
+ <link rel="icon" type="image/jpeg" href="LOVARA.jpeg">
+  
+</head>
+<body data-category="lingerie">
+
+  <!-- NAVBAR -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+      <a href="index.html" class="logo">LOVARA</a>
+      <nav class="nav-links" id="navLinks">
+        <a href="index.html" class="nav-link" data-i18n="navHome">Home</a>
+        <a href="index.html#shop" class="nav-link" data-i18n="navShop">Shop</a>
+        <a href="index.html#categories" class="nav-link active" data-i18n="navCategories">Categories</a>
+        <a href="index.html#about" class="nav-link" data-i18n="navAbout">About</a>
+        <a href="index.html#contact" class="nav-link" data-i18n="navContact">Contact</a>
+      </nav>
+      <div class="nav-actions" id="navActions">
+        <div class="lang-switcher" id="langSwitcher">
+          <button class="lang-btn" id="langBtn" aria-label="Change Language">
+            <i class="fas fa-globe"></i>
+            <span id="langLabel">EN</span>
+          </button>
+          <div class="lang-dropdown" id="langDropdown">
+            <button class="lang-option" data-lang="en">
+              <span class="lang-flag">🇺🇸</span>
+              <span class="lang-name">English</span>
+            </button>
+            <button class="lang-option" data-lang="ar">
+              <span class="lang-flag">🇸🇦</span>
+              <span class="lang-name">العربية</span>
+            </button>
+          </div>
+        </div>
+        <div class="auth-buttons" id="authButtons">
+          <button class="btn btn-sm btn-outline" id="openLogin" data-i18n="navLogin" onclick="CategoryApp.openLoginModal()">Login</button>
+          <button class="btn btn-sm btn-primary" id="openSignup" data-i18n="navSignup" onclick="CategoryApp.openSignupModal()">Sign Up</button>
+        </div>
+        <button class="btn btn-sm btn-outline" id="logoutBtn" onclick="CategoryApp.logout()" style="display:none;margin-left:8px;" data-i18n="logout">Logout</button>
+        <div class="user-info" id="userDisplay" style="display: none;">
+          <i class="fas fa-user-circle"></i>
+          <div class="user-details">
+            <span id="userName" class="user-name">User</span>
+            <span id="userEmail" class="user-email"></span>
+          </div>
+        </div>
+        <button class="wishlist-btn" onclick="CategoryApp.openWishlistModal()" aria-label="Wishlist">
+          <i class="fas fa-heart"></i>
+          <span class="wishlist-count" id="wishlistCount">0</span>
+        </button>
+        <button class="cart-btn" onclick="CategoryApp.openCartModal()" aria-label="Cart">
+          <i class="fas fa-bag-shopping"></i>
+          <span class="cart-count" id="cartCount">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <!-- PAGE HEADER -->
+  <section class="page-header">
+    <div class="container">
+      <h1><em data-i18n="pageTitle">Lingerie</em></h1>
+      <div class="breadcrumb">
+        <a href="index.html" data-i18n="navHome">Home</a>
+        <span class="breadcrumb-separator">/</span>
+        <span data-i18n="pageTitle">Lingerie</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATEGORY NAVIGATION -->
+  <section class="category-nav">
+    <div class="container">
+      <a href="dresses.html" class="cat-nav-link" data-i18n="catDresses">Dresses</a>
+      <a href="tops.html" class="cat-nav-link" data-i18n="catTops">Tops</a>
+      <a href="pants.html" class="cat-nav-link" data-i18n="catPants">Pants</a>
+      <a href="accessories.html" class="cat-nav-link" data-i18n="catAccessories">Accessories</a>
+      <a href="sets.html" class="cat-nav-link" data-i18n="catSets">Sets</a>
+      <a href="lingerie.html" class="cat-nav-link active" data-i18n="catLingerie">Lingerie</a>
+    </div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section class="products-section" id="shop">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow" data-i18n="shopEyebrow">Our Collection</p>
+        <h2 class="section-title" data-i18n="pageTitle">Lingerie</h2>
+      </div>
+      <div class="products-grid" id="productsGrid">
+        <div class="products-loading" id="productsLoading">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p data-i18n="loadingProducts">Loading products...</p>
+        </div>
+        <div class="empty-state" id="emptyState" style="display: none;">
+          <div class="empty-icon"><i class="fas fa-bag-shopping"></i></div>
+          <h3 data-i18n="emptyTitle">Products Coming Soon</h3>
+          <p data-i18n="emptyDesc">We are adding beautiful new items to this category.<br />Check back shortly!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUPPORT SECTION -->
+  <section class="support-section" id="support">
+    <div class="container">
+      <div class="support-grid">
+        <div class="support-info">
+          <h2 data-i18n="supportTitle">Need Help?</h2>
+          <p data-i18n="supportDesc">Have an issue with a product? Contact us directly and we will help you resolve it.</p>
+          <div class="support-cards">
+            <div class="support-card">
+              <i class="fas fa-headset"></i>
+              <div><h4 data-i18n="phoneSupport">Phone Support</h4><p data-i18n="phoneSupportDesc">Call us at +20128845212</p></div>
+            </div>
+            <div class="support-card">
+              <i class="fab fa-whatsapp"></i>
+              <div>
+                <h4 data-i18n="whatsappSupport">WhatsApp Support</h4>
+                <p data-i18n="whatsappSupportDesc">Chat with us on WhatsApp</p>
+                <a href="https://wa.me/20128845212" target="_blank" rel="noopener noreferrer" class="whatsapp-btn"><i class="fab fa-whatsapp"></i><span>+20 128 845 2212</span></a>
+              </div>
+            </div>
+            <div class="support-card">
+              <i class="fas fa-envelope"></i>
+              <div><h4 data-i18n="emailSupport">Email Support</h4><p><a href="mailto:lovarafashon@gmail.com" target="_blank">lovarafashon@gmail.com</a></p></div>
+            </div>
+          </div>
+        </div>
+        <div class="contact-form-wrapper">
+          <form class="contact-form" id="supportForm">
+            <h3 data-i18n="quickForm">Quick Contact Form</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="sName" data-i18n="formName">Your Name</label>
+                <input type="text" id="sName" name="name" placeholder="Your Name" required />
+              </div>
+              <div class="form-group">
+                <label for="sEmail" data-i18n="formEmail">Email Address</label>
+                <input type="email" id="sEmail" name="email" placeholder="Email Address" required />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="sCountryCode">Country Code</label>
+                <select id="sCountryCode" name="country_code" required>
+      <option value="+20">🇪🇬 Egypt (+20)</option>
+      <option value="+966">🇸🇦 Saudi Arabia (+966)</option>
+      <option value="+971">🇦🇪 UAE (+971)</option>
+      <option value="+965">🇰🇼 Kuwait (+965)</option>
+      <option value="+974">🇶🇦 Qatar (+974)</option>
+      <option value="+962">🇯🇴 Jordan (+962)</option>
+      <option value="+961">🇱🇧 Lebanon (+961)</option>
+      <option value="+212">🇲🇦 Morocco (+212)</option>
+      <option value="+216">🇹🇳 Tunisia (+216)</option>
+      <option value="+213">🇩🇿 Algeria (+213)</option>
+      <option value="+1">🇺🇸 USA (+1)</option>
+      <option value="+44">🇬🇧 UK (+44)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="sPhone">Phone Number</label>
+                <input type="tel" id="sPhone" name="phone" placeholder="123 456 7890" required pattern="[0-9\s]+" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="sSubject" data-i18n="formSubject">Subject</label>
+              <select id="sSubject" name="subject" required>
+                <option value="" data-i18n="subjectSelect">Select a topic</option>
+                <option value="order" data-i18n="subjectOrder">Order Issue</option>
+                <option value="product" data-i18n="subjectProduct">Product Problem</option>
+                <option value="sizing" data-i18n="subjectSizing">Sizing Question</option>
+                <option value="other" data-i18n="subjectOther">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="sMessage" data-i18n="formMessage">Describe your issue</label>
+              <textarea id="sMessage" name="message" rows="4" placeholder="Describe your issue..." required></textarea>
+            </div>
+            <button type="submit" class="btn-submit"><span data-i18n="formSubmit">Send Message</span><i class="fas fa-paper-plane"></i></button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="logo footer-logo">LOVARA</a>
+          <p data-i18n="footerBrand">Luxury women's fashion, curated with love. Wear your story.</p>
+          <div class="footer-socials">
+            <a href="#" aria-label="Instagram" target="_blank"><i class="fab fa-instagram"></i></a>
+            <a href="#" aria-label="Pinterest" target="_blank"><i class="fab fa-pinterest"></i></a>
+            <a href="#" aria-label="TikTok" target="_blank"><i class="fab fa-tiktok"></i></a>
+            <a href="#" aria-label="Facebook" target="_blank"><i class="fab fa-facebook-f"></i></a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4 data-i18n="footerShop">Shop</h4>
+          <ul>
+            <li><a href="dresses.html" data-i18n="footerDresses">Dresses</a></li>
+            <li><a href="tops.html" data-i18n="footerTops">Tops</a></li>
+            <li><a href="pants.html" data-i18n="footerPants">Pants</a></li>
+            <li><a href="accessories.html" data-i18n="footerAccessories">Accessories</a></li>
+            <li><a href="lingerie.html" data-i18n="footerLingerie">Lingerie</a></li>
+            <li><a href="sets.html" data-i18n="footerSets">Sets</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4 data-i18n="footerHelp">Help</h4>
+          <ul>
+            <li><a href="#" data-i18n="footerSizing">Sizing Guide</a></li>
+            <li><a href="#" data-i18n="footerShipping">Shipping Info</a></li>
+            <li><a href="#" data-i18n="footerReturns">Returns</a></li>
+            <li><a href="#" data-i18n="footerTrack">Track Order</a></li>
+            <li><a href="index.html#contact" data-i18n="footerContact">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4 data-i18n="footerNewsletter">Newsletter</h4>
+          <p data-i18n="footerNewsletterDesc">Get exclusive deals and style inspiration.</p>
+          <form class="newsletter-form" id="newsletterForm">
+            <input type="email" name="email" placeholder="Your email address" required />
+            <button type="submit" aria-label="Subscribe"><i class="fas fa-arrow-right"></i></button>
+          </form>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p data-i18n="footerCopyright">© 2027 LOVARA. All rights reserved. | Women's Luxury Fashion</p>
+        <div class="footer-links">
+          <a href="#" data-i18n="footerPrivacy">Privacy Policy</a>
+          <a href="#" data-i18n="footerTerms">Terms of Service</a>
+          <a href="#" data-i18n="footerCookies">Cookie Policy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastMsg" data-i18n="toastDefault">Action completed!</span>
+  </div>
+
+  <!-- BACK TO TOP -->
+  <button class="back-to-top" id="backToTop" aria-label="Back to top"><i class="fas fa-chevron-up"></i></button>
+
+  <!-- CART MODAL -->
+  <div class="cart-overlay" id="cartOverlay"></div>
+  <div class="cart-modal" id="cartModal">
+    <div class="cart-modal-header">
+      <h3 data-i18n="cartTitle">Your Cart</h3>
+      <button class="cart-modal-close" onclick="CategoryApp.closeCartModal()" aria-label="Close cart"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="cart-modal-body">
+      <div class="cart-empty" id="cartEmpty">
+        <i class="fas fa-shopping-bag"></i>
+        <p data-i18n="cartEmpty">Your cart is empty</p>
+        <button class="btn-continue" onclick="CategoryApp.closeCartModal()" data-i18n="cartContinue">Continue Shopping</button>
+      </div>
+      <div class="cart-items" id="cartItems"></div>
+    </div>
+    <div class="cart-modal-footer">
+      <div class="cart-total-row">
+        <span data-i18n="cartTotal">Total:</span>
+        <span class="cart-total-price">EGP <span id="cartTotal">0.00</span></span>
+      </div>
+      <div class="cart-actions">
+        <button class="btn-checkout" onclick="CategoryApp.checkout()" data-i18n="cartCheckout">Checkout</button>
+        <button class="btn-clear" onclick="CategoryApp.clearCart()" data-i18n="cartClear">Clear Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WISHLIST MODAL -->
+  <div class="wishlist-overlay" id="wishlistOverlay"></div>
+  <div class="wishlist-modal" id="wishlistModal">
+    <div class="wishlist-modal-header">
+      <h3 data-i18n="wishlistTitle">Your Wishlist</h3>
+      <button class="wishlist-modal-close" onclick="CategoryApp.closeWishlistModal()" aria-label="Close wishlist"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="wishlist-modal-body">
+      <div class="wishlist-empty" id="wishlistEmpty">
+        <i class="fas fa-heart"></i>
+        <p data-i18n="wishlistEmpty">Your wishlist is empty</p>
+        <button class="btn-continue" onclick="CategoryApp.closeWishlistModal()" data-i18n="wishlistContinue">Continue Shopping</button>
+      </div>
+      <div class="wishlist-items" id="wishlistItems"></div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="categories-shared.js"></script>
+
+
+  <!-- ===================== MODAL: LOGIN ===================== -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Login">
+      <button class="modal-close" id="closeLogin" aria-label="Close"><i class="fas fa-xmark"></i></button>
+
+      <div class="modal-header">
+        <div class="modal-logo">LOVARA</div>
+        <h2 data-i18n="loginTitle">Welcome Back</h2>
+        <p data-i18n="loginSub">Sign in to your account</p>
+      </div>
+
+      <button class="google-btn" onclick="CategoryApp.showToast('Google sign-in coming soon!')">
+        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <span data-i18n="googleSignIn">Continue with Google</span>
+      </button>
+
+      <div class="divider"><span data-i18n="orSignIn">or sign in with email</span></div>
+
+      <form class="modal-form" id="loginForm">
+        <div class="form-group">
+          <label data-i18n="labelEmail">Email</label>
+          <input type="email" data-i18n-placeholder="placeholderEmail" placeholder="emma@example.com" required />
+        </div>
+        <div class="form-group">
+          <label data-i18n="labelPassword">Password</label>
+          <div class="password-wrap">
+            <input type="password" id="loginPassword" data-i18n-placeholder="placeholderPassword" placeholder="••••••••" required />
+            <button type="button" class="toggle-pw" onclick="togglePassword('loginPassword')">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-row-inline">
+          <label class="checkbox-label">
+            <input type="checkbox" /> <span data-i18n="rememberMe">Remember me</span>
+          </label>
+          <a href="#" class="forgot-link" id="forgotLink" data-i18n="forgotPassword">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" data-i18n="btnSignIn">Sign In</button>
+      </form>
+
+      <p class="modal-switch">
+        <span data-i18n="noAccount">Don't have an account?</span>
+        <button class="switch-btn" id="switchToSignup" data-i18n="btnSignUpLink">Sign Up</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL: SIGN UP ===================== -->
+  <div class="modal-overlay" id="signupModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Sign Up">
+      <button class="modal-close" id="closeSignup" aria-label="Close"><i class="fas fa-xmark"></i></button>
+
+      <div class="modal-header">
+        <div class="modal-logo">LOVARA</div>
+        <h2 data-i18n="signupTitle">Join LOVARA</h2>
+        <p data-i18n="signupSub">Create your account — it's free</p>
+      </div>
+
+      <button class="google-btn" onclick="CategoryApp.showToast('Google sign-up coming soon!')">
+        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <span data-i18n="googleSignUp">Sign up with Google</span>
+      </button>
+
+      <div class="divider"><span data-i18n="orCreate">or create with email</span></div>
+
+      <form class="modal-form" id="signupForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label data-i18n="labelFirstName">First Name</label>
+            <input type="text" data-i18n-placeholder="placeholderFirstName" placeholder="Emma" required />
+          </div>
+          <div class="form-group">
+            <label data-i18n="labelLastName">Last Name</label>
+            <input type="text" data-i18n-placeholder="placeholderLastName" placeholder="Rose" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="labelEmail">Email</label>
+          <input type="email" data-i18n-placeholder="placeholderEmail" placeholder="emma@example.com" required />
+        </div>
+        <div class="form-group">
+          <label data-i18n="labelPassword">Password</label>
+          <div class="password-wrap">
+            <input type="password" id="signupPassword" data-i18n-placeholder="placeholderPasswordMin" placeholder="Minimum 8 characters" required />
+            <button type="button" class="toggle-pw" onclick="togglePassword('signupPassword')">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" required />
+            <span data-i18n="agreeTerms">I agree to the</span> <a href="#" data-i18n="termsLink">Terms of Service</a> <span data-i18n="and">and</span> <a href="#" data-i18n="privacyLink">Privacy Policy</a>
+          </label>
+        </div>
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" />
+            <span data-i18n="subscribeNews">Subscribe to our newsletter for exclusive offers</span>
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" data-i18n="btnCreateAccount">Create Account</button>
+      </form>
+
+      <p class="modal-switch">
+        <span data-i18n="haveAccount">Already have an account?</span>
+        <button class="switch-btn" id="switchToLogin" data-i18n="btnSignInLink">Sign In</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL: FORGOT PASSWORD ===================== -->
+  <div class="modal-overlay" id="forgotModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Reset Password">
+      <button class="modal-close" id="closeForgot" aria-label="Close"><i class="fas fa-xmark"></i></button>
+
+      <div class="modal-header">
+        <div class="modal-logo">LOVARA</div>
+        <h2 data-i18n="forgotTitle">Reset Password</h2>
+        <p data-i18n="forgotSub">Enter your email to receive a reset link</p>
+      </div>
+
+      <form class="modal-form" id="forgotForm">
+        <div class="form-group">
+          <label data-i18n="labelEmail">Email</label>
+          <input type="email" id="forgotEmail" data-i18n-placeholder="placeholderEmail" placeholder="emma@example.com" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" data-i18n="btnSendReset">Send Reset Link</button>
+      </form>
+
+      <p class="modal-switch">
+        <span data-i18n="rememberPassword">Remember your password?</span>
+        <button class="switch-btn" id="switchToLoginFromForgot" data-i18n="btnSignInLink">Sign In</button>
+      </p>
+    </div>
+  </div>
+
+
+<!-- ===================== PHONE VALIDATION ===================== -->
+<script>
+(function() {
+  const phoneLengths = {
+    '+20': 11, '+966': 9, '+971': 9, '+965': 8, '+974': 8,
+    '+962': 9, '+961': 8, '+212': 9, '+216': 8, '+213': 9,
+    '+1': 10, '+44': 10
+  };
+
+  const countryNames = {
+    '+20': 'Egypt', '+966': 'Saudi Arabia', '+971': 'UAE', '+965': 'Kuwait',
+    '+974': 'Qatar', '+962': 'Jordan', '+961': 'Lebanon', '+212': 'Morocco',
+    '+216': 'Tunisia', '+213': 'Algeria', '+1': 'USA', '+44': 'UK'
+  };
+
+  function getLang() {
+    return localStorage.getItem('lovara_lang') || 'en';
+  }
+
+  function validatePhone(countrySelectId, phoneInputId, errorId) {
+    const country = document.getElementById(countrySelectId);
+    const phone = document.getElementById(phoneInputId);
+    const error = document.getElementById(errorId);
+    if (!country || !phone || !error) return true;
+
+    const code = country.value;
+    const expected = phoneLengths[code];
+    const digits = phone.value.replace(/\D/g, '');
+    const lang = getLang();
+
+    if (expected && digits.length !== expected) {
+      const countryName = countryNames[code] || '';
+      if (lang === 'ar') {
+        error.textContent = 'رقم ' + countryName + ' لازم يكون ' + expected + ' أرقام بالظبط (دخلت ' + digits.length + ').';
+      } else {
+        error.textContent = countryName + ' number must be exactly ' + expected + ' digits (you entered ' + digits.length + ').';
+      }
+      error.style.display = 'block';
+      phone.style.borderColor = '#e74c3c';
+      return false;
+    } else {
+      error.style.display = 'none';
+      phone.style.borderColor = '';
+      return true;
+    }
+  }
+
+  function setupValidation(countryId, phoneId, errorId, formId) {
+    const country = document.getElementById(countryId);
+    const phone = document.getElementById(phoneId);
+    const form = document.getElementById(formId);
+    if (!country || !phone) return;
+
+    // Create error element if not exists
+    let error = document.getElementById(errorId);
+    if (!error) {
+      error = document.createElement('span');
+      error.id = errorId;
+      error.className = 'phone-error';
+      error.style.cssText = 'color:#e74c3c; font-size:13px; display:none; margin-top:4px;';
+      phone.parentNode.appendChild(error);
+    }
+
+    // Validate on input
+    phone.addEventListener('input', function() {
+      // Allow only digits and spaces
+      this.value = this.value.replace(/[^0-9\s]/g, '');
+      validatePhone(countryId, phoneId, errorId);
+    });
+
+    // Validate on country change
+    country.addEventListener('change', function() {
+      validatePhone(countryId, phoneId, errorId);
+    });
+
+    // Block form submit if invalid
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        if (!validatePhone(countryId, phoneId, errorId)) {
+          e.preventDefault();
+          e.stopPropagation();
+          phone.focus();
+        }
+      });
+    }
+  }
+
+  // Setup for index.html contact form
+  setupValidation('countryCode', 'phone', 'phoneError', 'contactForm');
+
+  // Setup for category pages support form
+  setupValidation('sCountryCode', 'sPhone', 'sPhoneError', 'supportForm');
+})();
+</script>
+
+</body>
+</html>
