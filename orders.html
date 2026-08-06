@@ -10,7 +10,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
-<link rel="icon" type="image/jpeg" href="LOVARA.jpeg">
+  <link rel="icon" type="image/jpeg" href="LOVARA.jpeg">
+
+  <!-- Firebase SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- Firebase Config -->
+  <script src="js/firebase-config.js"></script>
 
   <style>
     :root {
@@ -71,6 +79,23 @@
       border-radius: 20px; font-size: 13px; font-weight: 600;
     }
 
+    /* Loading */
+    .loading-state {
+      text-align: center; padding: 80px 20px; color: var(--text-light);
+    }
+    .loading-state i { font-size: 40px; color: var(--primary); margin-bottom: 15px; display: block; }
+    .loading-state p { font-size: 15px; }
+
+    /* Error / Auth */
+    .error-state, .auth-state {
+      text-align: center; padding: 80px 20px; max-width: 500px; margin: 0 auto;
+    }
+    .error-state i, .auth-state i { font-size: 50px; margin-bottom: 20px; display: block; }
+    .error-state i { color: #e74c3c; }
+    .auth-state i { color: var(--primary); }
+    .error-state h3, .auth-state h3 { font-family: 'Cormorant Garamond', serif; font-size: 26px; color: var(--secondary); margin-bottom: 10px; }
+    .error-state p, .auth-state p { color: var(--text-light); margin-bottom: 20px; }
+
     .order-card {
       background: var(--white); border-radius: var(--radius);
       box-shadow: var(--shadow); margin-bottom: 25px; overflow: hidden;
@@ -118,7 +143,6 @@
     .info-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;
     }
-    .info-item {}
     .info-label { font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
     .info-value { font-size: 14px; font-weight: 500; color: var(--secondary); }
     .info-value.phone { direction: ltr; display: inline-block; }
@@ -195,6 +219,7 @@
     }
   </style>
 
+<base target="_blank">
 </head>
 <body>
 
@@ -213,12 +238,18 @@
       <div class="page-header">
         <div>
           <h1>Orders Dashboard</h1>
-          <p>All customer orders in one place</p>
+          <p>All customer orders synced from the cloud</p>
         </div>
         <span class="badge-count" id="orderCount">0 Orders</span>
       </div>
 
-      <div id="ordersList"></div>
+      <div id="ordersList">
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+          <i class="fas fa-circle-notch fa-spin"></i>
+          <p>Loading orders from cloud...</p>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -230,14 +261,127 @@
 
   <script>
     const OrdersApp = {
+      db: null,
       orders: [],
+      unsubscribe: null,
 
       init() {
-        this.loadOrders();
+        // Wait for Firebase to be ready
+        let attempts = 0;
+        const check = () => {
+          attempts++;
+          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0 && firebase.firestore) {
+            this.db = firebase.firestore();
+            this.setupAuthCheck();
+            console.log('[LOVARA Orders] Firebase ready');
+          } else if (attempts < 30) {
+            setTimeout(check, 300);
+          } else {
+            console.warn('[LOVARA Orders] Firebase not loaded, falling back to localStorage');
+            this.loadFromLocalStorage();
+          }
+        };
+        setTimeout(check, 200);
       },
 
-      loadOrders() {
+      setupAuthCheck() {
+        firebase.auth().onAuthStateChanged((user) => {
+          if (!user) {
+            this.showAuthState();
+            return;
+          }
+          // Optional: check if admin
+          this.db.collection('users').doc(user.uid).get()
+            .then(doc => {
+              const role = doc.exists ? doc.data().role : 'user';
+              if (role === 'admin') {
+                this.loadFromFirestore();
+              } else {
+                // Allow any logged-in user to view orders (or restrict to admin only)
+                this.loadFromFirestore();
+              }
+            })
+            .catch(() => {
+              // If can't check role, still load orders (fail-open for now)
+              this.loadFromFirestore();
+            });
+        });
+      },
+
+      showAuthState() {
+        const container = document.getElementById('ordersList');
+        const countBadge = document.getElementById('orderCount');
+        countBadge.textContent = '0 Orders';
+        container.innerHTML = `
+          <div class="auth-state">
+            <i class="fas fa-lock"></i>
+            <h3>Authentication Required</h3>
+            <p>Please sign in to view orders dashboard.</p>
+            <a href="index.html" class="nav-btn" style="margin-top:10px;"><i class="fas fa-sign-in-alt"></i> Go to Login</a>
+          </div>
+        `;
+      },
+
+      showErrorState(msg) {
+        const container = document.getElementById('ordersList');
+        container.innerHTML = `
+          <div class="error-state">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Failed to Load Orders</h3>
+            <p>${msg}</p>
+            <button class="nav-btn" style="margin-top:10px;" onclick="OrdersApp.loadFromFirestore()">
+              <i class="fas fa-redo"></i> Retry
+            </button>
+          </div>
+        `;
+      },
+
+      // ===================== FIRESTORE MODE =====================
+      loadFromFirestore() {
+        if (!this.db) {
+          this.loadFromLocalStorage();
+          return;
+        }
+
+        const container = document.getElementById('ordersList');
+        container.innerHTML = `
+          <div class="loading-state">
+            <i class="fas fa-circle-notch fa-spin"></i>
+            <p>Loading orders from cloud...</p>
+          </div>
+        `;
+
+        // Real-time listener: orders collection ordered by date descending
+        this.unsubscribe = this.db.collection('orders')
+          .orderBy('date', 'desc')
+          .onSnapshot((snapshot) => {
+            this.orders = [];
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              // Add Firestore doc ID for deletion
+              data._docId = doc.id;
+              this.orders.push(data);
+            });
+            this.renderOrders();
+          }, (err) => {
+            console.error('[LOVARA Orders] Firestore error:', err);
+            if (err.code === 'permission-denied') {
+              this.showErrorState('You do not have permission to view orders. Please check your Firestore rules.');
+            } else if (err.code === 'failed-precondition') {
+              this.showErrorState('Firestore index required. Please create a composite index for "orders" collection ordered by "date".');
+            } else {
+              this.showErrorState(err.message);
+            }
+          });
+      },
+
+      // ===================== LOCALSTORAGE FALLBACK =====================
+      loadFromLocalStorage() {
         this.orders = JSON.parse(localStorage.getItem('lovara_orders')) || [];
+        this.renderOrders();
+      },
+
+      renderOrders() {
         const container = document.getElementById('ordersList');
         const countBadge = document.getElementById('orderCount');
 
@@ -258,7 +402,8 @@
       },
 
       renderOrder(order, index) {
-        const date = new Date(order.date).toLocaleString('en-GB', {
+        const dateObj = order.date ? (order.date.toDate ? order.date.toDate() : new Date(order.date)) : new Date();
+        const date = dateObj.toLocaleString('en-GB', {
           weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
           hour: '2-digit', minute: '2-digit'
         });
@@ -266,77 +411,101 @@
         const statusClass = `status-${order.status || 'pending'}`;
         const statusText = (order.status || 'pending').toUpperCase();
 
-        // Customer info
+        // Customer info (handle both old localStorage shape and Firestore shape)
+        const customer = order.customer || {};
+        const firstName = customer.firstName || '';
+        const lastName = customer.lastName || '';
+        const phone = customer.phone || '';
+        const email = customer.email || '';
+        const address = customer.address || '';
+        const city = customer.city || '';
+        const country = customer.country || '';
+        const postalCode = customer.postalCode || '';
+        const notes = customer.notes || '';
+
         const customerHtml = `
           <div class="customer-box">
             <div class="box-title"><i class="fas fa-user"></i> Customer Details</div>
             <div class="info-grid">
               <div class="info-item">
                 <div class="info-label">Full Name</div>
-                <div class="info-value highlight">${order.customer.firstName} ${order.customer.lastName}</div>
+                <div class="info-value highlight">${firstName} ${lastName}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Phone Number</div>
-                <div class="info-value phone">${order.customer.phone}</div>
+                <div class="info-value phone">${phone}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Email</div>
-                <div class="info-value">${order.customer.email}</div>
+                <div class="info-value">${email}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Address</div>
-                <div class="info-value">${order.customer.address}, ${order.customer.city}</div>
+                <div class="info-value">${address}${city ? ', ' + city : ''}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Country</div>
-                <div class="info-value">${this.getCountryName(order.customer.country)}</div>
+                <div class="info-value">${this.getCountryName(country)}</div>
               </div>
-              ${order.customer.postalCode ? `
+              ${postalCode ? `
               <div class="info-item">
                 <div class="info-label">Postal Code</div>
-                <div class="info-value">${order.customer.postalCode}</div>
+                <div class="info-value">${postalCode}</div>
               </div>` : ''}
-              ${order.customer.notes ? `
+              ${notes ? `
               <div class="info-item" style="grid-column: 1 / -1;">
                 <div class="info-label">Customer Notes</div>
-                <div class="info-value" style="font-style:italic;color:var(--text-light);">${order.customer.notes}</div>
+                <div class="info-value" style="font-style:italic;color:var(--text-light);">${notes}</div>
               </div>` : ''}
             </div>
           </div>
         `;
 
         // Items
-        const itemsHtml = order.items.map(item => `
-          <div class="item-card">
-            <img src="${item.imageUrl || 'https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA'}" 
-                 class="item-img" alt="${item.name}" 
-                 onerror="this.onerror=null;this.src='https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA';" />
-            <div class="item-info">
-              <div class="item-name">${item.name}</div>
-              <div class="item-tags">
-                <span class="item-tag"><i class="fas fa-palette"></i> ${item.color}</span>
-                <span class="item-tag"><i class="fas fa-ruler"></i> ${item.size}</span>
-                <span class="item-tag"><i class="fas fa-times"></i> Qty: ${item.quantity}</span>
-                <span class="item-tag"><i class="fas fa-tag"></i> EGP ${item.price.toFixed(2)} each</span>
+        const items = order.items || [];
+        const itemsHtml = items.map(item => {
+          const itemPrice = parseFloat(item.price) || 0;
+          const itemQty = parseInt(item.quantity) || 1;
+          return `
+            <div class="item-card">
+              <img src="${item.imageUrl || item.image || 'https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA'}" 
+                   class="item-img" alt="${item.name || 'Product'}" 
+                   onerror="this.onerror=null;this.src='https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA';" />
+              <div class="item-info">
+                <div class="item-name">${item.name || 'Unknown Product'}</div>
+                <div class="item-tags">
+                  <span class="item-tag"><i class="fas fa-palette"></i> ${item.color || 'N/A'}</span>
+                  <span class="item-tag"><i class="fas fa-ruler"></i> ${item.size || 'N/A'}</span>
+                  <span class="item-tag"><i class="fas fa-times"></i> Qty: ${itemQty}</span>
+                  <span class="item-tag"><i class="fas fa-tag"></i> EGP ${itemPrice.toFixed(2)} each</span>
+                </div>
               </div>
+              <div class="item-total">EGP ${(itemPrice * itemQty).toFixed(2)}</div>
             </div>
-            <div class="item-total">EGP ${(item.price * item.quantity).toFixed(2)}</div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
 
         // Payment info
-        const paymentExtra = order.payment.method !== 'cod' 
-          ? `<div class="info-item"><div class="info-label">Transaction ID</div><div class="info-value">${order.payment.transactionId || '-'}</div></div>` 
+        const payment = order.payment || {};
+        const paymentExtra = payment.method !== 'cod' 
+          ? `<div class="info-item"><div class="info-label">Transaction ID</div><div class="info-value">${payment.transactionId || '-'}</div></div>` 
           : '';
 
-        const phoneClean = order.customer.phone.replace(/[^0-9+]/g, '');
-        const whatsappLink = `https://wa.me/${phoneClean}?text=Hello%20${encodeURIComponent(order.customer.firstName)}%2C%20regarding%20your%20LOVARA%20order%20${order.orderNumber}`;
+        // Totals
+        const totals = order.totals || {};
+        const subtotal = totals.subtotal || 'EGP 0.00';
+        const shipping = totals.shipping || 'EGP 0.00';
+        const total = totals.total || 'EGP 0.00';
+
+        const phoneClean = phone.replace(/[^0-9+]/g, '');
+        const orderNum = order.orderNumber || order._docId || ('ORD-' + index);
+        const whatsappLink = `https://wa.me/${phoneClean}?text=Hello%20${encodeURIComponent(firstName)}%2C%20regarding%20your%20LOVARA%20order%20${orderNum}`;
 
         return `
           <div class="order-card">
             <div class="order-header">
               <div class="order-header-left">
-                <div class="order-id">#${order.orderNumber}</div>
+                <div class="order-id">#${orderNum}</div>
                 <div class="order-date"><i class="far fa-clock" style="margin-right:5px;"></i>${date}</div>
               </div>
               <div class="order-status ${statusClass}">${statusText}</div>
@@ -353,19 +522,19 @@
               <div class="info-grid" style="margin-bottom:20px;">
                 <div class="info-item">
                   <div class="info-label">Payment Method</div>
-                  <div class="info-value">${order.payment.methodName}</div>
+                  <div class="info-value">${payment.methodName || payment.method || 'N/A'}</div>
                 </div>
                 ${paymentExtra}
               </div>
 
               <div class="totals-box">
                 <div class="totals-left">
-                  <div class="line">Subtotal: <span>${order.totals.subtotal}</span></div>
-                  <div class="line">Shipping: <span>${order.totals.shipping}</span></div>
+                  <div class="line">Subtotal: <span>${subtotal}</span></div>
+                  <div class="line">Shipping: <span>${shipping}</span></div>
                 </div>
                 <div class="totals-right">
                   <div class="label">Total Amount</div>
-                  <div class="amount">${order.totals.total}</div>
+                  <div class="amount">${total}</div>
                 </div>
               </div>
             </div>
@@ -387,14 +556,31 @@
 
       getCountryName(code) {
         const map = { EG: 'Egypt', SA: 'Saudi Arabia', AE: 'UAE', KW: 'Kuwait', QA: 'Qatar', BH: 'Bahrain', JO: 'Jordan', LB: 'Lebanon', IQ: 'Iraq', OTHER: 'Other' };
-        return map[code] || code;
+        return map[code] || code || 'Unknown';
       },
 
       deleteOrder(index) {
         if (!confirm('Are you sure you want to delete this order?')) return;
-        this.orders.splice(index, 1);
-        localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
-        this.loadOrders();
+
+        const order = this.orders[index];
+        if (!order) return;
+
+        // If Firestore is available and order has a docId, delete from cloud
+        if (this.db && order._docId) {
+          this.db.collection('orders').doc(order._docId).delete()
+            .then(() => {
+              console.log('[LOVARA Orders] Deleted from Firestore:', order._docId);
+            })
+            .catch(err => {
+              console.error('[LOVARA Orders] Delete error:', err);
+              alert('Failed to delete order: ' + err.message);
+            });
+        } else {
+          // Fallback: delete from localStorage
+          this.orders.splice(index, 1);
+          localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
+          this.renderOrders();
+        }
       }
     };
 
