@@ -218,6 +218,34 @@
     .payment-details .help-text { font-size: 0.8rem; color: #888; margin-top: 6px; margin-bottom: 0; }
     .payment-error { display: none; color: #e74c3c; font-size: 13px; margin-top: 8px; }
 
+    /* Quantity Controls */
+    .qty-control {
+      display: inline-flex; align-items: center; gap: 0;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      overflow: hidden; margin-top: 8px; background: var(--white);
+    }
+    .qty-control button {
+      width: 32px; height: 32px; border: none; background: var(--bg);
+      color: var(--secondary); font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: var(--transition); display: flex;
+      align-items: center; justify-content: center;
+    }
+    .qty-control button:hover { background: var(--primary); color: var(--white); }
+    .qty-control .qty-value {
+      width: 40px; text-align: center; font-size: 14px; font-weight: 600;
+      color: var(--secondary); border-left: 1.5px solid var(--border);
+      border-right: 1.5px solid var(--border); line-height: 32px;
+    }
+    .order-item-right {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    }
+    .btn-remove-item {
+      background: none; border: none; color: #ccc; font-size: 14px;
+      cursor: pointer; padding: 4px; transition: var(--transition);
+    }
+    .btn-remove-item:hover { color: #e74c3c; }
+    .item-meta { font-size: 12px; color: var(--text-light); margin-bottom: 4px; }
+
     .footer { background: var(--secondary); color: #aaa; padding: 30px 0; text-align: center; margin-top: 60px; }
     .footer-bottom p { font-size: 13px; }
 
@@ -242,6 +270,7 @@
     }
   </style>
 
+<base target="_blank">
 <base target="_blank">
 </head>
 <body>
@@ -473,9 +502,14 @@
           return;
         }
 
+        this.renderCartItems();
+      },
+
+      renderCartItems() {
+        const container = document.getElementById('orderItems');
         let subtotal = 0;
 
-        container.innerHTML = this.cart.map(item => {
+        container.innerHTML = this.cart.map((item, index) => {
           const price = parseFloat(item.price) || 0;
           const qty = item.quantity || 1;
           const itemTotal = price * qty;
@@ -485,15 +519,25 @@
           const colorText = item.color ? ` | Color: ${item.color}` : '';
 
           return `
-            <div class="order-item">
+            <div class="order-item" data-index="${index}">
               <img src="${item.imageUrl || 'https://via.placeholder.com/60x60/c9a87c/ffffff?text=LOVARA'}" 
                    alt="${item.name}" 
                    onerror="this.onerror=null; this.src='https://via.placeholder.com/60x60/c9a87c/ffffff?text=LOVARA';" />
               <div class="order-item-info">
                 <h4>${item.name || 'Product'}</h4>
-                <p>Qty: ${qty}${sizeText}${colorText}</p>
+                <p class="item-meta">${sizeText}${colorText}</p>
+                <div class="qty-control">
+                  <button type="button" class="qty-btn-minus" onclick="CheckoutApp.updateQty(${index}, -1)" aria-label="Decrease">−</button>
+                  <span class="qty-value">${qty}</span>
+                  <button type="button" class="qty-btn-plus" onclick="CheckoutApp.updateQty(${index}, 1)" aria-label="Increase">+</button>
+                </div>
               </div>
-              <div class="order-item-price">EGP ${itemTotal.toFixed(2)}</div>
+              <div class="order-item-right">
+                <div class="order-item-price">EGP ${itemTotal.toFixed(2)}</div>
+                <button type="button" class="btn-remove-item" onclick="CheckoutApp.removeItem(${index})" title="Remove">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
             </div>
           `;
         }).join('');
@@ -504,6 +548,35 @@
         document.getElementById('subtotal').textContent = `EGP ${subtotal.toFixed(2)}`;
         document.getElementById('shipping').textContent = shipping === 0 ? 'FREE' : `EGP ${shipping.toFixed(2)}`;
         document.getElementById('total').textContent = `EGP ${total.toFixed(2)}`;
+      },
+
+      updateQty(index, delta) {
+        if (!this.cart[index]) return;
+        this.cart[index].quantity = (this.cart[index].quantity || 1) + delta;
+        if (this.cart[index].quantity <= 0) {
+          this.cart.splice(index, 1);
+        }
+        this.saveCart();
+        this.renderCartItems();
+      },
+
+      removeItem(index) {
+        if (!this.cart[index]) return;
+        this.cart.splice(index, 1);
+        this.saveCart();
+        if (this.cart.length === 0) {
+          this.loadOrderItems();
+        } else {
+          this.renderCartItems();
+        }
+      },
+
+      saveCart() {
+        localStorage.setItem('lovara_cart', JSON.stringify(this.cart));
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'lovara_cart',
+          newValue: JSON.stringify(this.cart)
+        }));
       },
 
       setupPaymentMethods() {
