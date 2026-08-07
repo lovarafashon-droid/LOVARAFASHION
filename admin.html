@@ -581,6 +581,7 @@
   <link rel="manifest" href="photo/site.webmanifest">
   <meta name="theme-color" content="#c9a87c">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -713,27 +714,10 @@
               </div>
             </div>
 
-            <!-- COLORS SELECTOR -->
-            <div class="selector-group">
-              <label><span data-i18n="availableColors">Available Colors</span> <small style="color:var(--text-light)" data-i18n="selectAll">(select all that apply)</small></label>
-              <div class="selector-grid" id="colorSelector">
-                <label class="selector-item"><input type="checkbox" name="color" value="Black" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#1a1a1a;"></span> <span data-i18n="black">Black</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="White" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#ffffff; border-color:#ddd;"></span> <span data-i18n="white">White</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Beige" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#d4b996;"></span> <span data-i18n="beige">Beige</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Nude" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#e8c4a0;"></span> <span data-i18n="nude">Nude</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Red" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#c0392b;"></span> <span data-i18n="red">Red</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Burgundy" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#800020;"></span> <span data-i18n="burgundy">Burgundy</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Pink" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#e91e63;"></span> <span data-i18n="pink">Pink</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Rose" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#f8c3cd;"></span> <span data-i18n="rose">Rose</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Blue" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#2980b9;"></span> <span data-i18n="blue">Blue</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Navy" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#000080;"></span> <span data-i18n="navy">Navy</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Green" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#27ae60;"></span> <span data-i18n="green">Green</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Olive" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#556b2f;"></span> <span data-i18n="olive">Olive</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Gold" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#d4af37;"></span> <span data-i18n="gold">Gold</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Silver" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#c0c0c0;"></span> <span data-i18n="silver">Silver</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Champagne" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#f7e7ce;"></span> <span data-i18n="champagne">Champagne</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="color" value="Lavender" /><span class="item-label"><i class="fas fa-check check-icon"></i><span class="color-swatch" style="background:#e6e6fa;"></span> <span data-i18n="lavender">Lavender</span></span></label>
-              </div>
+            <!-- COLORS INPUT -->
+            <div class="form-group">
+              <label><span data-i18n="availableColors">Available Colors</span> <small style="color:var(--text-light)">(اكتب الألوان مفصولة بفاصلة)</small></label>
+              <input type="text" id="pColors" data-i18n-placeholder="colorsPlaceholder" placeholder="e.g. Black, White, Red, Navy" style="direction: ltr;" />
             </div>
 
             <div class="form-group">
@@ -853,7 +837,7 @@
         cost: "Cost (EGP)", costHint: "(purchase price)", stock: "Stock Quantity",
         categoryProfit: "Category Profit", revenue: "Revenue", totalCost: "Total Cost",
         itemsSold: "Items Sold", avgProfit: "Avg Profit/Item",
-        langBtn: "العربية", themeLight: "Dark", themeDark: "Light"
+        colorsPlaceholder: "e.g. Black, White, Red, Navy", langBtn: "العربية", themeLight: "Dark", themeDark: "Light"
       },
       ar: {
         adminPanel: "لوحة التحكم", signIn: "تسجيل الدخول", signInDesc: "أدخل بيانات الدخول لإدارة المنتجات",
@@ -883,7 +867,7 @@
         cost: "التكلفة (ج.م)", costHint: "(سعر الشراء)", stock: "الكمية في المخزن",
         categoryProfit: "ربح القسم", revenue: "الإيرادات", totalCost: "إجمالي التكلفة",
         itemsSold: "القطع المباعة", avgProfit: "متوسط الربح/قطعة",
-        ht: "داكن", themeDark: "فاتح"
+        colorsPlaceholder: "مثال: أسود, أبيض, أحمر, كحلي", ht: "داكن", themeDark: "فاتح"
       }
     };
 
@@ -922,6 +906,10 @@
             if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = t[key];
             else el.textContent = t[key];
           }
+        });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+          const key = el.getAttribute('data-i18n-placeholder');
+          if (t[key]) el.placeholder = t[key];
         });
         document.getElementById('pageTitle').textContent = this.currentLang === 'ar' ? 'LOVARA – لوحة التحكم' : 'LOVARA – Admin';
       },
@@ -1120,10 +1108,13 @@
         return Array.from(document.querySelectorAll('#sizeSelector input[name="size"]:checked')).map(cb => cb.value);
       },
       getSelectedColors() {
-        return Array.from(document.querySelectorAll('#colorSelector input[name="color"]:checked')).map(cb => cb.value);
+        const colorsInput = document.getElementById('pColors').value.trim();
+        if (!colorsInput) return [];
+        return colorsInput.split(',').map(c => c.trim()).filter(c => c.length > 0);
       },
       resetSelectors() {
-        document.querySelectorAll('#sizeSelector input, #colorSelector input').forEach(cb => cb.checked = false);
+        document.querySelectorAll('#sizeSelector input').forEach(cb => cb.checked = false);
+        document.getElementById('pColors').value = '';
       },
 
       // FIX #1: Use simple .get() without orderBy to avoid index issues
