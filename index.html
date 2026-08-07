@@ -129,6 +129,152 @@
 
   </style>
 
+<style>
+    /* ===== PRODUCT DETAIL MODAL (Amazon-style) ===== */
+    .product-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 2000; opacity: 0; visibility: hidden;
+      transition: all 0.3s ease;
+    }
+    .product-modal-overlay.show { opacity: 1; visibility: visible; }
+
+    .product-modal {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95);
+      width: 90%; max-width: 900px; max-height: 90vh; background: #fff;
+      border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      z-index: 2001; opacity: 0; visibility: hidden; overflow: hidden;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex; flex-direction: column;
+    }
+    .product-modal.show { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+
+    .product-modal-close {
+      position: absolute; top: 16px; right: 16px; width: 40px; height: 40px;
+      border-radius: 50%; border: none; background: rgba(0,0,0,0.05);
+      color: #333; font-size: 18px; cursor: pointer; z-index: 10;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .product-modal-close:hover { background: #e74c3c; color: #fff; }
+
+    .product-modal-body {
+      display: grid; grid-template-columns: 1fr 1.1fr; gap: 0;
+      overflow-y: auto; max-height: 90vh;
+    }
+    .product-modal-gallery {
+      background: #f8f6f3; display: flex; align-items: center; justify-content: center;
+      padding: 40px; min-height: 400px;
+    }
+    .product-modal-img-wrap {
+      width: 100%; max-width: 380px; aspect-ratio: 3/4;
+      border-radius: 16px; overflow: hidden; background: #fff;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    }
+    .product-modal-img-wrap img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+
+    .product-modal-details {
+      padding: 40px 35px; display: flex; flex-direction: column; gap: 20px;
+    }
+    .product-modal-header { margin-bottom: 5px; }
+    .product-modal-badge {
+      display: inline-block; padding: 4px 14px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .product-modal-badge.badge-new { background: #e8f5e9; color: #2e7d32; }
+    .product-modal-badge.badge-sale { background: #ffebee; color: #c62828; }
+    .product-modal-badge.badge-bestseller { background: #fff3e0; color: #ef6c00; }
+    .product-modal-badge.badge-limited { background: #f3e5f5; color: #7b1fa2; }
+
+    .product-modal-header h2 {
+      font-family: 'Cormorant Garamond', serif; font-size: 28px;
+      font-weight: 600; color: #1a1a1a; margin-bottom: 12px; line-height: 1.2;
+    }
+    .product-modal-price-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .product-modal-price {
+      font-size: 24px; font-weight: 700; color: #c9a87c;
+    }
+    .product-modal-old-price {
+      font-size: 16px; color: #999; text-decoration: line-through;
+    }
+
+    .product-modal-section h4 {
+      font-size: 13px; font-weight: 600; color: #1a1a1a;
+      text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;
+    }
+    .product-modal-section p {
+      font-size: 14px; color: #555; line-height: 1.7;
+    }
+
+    .pm-options { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pm-option {
+      padding: 8px 18px; border: 1.5px solid #e8e4e0; border-radius: 10px;
+      background: #fff; cursor: pointer; font-size: 13px; font-weight: 500;
+      color: #333; transition: all 0.2s; user-select: none;
+    }
+    .pm-option:hover { border-color: #c9a87c; }
+    .pm-option.selected {
+      background: #c9a87c; border-color: #c9a87c; color: #fff;
+      box-shadow: 0 2px 8px rgba(201,168,124,0.3);
+    }
+    .pm-option.pm-color {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .pm-color-swatch {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .product-modal-actions {
+      display: flex; align-items: center; gap: 12px; margin-top: 10px;
+      padding-top: 20px; border-top: 1px solid #eee;
+    }
+    .pm-qty-control {
+      display: flex; align-items: center; border: 1.5px solid #e8e4e0;
+      border-radius: 10px; overflow: hidden;
+    }
+    .pm-qty-control button {
+      width: 40px; height: 44px; border: none; background: #f8f6f3;
+      color: #333; font-size: 16px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pm-qty-control button:hover { background: #c9a87c; color: #fff; }
+    .pm-qty-control span {
+      width: 50px; text-align: center; font-size: 15px; font-weight: 600;
+      color: #1a1a1a; border-left: 1.5px solid #e8e4e0;
+      border-right: 1.5px solid #e8e4e0; line-height: 44px;
+    }
+    .pm-btn-add {
+      flex: 1; padding: 14px 24px; background: #c9a87c; color: #fff;
+      border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 10px; transition: all 0.3s; font-family: 'Jost', sans-serif;
+    }
+    .pm-btn-add:hover {
+      background: #b8956a; transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(201,168,124,0.35);
+    }
+    .pm-btn-wishlist {
+      width: 48px; height: 48px; border-radius: 10px; border: 1.5px solid #e8e4e0;
+      background: #fff; color: #e74c3c; font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .pm-btn-wishlist:hover { border-color: #e74c3c; background: #ffebee; }
+    .pm-btn-wishlist.active { background: #e74c3c; color: #fff; border-color: #e74c3c; }
+
+    @media (max-width: 768px) {
+      .product-modal { width: 95%; max-height: 95vh; border-radius: 16px; }
+      .product-modal-body { grid-template-columns: 1fr; }
+      .product-modal-gallery { min-height: 280px; padding: 20px; }
+      .product-modal-details { padding: 25px 20px; }
+      .product-modal-header h2 { font-size: 22px; }
+      .product-modal-actions { flex-wrap: wrap; }
+    }
+</style>
+<base target="_blank">
 </head>
 <body>
 
@@ -848,7 +994,8 @@
         cartTitle: "Your Cart", cartEmpty: "Your cart is empty", cartContinue: "Continue Shopping",
         cartTotal: "Total:", cartCheckout: "Checkout", cartClear: "Clear Cart",
         wishlistTitle: "Your Wishlist", wishlistEmpty: "Your wishlist is empty",
-        addToCart: "Add to Cart", buyNow: "Buy Now", share: "Share"
+        addToCart: "Add to Cart", buyNow: "Buy Now", share: "Share",
+        description: "Description", selectSize: "Select Size", selectColor: "Select Color"
       },
       ar: {
         pageTitle: "LOVARA – أزياء نسائية",
@@ -926,7 +1073,8 @@
         cartTitle: "سلة التسوق", cartEmpty: "سلة التسوق فارغة", cartContinue: "مواصلة التسوق",
         cartTotal: "الإجمالي:", cartCheckout: "إتمام الشراء", cartClear: "إفراغ السلة",
         wishlistTitle: "المفضلة", wishlistEmpty: "المفضلة فارغة",
-        addToCart: "أضيفي للسلة", buyNow: "اشتري الآن", share: "مشاركة"
+        addToCart: "أضيفي للسلة", buyNow: "اشتري الآن", share: "مشاركة",
+        description: "الوصف", selectSize: "اختيار المقاس", selectColor: "اختيار اللون"
       }
     };
 
@@ -1493,6 +1641,192 @@
       AuthApp.init();
       // CategoryApp.init() is already called by categories-shared.js
     });
+
+    // ---- Product Detail Modal ----
+    let pmCurrentProduct = null;
+    let pmSelectedSize = null;
+    let pmSelectedColor = null;
+    let pmQty = 1;
+
+    function openProductModal(product) {
+      if (!product) return;
+      pmCurrentProduct = product;
+      pmSelectedSize = product.sizes && product.sizes.length > 0 ? product.sizes[0] : null;
+      pmSelectedColor = product.colors && product.colors.length > 0 ? product.colors[0] : null;
+      pmQty = 1;
+
+      document.getElementById('pmImage').src = product.imageUrl || 'https://via.placeholder.com/400x500/c9a87c/ffffff?text=LOVARA';
+      document.getElementById('pmImage').alt = product.name || 'Product';
+      document.getElementById('pmName').textContent = product.name || 'Product';
+      document.getElementById('pmPrice').textContent = 'EGP ' + (parseFloat(product.price) || 0).toFixed(2);
+
+      const oldPriceEl = document.getElementById('pmOldPrice');
+      if (product.oldPrice) {
+        oldPriceEl.textContent = 'EGP ' + parseFloat(product.oldPrice).toFixed(2);
+        oldPriceEl.style.display = 'inline';
+      } else {
+        oldPriceEl.style.display = 'none';
+      }
+
+      const badgeEl = document.getElementById('pmBadge');
+      if (product.badge) {
+        badgeEl.textContent = product.badge;
+        badgeEl.className = 'product-modal-badge badge-' + product.badge.toLowerCase();
+        badgeEl.style.display = 'inline-block';
+      } else {
+        badgeEl.style.display = 'none';
+      }
+
+      const descEl = document.getElementById('pmDesc');
+      const descSection = document.getElementById('pmDescSection');
+      if (product.description) {
+        descEl.textContent = product.description;
+        descSection.style.display = 'block';
+      } else {
+        descSection.style.display = 'none';
+      }
+
+      // Sizes
+      const sizesContainer = document.getElementById('pmSizes');
+      const sizesSection = document.getElementById('pmSizesSection');
+      if (product.sizes && product.sizes.length > 0) {
+        sizesSection.style.display = 'block';
+        sizesContainer.innerHTML = product.sizes.map((s, i) =>
+          `<span class="pm-option ${s === pmSelectedSize ? 'selected' : ''}" onclick="pmSelectSize(this, '${s}')">${s}</span>`
+        ).join('');
+      } else {
+        sizesSection.style.display = 'none';
+      }
+
+      // Colors
+      const colorsContainer = document.getElementById('pmColors');
+      const colorsSection = document.getElementById('pmColorsSection');
+      if (product.colors && product.colors.length > 0) {
+        colorsSection.style.display = 'block';
+        colorsContainer.innerHTML = product.colors.map((c, i) => {
+          const colorMap = {
+            'Black':'#1a1a1a','White':'#ffffff','Beige':'#d4b996','Nude':'#e8c4a0',
+            'Red':'#c0392b','Burgundy':'#800020','Pink':'#e91e63','Rose':'#f8c3cd',
+            'Blue':'#2980b9','Navy':'#000080','Green':'#27ae60','Olive':'#556b2f',
+            'Gold':'#d4af37','Silver':'#c0c0c0','Champagne':'#f7e7ce','Lavender':'#e6e6fa'
+          };
+          const hex = colorMap[c] || '#ccc';
+          return `<span class="pm-option pm-color ${c === pmSelectedColor ? 'selected' : ''}" onclick="pmSelectColor(this, '${c}')">
+            <span class="pm-color-swatch" style="background:${hex}; ${c==='White'?'border:1px solid #ddd':''}"></span> ${c}
+          </span>`;
+        }).join('');
+      } else {
+        colorsSection.style.display = 'none';
+      }
+
+      document.getElementById('pmQty').textContent = pmQty;
+
+      // Wishlist state
+      const wlBtn = document.getElementById('pmWishlist');
+      const wlIcon = wlBtn.querySelector('i');
+      if (CartApp.isInWishlist && CartApp.isInWishlist(product.id)) {
+        wlBtn.classList.add('active'); wlIcon.className = 'fas fa-heart';
+      } else {
+        wlBtn.classList.remove('active'); wlIcon.className = 'far fa-heart';
+      }
+
+      document.getElementById('productModalOverlay').classList.add('show');
+      document.getElementById('productModal').classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeProductModal() {
+      document.getElementById('productModalOverlay').classList.remove('show');
+      document.getElementById('productModal').classList.remove('show');
+      document.body.style.overflow = '';
+      pmCurrentProduct = null;
+    }
+
+    function pmSelectSize(el, size) {
+      pmSelectedSize = size;
+      el.parentNode.querySelectorAll('.pm-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function pmSelectColor(el, color) {
+      pmSelectedColor = color;
+      el.parentNode.querySelectorAll('.pm-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function pmChangeQty(delta) {
+      pmQty = Math.max(1, pmQty + delta);
+      document.getElementById('pmQty').textContent = pmQty;
+    }
+
+    function pmAddToCart() {
+      if (!pmCurrentProduct) return;
+      const item = {
+        ...pmCurrentProduct,
+        size: pmSelectedSize,
+        color: pmSelectedColor,
+        quantity: pmQty
+      };
+      if (window.CategoryApp) {
+        CategoryApp.addToCart(item, pmSelectedSize, pmSelectedColor);
+      } else {
+        CartApp.add(item);
+      }
+      showToast((pmCurrentProduct.name || 'Product') + ' added to cart!');
+      closeProductModal();
+    }
+
+    function pmToggleWishlist() {
+      if (!pmCurrentProduct) return;
+      if (window.CategoryApp) {
+        CategoryApp.toggleWishlist(pmCurrentProduct);
+      } else {
+        CartApp.toggleWishlist(pmCurrentProduct);
+      }
+      const wlBtn = document.getElementById('pmWishlist');
+      const wlIcon = wlBtn.querySelector('i');
+      const isActive = wlBtn.classList.toggle('active');
+      wlIcon.className = isActive ? 'fas fa-heart' : 'far fa-heart';
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeProductModal();
+    });
+
+    // Attach click handlers to product cards via MutationObserver
+    (function setupProductModalClicks() {
+      const grid = document.getElementById('productsGrid');
+      if (!grid) return;
+
+      const attachClicks = () => {
+        grid.querySelectorAll('.product-card, [data-product-id]').forEach(card => {
+          if (card.dataset.pmAttached) return;
+          card.dataset.pmAttached = 'true';
+          card.style.cursor = 'pointer';
+          card.addEventListener('click', (e) => {
+            // Don't open modal if clicking on action buttons
+            if (e.target.closest('.product-actions') || e.target.closest('.product-wishlist') || e.target.closest('button') || e.target.closest('a')) return;
+            const pid = card.dataset.productId;
+            if (!pid) return;
+            // Try to find product data
+            let product = null;
+            if (window.carouselState && carouselState.products) {
+              product = carouselState.products.find(p => p.id === pid);
+            }
+            if (!product && window.allProducts) {
+              product = allProducts.find(p => p.id === pid);
+            }
+            if (product) openProductModal(product);
+          });
+        });
+      };
+
+      const observer = new MutationObserver(attachClicks);
+      observer.observe(grid, { childList: true, subtree: true });
+      attachClicks(); // initial
+    })();
+
   </script>
 
 <!-- ===================== PHONE VALIDATION ===================== -->
@@ -1614,6 +1948,61 @@
       <button type="button" class="admin-portal-close" onclick="Modals.close('adminPortalModal')">
         <i class="fas fa-times"></i> Close
       </button>
+    </div>
+  </div>
+
+
+  <!-- ===================== PRODUCT DETAIL MODAL (Amazon-style) ===================== -->
+  <div class="product-modal-overlay" id="productModalOverlay" onclick="closeProductModal()"></div>
+  <div class="product-modal" id="productModal">
+    <button class="product-modal-close" onclick="closeProductModal()" aria-label="Close">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="product-modal-body">
+      <div class="product-modal-gallery">
+        <div class="product-modal-img-wrap">
+          <img id="pmImage" src="" alt="" />
+        </div>
+      </div>
+      <div class="product-modal-details">
+        <div class="product-modal-header">
+          <span class="product-modal-badge" id="pmBadge"></span>
+          <h2 id="pmName">Product Name</h2>
+          <div class="product-modal-price-row">
+            <span class="product-modal-price" id="pmPrice">EGP 0</span>
+            <span class="product-modal-old-price" id="pmOldPrice"></span>
+          </div>
+        </div>
+
+        <div class="product-modal-section" id="pmDescSection">
+          <h4 data-i18n="description">Description</h4>
+          <p id="pmDesc"></p>
+        </div>
+
+        <div class="product-modal-section" id="pmSizesSection">
+          <h4 data-i18n="selectSize">Select Size</h4>
+          <div class="pm-options" id="pmSizes"></div>
+        </div>
+
+        <div class="product-modal-section" id="pmColorsSection">
+          <h4 data-i18n="selectColor">Select Color</h4>
+          <div class="pm-options" id="pmColors"></div>
+        </div>
+
+        <div class="product-modal-actions">
+          <div class="pm-qty-control">
+            <button type="button" onclick="pmChangeQty(-1)">−</button>
+            <span id="pmQty">1</span>
+            <button type="button" onclick="pmChangeQty(1)">+</button>
+          </div>
+          <button class="pm-btn-add" id="pmAddToCart" onclick="pmAddToCart()">
+            <i class="fas fa-bag-shopping"></i> <span data-i18n="addToCart">Add to Cart</span>
+          </button>
+          <button class="pm-btn-wishlist" id="pmWishlist" onclick="pmToggleWishlist()">
+            <i class="far fa-heart"></i>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
