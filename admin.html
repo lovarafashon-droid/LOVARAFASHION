@@ -268,6 +268,66 @@
 
     .color-swatch { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.1); display: inline-block; }
     .selector-item input:checked + .item-label .color-swatch { border-color: rgba(255,255,255,0.5); }
+    .image-uploads-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .image-uploads-row .image-upload-area { min-height: 120px; padding: 15px; }
+    .image-uploads-row .upload-placeholder i { font-size: 24px; }
+    .image-uploads-row .upload-placeholder span { font-size: 12px; }
+    .image-uploads-row .upload-preview img { max-height: 100px; }
+    @media (max-width: 768px) { .image-uploads-row { grid-template-columns: 1fr; } }
+    .color-input-row { display: flex; gap: 10px; align-items: stretch; }
+    .color-input-row input { flex: 1; min-height: 44px; }
+    .btn-done-colors {
+      padding: 0 20px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      font-family: 'Jost', sans-serif;
+    }
+    .btn-done-colors:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .color-tags-display { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 0; }
+    .color-tag-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: var(--input-bg);
+      border: 1.5px solid var(--border);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--secondary);
+      transition: var(--transition);
+      animation: fadeInUp 0.2s ease;
+    }
+    .color-tag-box .color-dot {
+      width: 16px; height: 16px;
+      border-radius: 4px;
+      border: 2px solid rgba(0,0,0,0.1);
+      flex-shrink: 0;
+    }
+    .color-tag-box .btn-remove-tag {
+      background: none; border: none;
+      color: var(--text-light);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 2px;
+      width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      transition: var(--transition);
+    }
+    .color-tag-box .btn-remove-tag:hover { color: var(--danger); background: rgba(255,71,87,0.1); }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+    [data-theme="dark"] .color-tag-box .color-dot { border-color: rgba(255,255,255,0.2); }
 
     .product-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
     .meta-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--input-bg); color: var(--text-light); border: 1px solid var(--border); }
@@ -582,6 +642,7 @@
   <meta name="theme-color" content="#c9a87c">
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -657,7 +718,7 @@
             <span id="errorMsgText" data-i18n="error">Error</span>
           </div>
 
-          <form id="productForm" onsubmit="ProductManager.addProduct(event)">
+          <form id="productForm" onsubmit="return ProductManager.addProduct(event)">
             <div class="form-row">
               <div class="form-group">
                 <label data-i18n="productName">Product Name *</label>
@@ -714,27 +775,41 @@
               </div>
             </div>
 
-            <!-- COLORS INPUT -->
+            <!-- COLORS INPUT WITH SWATCH TAGS -->
             <div class="form-group">
               <label><span data-i18n="availableColors">Available Colors</span> <small style="color:var(--text-light)">(اكتب الألوان مفصولة بفاصلة)</small></label>
-              <input type="text" id="pColors" data-i18n-placeholder="colorsPlaceholder" placeholder="e.g. Black, White, Red, Navy" style="direction: ltr;" />
+              <div class="color-input-row">
+                <input type="text" id="pColorsInput" data-i18n-placeholder="colorsPlaceholder" placeholder="e.g. Black, White, Red, Navy" style="direction: ltr; flex:1;" />
+                <button type="button" class="btn-done-colors" id="btnDoneColors" onclick="ProductManager.addColorTags()">
+                  <i class="fas fa-check"></i> <span data-i18n="done">تم</span>
+                </button>
+              </div>
+              <div class="color-tags-display" id="colorTagsDisplay"></div>
+              <input type="hidden" id="pColors" value="" />
             </div>
 
             <div class="form-group">
-              <label><span data-i18n="productImage">Product Image</span> <small style="color:var(--text-light)" data-i18n="imageHint">(JPG/PNG, max 5MB)</small></label>
-              <input type="file" id="pImageFile" accept="image/*" style="display:none" />
-              <div class="image-upload-area" id="imageUploadArea">
-                <div class="upload-placeholder" id="uploadPlaceholder">
-                  <i class="fas fa-cloud-upload-alt"></i>
-                  <span data-i18n="clickUpload">Click to upload image</span>
-                  <small data-i18n="dragDrop">or drag & drop here</small>
+              <label><span data-i18n="productImages">Product Images</span> <small style="color:var(--text-light)" data-i18n="imageHint">(JPG/PNG, max 5MB each)</small></label>
+              <div class="image-uploads-row">
+                <div class="image-upload-area" id="imageUploadArea1">
+                  <div class="upload-placeholder" id="uploadPlaceholder1"><i class="fas fa-cloud-upload-alt"></i><span data-i18n="clickUpload">Click to upload</span><small>1</small></div>
+                  <div class="upload-preview" id="uploadPreview1"><img id="previewImage1" src="" alt="Preview 1" /><button type="button" class="btn-remove-image" id="removeImageBtn1"><i class="fas fa-times"></i></button></div>
                 </div>
-                <div class="upload-preview" id="uploadPreview">
-                  <img id="previewImage" src="" alt="Preview" />
-                  <button type="button" class="btn-remove-image" id="removeImageBtn"><i class="fas fa-times"></i></button>
+                <div class="image-upload-area" id="imageUploadArea2">
+                  <div class="upload-placeholder" id="uploadPlaceholder2"><i class="fas fa-cloud-upload-alt"></i><span data-i18n="clickUpload">Click to upload</span><small>2</small></div>
+                  <div class="upload-preview" id="uploadPreview2"><img id="previewImage2" src="" alt="Preview 2" /><button type="button" class="btn-remove-image" id="removeImageBtn2"><i class="fas fa-times"></i></button></div>
+                </div>
+                <div class="image-upload-area" id="imageUploadArea3">
+                  <div class="upload-placeholder" id="uploadPlaceholder3"><i class="fas fa-cloud-upload-alt"></i><span data-i18n="clickUpload">Click to upload</span><small>3</small></div>
+                  <div class="upload-preview" id="uploadPreview3"><img id="previewImage3" src="" alt="Preview 3" /><button type="button" class="btn-remove-image" id="removeImageBtn3"><i class="fas fa-times"></i></button></div>
                 </div>
               </div>
-              <input type="hidden" id="pImage" value="" />
+              <input type="file" id="pImageFile1" accept="image/*" style="display:none" />
+              <input type="file" id="pImageFile2" accept="image/*" style="display:none" />
+              <input type="file" id="pImageFile3" accept="image/*" style="display:none" />
+              <input type="hidden" id="pImage1" value="" />
+              <input type="hidden" id="pImage2" value="" />
+              <input type="hidden" id="pImage3" value="" />
             </div>
 
             <div class="form-group">
@@ -821,7 +896,8 @@
         freeSize: "Free Size", black: "Black", white: "White", beige: "Beige", nude: "Nude", red: "Red",
         burgundy: "Burgundy", pink: "Pink", rose: "Rose", blue: "Blue", navy: "Navy", green: "Green",
         olive: "Olive", gold: "Gold", silver: "Silver", champagne: "Champagne", lavender: "Lavender",
-        productImage: "Product Image", imageHint: "(JPG/PNG, max 5MB)", clickUpload: "Click to upload image",
+        productImage: "Product Image",
+        productImages: "Product Images", imageHint: "(JPG/PNG, max 5MB)", clickUpload: "Click to upload image",
         dragDrop: "or drag & drop here", badge: "Badge", none: "None", newBadge: "New", saleBadge: "Sale",
         bestsellerBadge: "Bestseller", limitedBadge: "Limited", description: "Description", addProduct: "Add Product",
         products: "Products", all: "All", loading: "Loading products...", noProducts: "No products found.",
@@ -837,7 +913,7 @@
         cost: "Cost (EGP)", costHint: "(purchase price)", stock: "Stock Quantity",
         categoryProfit: "Category Profit", revenue: "Revenue", totalCost: "Total Cost",
         itemsSold: "Items Sold", avgProfit: "Avg Profit/Item",
-        colorsPlaceholder: "e.g. Black, White, Red, Navy", langBtn: "العربية", themeLight: "Dark", themeDark: "Light"
+        colorsPlaceholder: "e.g. Black, White, Red, Navy", done: "Done", langBtn: "العربية", themeLight: "Dark", themeDark: "Light"
       },
       ar: {
         adminPanel: "لوحة التحكم", signIn: "تسجيل الدخول", signInDesc: "أدخل بيانات الدخول لإدارة المنتجات",
@@ -851,7 +927,8 @@
         freeSize: "مقاس حر", black: "أسود", white: "أبيض", beige: "بيج", nude: "نود", red: "أحمر",
         burgundy: "نبيتي", pink: "وردي", rose: "روز", blue: "أزرق", navy: "كحلي", green: "أخضر",
         olive: "زيتوني", gold: "ذهبي", silver: "فضي", champagne: "شامبانيا", lavender: "لافندر",
-        productImage: "صورة المنتج", imageHint: "(JPG/PNG، بحد أقصى 5 ميجا)", clickUpload: "اضغط لرفع الصورة",
+        productImage: "صورة المنتج",
+        productImages: "صور المنتج", imageHint: "(JPG/PNG، بحد أقصى 5 ميجا)", clickUpload: "اضغط لرفع الصورة",
         dragDrop: "أو اسحب وأفلت هنا", badge: "الشارة", none: "بدون", newBadge: "جديد", saleBadge: "تخفيض",
         bestsellerBadge: "الأكثر مبيعاً", limitedBadge: "محدود", description: "الوصف", addProduct: "إضافة المنتج",
         products: "المنتجات", all: "الكل", loading: "جاري تحميل المنتجات...", noProducts: "لا توجد منتجات.",
@@ -867,7 +944,7 @@
         cost: "التكلفة (ج.م)", costHint: "(سعر الشراء)", stock: "الكمية في المخزن",
         categoryProfit: "ربح القسم", revenue: "الإيرادات", totalCost: "إجمالي التكلفة",
         itemsSold: "القطع المباعة", avgProfit: "متوسط الربح/قطعة",
-        colorsPlaceholder: "مثال: أسود, أبيض, أحمر, كحلي", ht: "داكن", themeDark: "فاتح"
+        colorsPlaceholder: "مثال: أسود, أبيض, أحمر, كحلي", done: "تم", ht: "داكن", themeDark: "فاتح"
       }
     };
 
@@ -1059,7 +1136,7 @@
         el.classList.add('show');
         setTimeout(() => el.classList.remove('show'), 3000);
       },
-      handleImageUpload(input) {
+      handleImageUpload(input, index) {
         const file = input.files[0];
         if (!file) return;
         const t = translations[AppSettings.currentLang];
@@ -1068,21 +1145,21 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           const dataUrl = e.target.result;
-          document.getElementById('pImage').value = dataUrl;
-          document.getElementById('uploadPreview').style.display = 'block';
-          document.getElementById('uploadPlaceholder').style.display = 'none';
-          document.getElementById('imageUploadArea').classList.add('has-image');
-          document.getElementById('previewImage').src = dataUrl;
+          document.getElementById('pImage' + index).value = dataUrl;
+          document.getElementById('uploadPreview' + index).style.display = 'block';
+          document.getElementById('uploadPlaceholder' + index).style.display = 'none';
+          document.getElementById('imageUploadArea' + index).classList.add('has-image');
+          document.getElementById('previewImage' + index).src = dataUrl;
         };
         reader.readAsDataURL(file);
       },
-      removeImage() {
-        document.getElementById('pImageFile').value = '';
-        document.getElementById('pImage').value = '';
-        document.getElementById('uploadPreview').style.display = 'none';
-        document.getElementById('uploadPlaceholder').style.display = 'block';
-        document.getElementById('imageUploadArea').classList.remove('has-image');
-        document.getElementById('previewImage').src = '';
+      removeImage(index) {
+        document.getElementById('pImageFile' + index).value = '';
+        document.getElementById('pImage' + index).value = '';
+        document.getElementById('uploadPreview' + index).style.display = 'none';
+        document.getElementById('uploadPlaceholder' + index).style.display = 'block';
+        document.getElementById('imageUploadArea' + index).classList.remove('has-image');
+        document.getElementById('previewImage' + index).src = '';
       }
     };
 
@@ -1108,13 +1185,56 @@
         return Array.from(document.querySelectorAll('#sizeSelector input[name="size"]:checked')).map(cb => cb.value);
       },
       getSelectedColors() {
-        const colorsInput = document.getElementById('pColors').value.trim();
-        if (!colorsInput) return [];
-        return colorsInput.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        const hidden = document.getElementById('pColors');
+        if (!hidden || !hidden.value) return [];
+        return hidden.value.split(',').map(c => c.trim()).filter(c => c.length > 0);
+      },
+      addColorTags() {
+        const input = document.getElementById('pColorsInput');
+        const display = document.getElementById('colorTagsDisplay');
+        const hidden = document.getElementById('pColors');
+        if (!input || !display) return;
+        const raw = input.value.trim();
+        if (!raw) return;
+        const newColors = raw.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        const existing = this.getSelectedColors();
+        const combined = [...new Set([...existing, ...newColors])];
+        hidden.value = combined.join(',');
+        input.value = '';
+        this.renderColorTags();
+      },
+      removeColorTag(color) {
+        const hidden = document.getElementById('pColors');
+        if (!hidden) return;
+        const colors = hidden.value.split(',').map(c => c.trim()).filter(c => c.length > 0 && c !== color);
+        hidden.value = colors.join(',');
+        this.renderColorTags();
+      },
+      renderColorTags() {
+        const display = document.getElementById('colorTagsDisplay');
+        const hidden = document.getElementById('pColors');
+        if (!display || !hidden) return;
+        const colors = hidden.value.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        const colorMap = {
+          'Black':'#1a1a1a','White':'#ffffff','Beige':'#e8d5b5','Nude':'#d4a574',
+          'Red':'#c0392b','Burgundy':'#800020','Pink':'#ffc0cb','Rose':'#e6a8b3',
+          'Blue':'#3498db','Navy':'#1a237e','Green':'#27ae60','Olive':'#6b8e23',
+          'Gold':'#d4af37','Silver':'#c0c0c0','Champagne':'#f7e7ce','Lavender':'#e6e6fa'
+        };
+        display.innerHTML = colors.map(c => {
+          const bg = colorMap[c] || '#c9a87c';
+          const border = c.toLowerCase() === 'white' ? 'border:1.5px solid #ccc;' : '';
+          return `<span class="color-tag-box"><span class="color-dot" style="background:${bg};${border}"></span>${c}<button type="button" class="btn-remove-tag" onclick="ProductManager.removeColorTag('${c}')" title="Remove"><i class="fas fa-times"></i></button></span>`;
+        }).join('');
       },
       resetSelectors() {
         document.querySelectorAll('#sizeSelector input').forEach(cb => cb.checked = false);
-        document.getElementById('pColors').value = '';
+        const hidden = document.getElementById('pColors');
+        const display = document.getElementById('colorTagsDisplay');
+        const input = document.getElementById('pColorsInput');
+        if (hidden) hidden.value = '';
+        if (display) display.innerHTML = '';
+        if (input) input.value = '';
       },
 
       // FIX #1: Use simple .get() without orderBy to avoid index issues
@@ -1176,6 +1296,10 @@
         const sizes = this.getSelectedSizes();
         const colors = this.getSelectedColors();
 
+        const img1 = document.getElementById('pImage1').value.trim();
+        const img2 = document.getElementById('pImage2').value.trim();
+        const img3 = document.getElementById('pImage3').value.trim();
+        const images = [img1, img2, img3].filter(u => u.length > 0);
         const product = {
           name: document.getElementById('pName').value.trim(),
           price: parseFloat(document.getElementById('pPrice').value),
@@ -1183,14 +1307,15 @@
           category: document.getElementById('pCategory').value,
           sizes: sizes,
           colors: colors,
-          imageUrl: document.getElementById('pImage').value.trim() || 'https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA',
+          images: images.length > 0 ? images : ['https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'],
+          imageUrl: images[0] || 'https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA',
           badge: document.getElementById('pBadge').value,
           description: document.getElementById('pDesc').value.trim(),
                     showOnHome: document.getElementById('showOnHome').checked,
           showOnCategory: document.getElementById('showOnCategory').checked,
                     cost: parseFloat(document.getElementById('pCost').value) || 0,
           stock: parseInt(document.getElementById('pStock').value) || 1,
-          createdAt: new Date().getTime()  // FIX: Use timestamp number instead of serverTimestamp()
+          createdAt: new Date().getTime()
         };
 
         try {
@@ -1203,7 +1328,7 @@
           document.querySelector('.badge-option[data-badge=""]').classList.add('selected');
           document.getElementById('pBadge').value = '';
           this.resetSelectors();
-          AdminApp.removeImage();
+          [1,2,3].forEach(i => AdminApp.removeImage(i));
           this.loadProducts();
         } catch (error) {
           console.error('Error adding product:', error);
@@ -1212,6 +1337,7 @@
           btn.innerHTML = originalHtml;
           btn.disabled = false;
         }
+        return false;
       },
 
       async deleteProduct(id) {
@@ -1252,7 +1378,7 @@
 
           return `
           <div class="product-item">
-            <img src="${p.imageUrl || 'https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'}"
+            <img src="${(p.images && p.images[0]) || p.imageUrl || 'https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'}"
                  alt="${p.name}" onerror="this.src='https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'" />
             <div class="product-item-info">
               <h4>${p.name}</h4>
@@ -1271,49 +1397,63 @@
       }
     };
 
-    // Setup image upload events
-    (function setupImageUpload() {
-      const fileInput = document.getElementById('pImageFile');
-      const uploadArea = document.getElementById('imageUploadArea');
-      const removeBtn = document.getElementById('removeImageBtn');
-
-      if (uploadArea) {
-        uploadArea.addEventListener('click', function(e) {
-          if (e.target.id === 'previewImage' || e.target.closest('.btn-remove-image')) return;
-          fileInput.click();
-        });
-      }
-      if (fileInput) {
-        fileInput.addEventListener('change', function() {
-          if (this.files && this.files[0]) AdminApp.handleImageUpload(this);
-        });
-      }
-      if (removeBtn) {
-        removeBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          AdminApp.removeImage();
-        });
-      }
-      if (uploadArea) {
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-          uploadArea.addEventListener(eventName, function(e) { e.preventDefault(); e.stopPropagation(); }, false);
-        });
-        ['dragenter', 'dragover'].forEach(eventName => {
-          uploadArea.addEventListener(eventName, function() { this.classList.add('dragover'); }, false);
-        });
-        ['dragleave', 'drop'].forEach(eventName => {
-          uploadArea.addEventListener(eventName, function() { this.classList.remove('dragover'); }, false);
-        });
-        uploadArea.addEventListener('drop', function(e) {
-          const files = e.dataTransfer.files;
-          if (files.length > 0) {
-            const dt = new DataTransfer();
-            dt.items.add(files[0]);
-            fileInput.files = dt.files;
-            AdminApp.handleImageUpload(fileInput);
+    // Setup color input Enter key
+    (function setupColorInput() {
+      const input = document.getElementById('pColorsInput');
+      if (input) {
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            ProductManager.addColorTags();
           }
-        }, false);
+        });
       }
+    })();
+
+    // Setup image upload events for 3 images
+    (function setupImageUpload() {
+      [1, 2, 3].forEach(idx => {
+        const fileInput = document.getElementById('pImageFile' + idx);
+        const uploadArea = document.getElementById('imageUploadArea' + idx);
+        const removeBtn = document.getElementById('removeImageBtn' + idx);
+        if (uploadArea) {
+          uploadArea.addEventListener('click', function(e) {
+            if (e.target.id === 'previewImage' + idx || e.target.closest('.btn-remove-image')) return;
+            fileInput.click();
+          });
+        }
+        if (fileInput) {
+          fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) AdminApp.handleImageUpload(this, idx);
+          });
+        }
+        if (removeBtn) {
+          removeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            AdminApp.removeImage(idx);
+          });
+        }
+        if (uploadArea) {
+          ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, function(e) { e.preventDefault(); e.stopPropagation(); }, false);
+          });
+          ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, function() { this.classList.add('dragover'); }, false);
+          });
+          ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, function() { this.classList.remove('dragover'); }, false);
+          });
+          uploadArea.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+              const dt = new DataTransfer();
+              dt.items.add(files[0]);
+              fileInput.files = dt.files;
+              AdminApp.handleImageUpload(fileInput, idx);
+            }
+          }, false);
+        }
+      });
     })();
 
     
@@ -1542,4 +1682,4 @@
   </div>
 
 </body>
-</html>ََََِ
+</html>
