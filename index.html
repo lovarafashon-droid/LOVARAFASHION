@@ -275,6 +275,7 @@
     }
 </style>
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -655,10 +656,10 @@
           </div>
 
           <div class="contact-socials">
-            <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-            <a href="#" aria-label="Pinterest"><i class="fab fa-pinterest"></i></a>
-            <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
-            <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a href="https://www.instagram.com/lovara.store?igsh=MTFiYnNsMTZhOXF4aQ==" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="https://t.me/LOVARAFASHON" aria-label="Telegram" target="_blank"><i class="fab fa-telegram"></i></a>
+            <a href="https://www.tiktok.com/@lovara.fashion?_r=1&_t=ZS-98ilKeskd8P" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+            <a href="https://www.facebook.com/share/1GHVd4ZF4v/" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
           </div>
         </div>
 
@@ -732,10 +733,10 @@
             <a href="#home" class="logo footer-logo">LOVARA</a>
             <p data-i18n="footerBrand">Luxury women's fashion, curated with love. Wear your story.</p>
             <div class="footer-socials">
-              <a href="#"><i class="fab fa-instagram"></i></a>
-              <a href="#"><i class="fab fa-pinterest"></i></a>
-              <a href="#"><i class="fab fa-tiktok"></i></a>
-              <a href="#"><i class="fab fa-facebook-f"></i></a>
+              <a href="https://www.instagram.com/lovara.store?igsh=MTFiYnNsMTZhOXF4aQ=="><i class="fab fa-instagram"></i></a>
+              <a href="https://t.me/LOVARAFASHON"><i class="fab fa-telegram"></i></a>
+              <a href="https://www.tiktok.com/@lovara.fashion?_r=1&_t=ZS-98ilKeskd8P"><i class="fab fa-tiktok"></i></a>
+              <a href="https://www.facebook.com/share/1GHVd4ZF4v/"><i class="fab fa-facebook-f"></i></a>
             </div>
           </div>
           <div class="footer-col">
@@ -1585,12 +1586,23 @@
         }
       },
       handleWishlistClick(productId) {
-        if (window.CategoryApp) { CategoryApp.handleWishlistClick(productId); return; }
-        const product = (window.carouselState && window.carouselState.products) ? window.carouselState.products.find(p => p.id === productId) : null;
+        let product = null;
+        if (window.carouselState && carouselState.products) {
+          product = carouselState.products.find(p => p.id === productId);
+        }
+        if (!product && window.allProducts) {
+          product = allProducts.find(p => p.id === productId);
+        }
         if (!product) return;
         this.toggleWishlist(product);
         const btn = document.querySelector(`[data-product-id="${productId}"] .product-wishlist`);
-        if (btn) btn.classList.toggle('active');
+        if (btn) {
+          const isActive = this.isInWishlist(productId);
+          btn.classList.toggle('active', isActive);
+          const icon = btn.querySelector('i');
+          if (icon) icon.className = isActive ? 'fas fa-heart' : 'far fa-heart';
+        }
+        this.updateWishlistCount();
       },
       shareProduct(productId) {
         if (window.CategoryApp) { CategoryApp.shareProduct(productId); return; }
@@ -1600,7 +1612,6 @@
         if (navigator.share) { navigator.share(shareData); } else { navigator.clipboard.writeText(window.location.href); showToast('Link copied to clipboard!'); }
       },
       toggleWishlist(product) {
-        if (window.CategoryApp) { CategoryApp.toggleWishlist(product); return; }
         if (!product || !product.id) return;
         let wishlist = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]');
         const index = wishlist.findIndex(item => item.id === product.id);
@@ -1611,16 +1622,74 @@
         if (wlCount) { wlCount.textContent = wishlist.length; wlCount.style.display = wishlist.length > 0 ? 'flex' : 'none'; }
       },
       isInWishlist(productId) {
-        if (window.CategoryApp) return CategoryApp.isInWishlist(productId);
         let wishlist = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]');
         return wishlist.some(item => item && item.id === productId);
+      },
+      updateWishlistCount() {
+        let wishlist = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]');
+        const wlCount = document.getElementById('wishlistCount');
+        if (wlCount) {
+          wlCount.textContent = wishlist.length;
+          wlCount.style.display = wishlist.length > 0 ? 'flex' : 'none';
+        }
       }
     };
+
+    // ---- CategoryApp Wrapper (delegates to CartApp for index.html) ----
+    window.CategoryApp = {
+      openLoginModal() { Modals.open('loginModal'); },
+      openSignupModal() { Modals.open('signupModal'); },
+      openCartModal() { CartApp.open(); },
+      closeCartModal() { CartApp.close(); },
+      openWishlistModal() {
+        const modal = document.getElementById('wishlistModal');
+        const overlay = document.getElementById('wishlistOverlay');
+        if (modal) { modal.classList.add('show'); modal.classList.add('active'); }
+        if (overlay) { overlay.classList.add('show'); overlay.classList.add('active'); }
+        document.body.style.overflow = 'hidden';
+        CartApp.renderWishlist && CartApp.renderWishlist();
+      },
+      closeWishlistModal() {
+        const modal = document.getElementById('wishlistModal');
+        const overlay = document.getElementById('wishlistOverlay');
+        if (modal) { modal.classList.remove('show'); modal.classList.remove('active'); }
+        if (overlay) { overlay.classList.remove('show'); overlay.classList.remove('active'); }
+        document.body.style.overflow = '';
+      },
+      logout() {
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+          firebase.auth().signOut().then(() => {
+            localStorage.removeItem('lovara_user');
+            showToast('Logged out successfully');
+            location.reload();
+          });
+        }
+      },
+      handleWishlistClick(productId) { CartApp.handleWishlistClick(productId); },
+      toggleWishlist(product) { CartApp.toggleWishlist(product); },
+      isInWishlist(productId) { return CartApp.isInWishlist(productId); },
+      updateWishlistCount() { CartApp.updateWishlistCount(); },
+      addToCart(item, size, color) { CartApp.add(item); },
+      handleAddToCart(productId) { CartApp.handleAddToCart(productId); },
+      handleBuyNow(productId) { CartApp.handleBuyNow(productId); },
+      removeFromCart(idx) { CartApp.remove(idx); },
+      updateQty(idx, delta) { CartApp.updateQty(idx, delta); },
+      clearCart() { CartApp.clear(); },
+      renderCart() { CartApp.render(); },
+      checkout() { CartApp.checkout(); },
+      openBuyNowModal(product, isDirect) { CartApp.openBuyNowModal(product, isDirect); },
+      closeBuyNowModal() { CartApp.closeBuyNowModal(); },
+      confirmBuyNow(pid, direct) { CartApp.confirmBuyNow(pid, direct); },
+      shareProduct(pid) { CartApp.shareProduct(pid); },
+      showToast(msg) { showToast(msg); },
+      closeModal(id) { Modals.close(id); },
+      get cart() { return CartApp.items; },
+      get currentUser() { return AuthApp.currentUser; }
+    };
+
     window.CartApp = CartApp;
     CartApp.render();
-
-    // ---- Wishlist count ----
-    if (window.CategoryApp) { CategoryApp.updateWishlistCount(); }
+    CartApp.updateWishlistCount();
 
     // ---- Global Modal Overlay Click ----
     // Close any modal when clicking its overlay (outside the modal content)
@@ -1724,7 +1793,7 @@
       // Wishlist state
       const wlBtn = document.getElementById('pmWishlist');
       const wlIcon = wlBtn.querySelector('i');
-      if (CartApp.isInWishlist && CartApp.isInWishlist(product.id)) {
+      if (CartApp.isInWishlist(product.id)) {
         wlBtn.classList.add('active'); wlIcon.className = 'fas fa-heart';
       } else {
         wlBtn.classList.remove('active'); wlIcon.className = 'far fa-heart';
@@ -1778,15 +1847,13 @@
 
     function pmToggleWishlist() {
       if (!pmCurrentProduct) return;
-      if (window.CategoryApp) {
-        CategoryApp.toggleWishlist(pmCurrentProduct);
-      } else {
-        CartApp.toggleWishlist(pmCurrentProduct);
-      }
+      CartApp.toggleWishlist(pmCurrentProduct);
       const wlBtn = document.getElementById('pmWishlist');
       const wlIcon = wlBtn.querySelector('i');
-      const isActive = wlBtn.classList.toggle('active');
+      const isActive = CartApp.isInWishlist(pmCurrentProduct.id);
+      wlBtn.classList.toggle('active', isActive);
       wlIcon.className = isActive ? 'fas fa-heart' : 'far fa-heart';
+      CartApp.updateWishlistCount();
     }
 
     // Close modal on Escape key
@@ -1818,6 +1885,20 @@
               product = allProducts.find(p => p.id === pid);
             }
             if (product) openProductModal(product);
+          });
+        });
+
+        // Attach wishlist button handlers
+        grid.querySelectorAll('.product-wishlist').forEach(btn => {
+          if (btn.dataset.wlAttached) return;
+          btn.dataset.wlAttached = 'true';
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const card = btn.closest('[data-product-id]');
+            if (!card) return;
+            const pid = card.dataset.productId;
+            if (!pid) return;
+            CartApp.handleWishlistClick(pid);
           });
         });
       };
