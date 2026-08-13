@@ -88,18 +88,18 @@
     .order-summary:hover { box-shadow:var(--shadow-lg); }
     .order-summary h2 { font-family:'Cormorant Garamond',serif; font-size:24px; margin-bottom:25px; color:var(--secondary); display:flex; align-items:center; gap:10px; }
     .order-summary h2 i { color:var(--primary); }
-    .order-items { margin-bottom:25px; max-height:320px; overflow-y:auto; padding-right:5px; }
+    .order-items { margin-bottom:25px; max-height:420px; overflow-y:auto; padding-right:5px; }
     .order-items::-webkit-scrollbar { width:4px; }
     .order-items::-webkit-scrollbar-track { background:transparent; }
     .order-items::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
     .order-item { display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); transition:var(--transition); animation:fadeInUp 0.4s ease both; }
     .order-item:last-child { border-bottom:none; }
     .order-item:hover { background:rgba(201,168,124,0.02); margin:0 -10px; padding:14px 10px; border-radius:8px; }
-    .order-item img { width:64px; height:64px; object-fit:cover; border-radius:var(--radius-sm); box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+    .order-item img { width:90px; height:90px; object-fit:cover; border-radius:var(--radius-sm); box-shadow:0 2px 8px rgba(0,0,0,0.08); }
     .order-item-info { flex:1; }
-    .order-item-info h4 { font-size:14px; color:var(--secondary); margin-bottom:4px; font-weight:600; }
+    .order-item-info h4 { font-size:15px; color:var(--secondary); margin-bottom:6px; font-weight:600; }
     .order-item-info p { font-size:12px; color:var(--text-light); }
-    .order-item-price { font-weight:700; color:var(--primary); font-size:15px; }
+    .order-item-price { font-weight:700; color:var(--primary); font-size:17px; }
     .order-totals { border-top:2px solid var(--border); padding-top:20px; }
     .order-total-row { display:flex; justify-content:space-between; margin-bottom:12px; font-size:14px; color:var(--text-light); }
     .order-total-row.total { font-size:20px; font-weight:700; color:var(--secondary); border-top:1px solid var(--border); padding-top:18px; margin-top:18px; }
@@ -122,7 +122,7 @@
     .order-item-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
     .btn-remove-item { background:none; border:none; color:#ccc; font-size:14px; cursor:pointer; padding:4px; transition:var(--transition); border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; }
     .btn-remove-item:hover { color:#e74c3c; background:rgba(231,76,60,0.08); }
-    .item-meta { font-size:12px; color:var(--text-light); margin-bottom:4px; }
+    .item-meta { font-size:13px; color:var(--text-light); margin-bottom:6px; }
     .item-options { display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; }
     .item-option { display:flex; align-items:center; gap:4px; }
     .item-option label { font-size:11px; color:var(--text-light); font-weight:500; }
@@ -160,8 +160,23 @@
     @keyframes scaleIn { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
     @keyframes bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
     @media (max-width:992px) { .checkout-grid { grid-template-columns:1fr; } .order-summary-wrapper { position:static; } .nav-links { display:none; } .mobile-summary-toggle { display:flex; } .order-summary { display:none; } .order-summary.show { display:block; animation:slideDown 0.3s ease; } .checkout-steps { gap:0; } .step-connector { width:20px; } }
-    @media (max-width:768px) { .checkout-page { padding:80px 0 40px; } .checkout-header h1 { font-size:32px; } .checkout-form-wrapper,.order-summary { padding:25px; } .checkout-form .form-row { grid-template-columns:1fr; } .checkout-steps { flex-wrap:wrap; gap:10px; } .step-connector { display:none; } .step { padding:8px 16px; font-size:12px; } }
+    @media (max-width:768px) { 
+    .checkout-page { padding:80px 0 40px; } 
+    .checkout-header h1 { font-size:32px; } 
+    .checkout-form-wrapper,.order-summary { padding:25px; } 
+    .checkout-form .form-row { grid-template-columns:1fr; } 
+    .checkout-steps { flex-wrap:wrap; gap:10px; } 
+    .step-connector { display:none; } 
+    .step { padding:8px 16px; font-size:12px; } 
+    .order-item { flex-direction:column; align-items:flex-start; gap:12px; padding:18px 0; }
+    .order-item img { width:100%; height:auto; max-height:180px; border-radius:var(--radius-sm); }
+    .order-item-info { width:100%; }
+    .order-item-right { flex-direction:row; align-items:center; width:100%; justify-content:space-between; margin-top:8px; }
+    .item-options { gap:16px; }
+    .item-option select { padding:6px 10px; font-size:13px; }
+  }
   </style>
+<base target="_blank">
 <base target="_blank">
 <base target="_blank">
 </head>
@@ -415,40 +430,46 @@
         const container = document.getElementById('orderItems');
         let subtotal = 0;
         const sizes = ['XS','S','M','L','XL','XXL','One Size'];
-        const allColors = [
-          {value:'Black',label:'Black'},
-          {value:'White',label:'White'},
-          {value:'Beige',label:'Beige'},
-          {value:'Navy',label:'Navy'},
-          {value:'Gray',label:'Gray'},
-          {value:'Burgundy',label:'Burgundy'},
-          {value:'Olive',label:'Olive'},
-          {value:'Cream',label:'Cream'},
-          {value:'Brown',label:'Brown'},
-          {value:'Pink',label:'Pink'},
-          {value:'Red',label:'Red'},
-          {value:'Blue',label:'Blue'},
-          {value:'Green',label:'Green'},
-          {value:'Gold',label:'Gold'},
-          {value:'Silver',label:'Silver'}
-        ];
+
         container.innerHTML = this.cart.map((item, index) => {
           const price = parseFloat(item.price) || 0;
           const qty = item.quantity || 1;
           const itemTotal = price * qty;
           subtotal += itemTotal;
+
           const currentSize = item.size || 'M';
-          const currentColor = item.color || (item.availableColors?.[0] || 'Black');
-          const sizeOptions = sizes.map(s => `<option value="${s}" ${s === currentSize ? 'selected' : ''}>${s}</option>`).join('');
-          // Show exactly the available colors for this product
-          const productColors = item.availableColors && item.availableColors.length > 0
-            ? item.availableColors
-            : ['Black','White','Beige'];
-          const colorOptions = productColors.map(c => `<option value="${c}" ${c === currentColor ? 'selected' : ''}>${c}</option>`).join('');
+          // اللون المختار حالياً
+          const currentColor = item.color || 'Black';
+
+          // الألوان المتاحة من المنتج (من صفحة الإدمن/المتجر)
+          let productColors = [];
+          if (item.availableColors && Array.isArray(item.availableColors) && item.availableColors.length > 0) {
+            productColors = [...item.availableColors];
+          }
+
+          // التعديل المهم: لو اللون المختار مش في القائمة، نضيفه
+          if (currentColor && !productColors.includes(currentColor)) {
+            productColors.unshift(currentColor);
+          }
+
+          // لو لسه القائمة فاضية بعد كل ده، نحط لون واحد على الأقل
+          if (productColors.length === 0) {
+            productColors = [currentColor];
+          }
+
+          const sizeOptions = sizes.map(s => 
+            `<option value="${s}" ${s === currentSize ? 'selected' : ''}>${s}</option>`
+          ).join('');
+
+          const colorOptions = productColors.map(c => 
+            `<option value="${c}" ${c === currentColor ? 'selected' : ''}>${c}</option>`
+          ).join('');
+
           return `
             <div class="order-item" data-index="${index}" style="animation-delay:${index * 0.05}s">
-              <img src="${item.imageUrl || 'https://via.placeholder.com/60x60/c9a87c/ffffff?text=LOVARA'}" alt="${item.name}" loading="lazy"
-                   onerror="this.onerror=null; this.src='https://via.placeholder.com/60x60/c9a87c/ffffff?text=LOVARA';" />
+              <img src="${item.imageUrl || 'https://via.placeholder.com/90x90/c9a87c/ffffff?text=LOVARA'}" 
+                   alt="${item.name}" loading="lazy"
+                   onerror="this.onerror=null; this.src='https://via.placeholder.com/90x90/c9a87c/ffffff?text=LOVARA';" />
               <div class="order-item-info">
                 <h4>${item.name || 'Product'}</h4>
                 <p class="item-meta">EGP ${price.toFixed(2)}</p>
