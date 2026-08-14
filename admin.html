@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   
 <link rel="icon" type="image/jpeg" href="LOVARA.jpeg">
+  <base target="_blank">
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -210,6 +211,13 @@
     .btn-logout { padding: 8px 20px; background: var(--secondary); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; transition: var(--transition); }
     .btn-logout:hover { background: #444; }
 
+    .btn-edit { background: #3498db; color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; margin-right: 4px; }
+    .btn-edit:hover { background: #2980b9; transform: scale(1.1); }
+    [dir="rtl"] .btn-edit { margin-right: 0; margin-left: 4px; }
+    .btn-cancel { width: 100%; padding: 14px; background: var(--text-light); color: var(--white); border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px; }
+    .btn-cancel:hover { background: #666; }
+    .edit-mode-badge { display: inline-flex; align-items: center; gap: 8px; background: #3498db; color: white; padding: 6px 16px; border-radius: 20px; font-size: 12px; margin-bottom: 20px; }
+    .edit-mode-badge.hidden { display: none; }
     .hidden { display: none !important; }
 
     .loading { display: inline-block; width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -552,6 +560,7 @@
       .product-item-price { font-size: 18px; }
       .btn-view { padding: 10px 16px; font-size: 14px; }
       .btn-delete { width: 40px; height: 40px; font-size: 16px; }
+      .btn-edit { width: 40px; height: 40px; font-size: 16px; }
 
       .admin-bar { padding: 12px 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
       .admin-bar .user-info span { font-size: 14px; }
@@ -626,24 +635,13 @@
     }
 
   </style>
-<base target="_blank">
-<base target="_blank">
-<base target="_blank">
-<base target="_blank">
-<base target="_blank">
-<base target="_blank">
-<base target="_blank">
-  <!-- Favicon -->
+<!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="photo/favicon.ico">
   <link rel="icon" type="image/png" sizes="16x16" href="photo/favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="photo/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="photo/apple-touch-icon.png">
   <link rel="manifest" href="photo/site.webmanifest">
   <meta name="theme-color" content="#c9a87c">
-<base target="_blank">
-<base target="_blank">
-<base target="_blank">
-<base target="_blank">
 <base target="_blank">
 </head>
 <body>
@@ -721,6 +719,8 @@
           </div>
 
           <form id="productForm" onsubmit="return ProductManager.addProduct(event)">
+            <input type="hidden" id="editProductId" value="" />
+          <div class="edit-mode-badge hidden" id="editModeBadge"><i class="fas fa-pen"></i> <span data-i18n="editMode">Edit Mode</span></div>
             <div class="form-row">
               <div class="form-group">
                 <label data-i18n="productName">Product Name *</label>
@@ -736,7 +736,9 @@
               <div class="form-group">
                 <label><span data-i18n="oldPrice">Old Price (EGP)</span> <small style="color:var(--text-light)" data-i18n="optional">(optional)</small></label>
                 <input type="number" id="pOldPrice" placeholder="e.g. 2499" step="0.01" min="0" />
-              </div>            <div class="form-row">
+              </div>
+            </div>
+            <div class="form-row">
               <div class="form-group">
                 <label><span data-i18n="cost">Cost (EGP)</span> <small style="color:var(--text-light)" data-i18n="costHint">(purchase price)</small></label>
                 <input type="number" id="pCost" placeholder="e.g. 1500" step="0.01" min="0" required />
@@ -760,7 +762,6 @@
                   <option value="sets" data-i18n="sets">Sets</option>
                 </select>
               </div>
-            </div>
 
             <!-- SUBCATEGORY -->
             <div class="form-group hidden" id="subcategoryGroup">
@@ -869,7 +870,10 @@
             </div>
 
             <button type="submit" class="btn-add" id="submitBtn">
-              <i class="fas fa-plus"></i> <span data-i18n="addProduct">Add Product</span>
+              <i class="fas fa-plus" id="submitIcon"></i> <span data-i18n="addProduct" id="submitText">Add Product</span>
+            </button>
+            <button type="button" class="btn-cancel hidden" id="cancelEditBtn" onclick="ProductManager.cancelEdit()">
+              <i class="fas fa-times"></i> <span data-i18n="cancel">Cancel</span>
             </button>
           </form>
         </div>
@@ -941,7 +945,8 @@
         cost: "Cost (EGP)", costHint: "(purchase price)", stock: "Stock Quantity",
         categoryProfit: "Category Profit", revenue: "Revenue", totalCost: "Total Cost",
         itemsSold: "Items Sold", avgProfit: "Avg Profit/Item",
-        colorsPlaceholder: "e.g. Black, White, Red, Navy", done: "Done", langBtn: "العربية", themeLight: "Dark", themeDark: "Light"
+        colorsPlaceholder: "e.g. Black, White, Red, Navy", done: "Done", langBtn: "العربية", themeLight: "Dark", themeDark: "Light",
+        edit: "Edit", editProduct: "Edit Product", updateProduct: "Update Product", cancel: "Cancel", editMode: "Edit Mode", productUpdated: "Product updated successfully!"
       },
       ar: {
         adminPanel: "لوحة التحكم", signIn: "تسجيل الدخول", signInDesc: "أدخل بيانات الدخول لإدارة المنتجات",
@@ -978,7 +983,8 @@
         cost: "التكلفة (ج.م)", costHint: "(سعر الشراء)", stock: "الكمية في المخزن",
         categoryProfit: "ربح القسم", revenue: "الإيرادات", totalCost: "إجمالي التكلفة",
         itemsSold: "القطع المباعة", avgProfit: "متوسط الربح/قطعة",
-        colorsPlaceholder: "مثال: أسود, أبيض, أحمر, كحلي", done: "تم", ht: "داكن", themeDark: "فاتح"
+        colorsPlaceholder: "مثال: أسود, أبيض, أحمر, كحلي", done: "تم", ht: "داكن", themeDark: "فاتح",
+        edit: "تعديل", editProduct: "تعديل المنتج", updateProduct: "تحديث المنتج", cancel: "إلغاء", editMode: "وضع التعديل", productUpdated: "تم تحديث المنتج بنجاح!"
       }
     };
 
@@ -1352,8 +1358,6 @@
         if (hidden) hidden.value = '';
         if (display) display.innerHTML = '';
         if (input) input.value = '';
-        // Reset category-dependent visibility
-        this.onCategoryChange('');
       },
 
       // FIX #1: Use simple .get() without orderBy to avoid index issues
@@ -1409,7 +1413,9 @@
         const btn = document.getElementById('submitBtn');
         const originalHtml = btn.innerHTML;
         const t = translations[AppSettings.currentLang];
-        btn.innerHTML = '<span class="loading"></span> Adding...';
+        const editId = document.getElementById('editProductId').value;
+        const isEdit = editId !== '';
+        btn.innerHTML = '<span class="loading"></span> ' + (isEdit ? (t.updateProduct || 'Updating...') : 'Adding...');
         btn.disabled = true;
 
         const sizes = this.getSelectedSizes();
@@ -1439,20 +1445,45 @@
         };
 
         try {
-          await AdminApp.db.collection('products').add(product);
-          AdminApp.showSuccess();
-          document.getElementById('productForm').reset();
-          document.getElementById('pCost').value = '';
-          document.getElementById('pStock').value = '1';
-          document.querySelectorAll('.badge-option').forEach(o => o.classList.remove('selected'));
-          document.querySelector('.badge-option[data-badge=""]').classList.add('selected');
-          document.getElementById('pBadge').value = '';
-          this.resetSelectors();
-          [1,2,3].forEach(i => AdminApp.removeImage(i));
+          if (isEdit) {
+            // Update existing product
+            await AdminApp.db.collection('products').doc(editId).update(product);
+            // Show custom success for update
+            const successEl = document.getElementById('successMsg');
+            const successSpan = successEl.querySelector('span[data-i18n="productAdded"]');
+            if (successSpan) {
+              successSpan.setAttribute('data-i18n-backup', successSpan.getAttribute('data-i18n'));
+              successSpan.setAttribute('data-i18n', 'productUpdated');
+              successSpan.textContent = t.productUpdated || 'Product updated successfully!';
+            }
+            successEl.classList.add('show');
+            setTimeout(() => {
+              successEl.classList.remove('show');
+              if (successSpan) {
+                successSpan.setAttribute('data-i18n', successSpan.getAttribute('data-i18n-backup') || 'productAdded');
+                successSpan.removeAttribute('data-i18n-backup');
+                const t2 = translations[AppSettings.currentLang];
+                successSpan.textContent = t2.productAdded || 'Product added to Firebase!';
+              }
+            }, 3000);
+            this.cancelEdit();
+          } else {
+            // Add new product
+            await AdminApp.db.collection('products').add(product);
+            AdminApp.showSuccess();
+            document.getElementById('productForm').reset();
+            document.getElementById('pCost').value = '';
+            document.getElementById('pStock').value = '1';
+            document.querySelectorAll('.badge-option').forEach(o => o.classList.remove('selected'));
+            document.querySelector('.badge-option[data-badge=""]').classList.add('selected');
+            document.getElementById('pBadge').value = '';
+            this.resetSelectors();
+            [1,2,3].forEach(i => AdminApp.removeImage(i));
+          }
           this.loadProducts();
         } catch (error) {
-          console.error('Error adding product:', error);
-          AdminApp.showError(t.failedAdd + error.message);
+          console.error('Error ' + (isEdit ? 'updating' : 'adding') + ' product:', error);
+          AdminApp.showError((isEdit ? 'Failed to update: ' : t.failedAdd) + error.message);
         } finally {
           btn.innerHTML = originalHtml;
           btn.disabled = false;
@@ -1509,14 +1540,146 @@
             <div class="product-item-price">EGP ${p.price}</div>
             <div class="product-item-actions">
               <a href="${p.category}.html" class="btn-view">${viewText}</a>
+              <button class="btn-edit" onclick="ProductManager.editProduct('${p.id}')" title="${t.edit || 'Edit'}">
+                <i class="fas fa-pen"></i>
+              </button>
               <button class="btn-delete" onclick="ProductManager.deleteProduct('${p.id}')">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
           </div>
         `}).join('');
+      },
+
+      // ===== EDIT PRODUCT FUNCTIONS =====
+      async editProduct(id) {
+        const t = translations[AppSettings.currentLang];
+        const product = this.products.find(p => p.id === id);
+        if (!product) return;
+
+        // Scroll to form
+        document.querySelector('.admin-form-wrapper').scrollIntoView({ behavior: 'smooth' });
+
+        // Fill form fields
+        document.getElementById('editProductId').value = id;
+        document.getElementById('pName').value = product.name || '';
+        document.getElementById('pPrice').value = product.price !== undefined && product.price !== null ? product.price : '';
+        document.getElementById('pOldPrice').value = product.oldPrice !== undefined && product.oldPrice !== null ? product.oldPrice : '';
+        document.getElementById('pCost').value = product.cost !== undefined && product.cost !== null ? product.cost : '';
+        document.getElementById('pStock').value = product.stock !== undefined && product.stock !== null ? product.stock : 1;
+        document.getElementById('pCategory').value = product.category || '';
+        document.getElementById('pDesc').value = product.description || '';
+        document.getElementById('pBadge').value = product.badge || '';
+
+        // Update badge selector UI
+        document.querySelectorAll('.badge-option').forEach(o => o.classList.remove('selected'));
+        const badgeOpt = document.querySelector('.badge-option[data-badge="' + (product.badge || '') + '"]');
+        if (badgeOpt) badgeOpt.classList.add('selected');
+
+        // Visibility
+        const showHome = document.getElementById('showOnHome');
+        const showCat = document.getElementById('showOnCategory');
+        if (showHome) showHome.checked = product.showOnHome !== false;
+        if (showCat) showCat.checked = product.showOnCategory !== false;
+
+        // Reset selectors first (clears sizes/colors but keeps category hidden logic clean)
+        this.resetSelectors();
+
+        // Handle category change to show subcategory if needed
+        this.onCategoryChange(product.category || '');
+
+        // Set subcategory after a small delay to ensure options are populated
+        setTimeout(() => {
+          const subcat = document.getElementById('pSubcategory');
+          if (subcat && product.subcategory) {
+            subcat.value = product.subcategory;
+            this.onSubcategoryChange(product.subcategory);
+          }
+        }, 50);
+        const category = product.category || '';
+        const subcategory = product.subcategory || '';
+        if (category === 'accessories' && subcategory === 'bags') {
+          if (product.sizes && Array.isArray(product.sizes)) {
+            product.sizes.forEach(s => {
+              const cb = document.querySelector('#bagSizeGrid input[name="bagSize"][value="' + s + '"]');
+              if (cb) cb.checked = true;
+            });
+          }
+        } else if (['dresses','tops','pants','sets'].includes(category) || (category === 'accessories' && subcategory === 'shoes')) {
+          if (product.sizes && Array.isArray(product.sizes)) {
+            product.sizes.forEach(s => {
+              const cb = document.querySelector('#sizeSelector input[name="size"][value="' + s + '"]');
+              if (cb) cb.checked = true;
+            });
+          }
+        }
+
+        // Set colors
+        if (product.colors && Array.isArray(product.colors)) {
+          document.getElementById('pColors').value = product.colors.join(',');
+          this.renderColorTags();
+        }
+
+        // Set images
+        [1,2,3].forEach(i => AdminApp.removeImage(i));
+        if (product.images && Array.isArray(product.images)) {
+          product.images.forEach((img, idx) => {
+            const i = idx + 1;
+            if (i <= 3 && img) {
+              document.getElementById('pImage' + i).value = img;
+              document.getElementById('uploadPreview' + i).style.display = 'block';
+              document.getElementById('uploadPlaceholder' + i).style.display = 'none';
+              document.getElementById('imageUploadArea' + i).classList.add('has-image');
+              document.getElementById('previewImage' + i).src = img;
+            }
+          });
+        } else if (product.imageUrl) {
+          document.getElementById('pImage1').value = product.imageUrl;
+          document.getElementById('uploadPreview1').style.display = 'block';
+          document.getElementById('uploadPlaceholder1').style.display = 'none';
+          document.getElementById('imageUploadArea1').classList.add('has-image');
+          document.getElementById('previewImage1').src = product.imageUrl;
+        }
+
+        // Switch to edit mode UI
+        document.getElementById('editModeBadge').classList.remove('hidden');
+        document.getElementById('cancelEditBtn').classList.remove('hidden');
+        const submitBtn = document.getElementById('submitBtn');
+        const submitIcon = document.getElementById('submitIcon');
+        const submitText = document.getElementById('submitText');
+        if (submitIcon) { submitIcon.classList.remove('fa-plus'); submitIcon.classList.add('fa-save'); }
+        if (submitText) submitText.textContent = t.updateProduct || 'Update Product';
+        if (submitBtn) submitBtn.style.background = '#3498db';
+      },
+
+      cancelEdit() {
+        const t = translations[AppSettings.currentLang];
+        document.getElementById('productForm').reset();
+        document.getElementById('editProductId').value = '';
+        document.getElementById('pCost').value = '';
+        document.getElementById('pStock').value = '1';
+        document.getElementById('editModeBadge').classList.add('hidden');
+        document.getElementById('cancelEditBtn').classList.add('hidden');
+        const submitBtn = document.getElementById('submitBtn');
+        const submitIcon = document.getElementById('submitIcon');
+        const submitText = document.getElementById('submitText');
+        if (submitIcon) { submitIcon.classList.remove('fa-save'); submitIcon.classList.add('fa-plus'); }
+        if (submitText) submitText.textContent = t.addProduct || 'Add Product';
+        if (submitBtn) submitBtn.style.background = '';
+        document.querySelectorAll('.badge-option').forEach(o => o.classList.remove('selected'));
+        document.querySelector('.badge-option[data-badge=""]').classList.add('selected');
+        document.getElementById('pBadge').value = '';
+        this.resetSelectors();
+        // Restore visibility based on default category (empty = hide all)
+        this.onCategoryChange('');
+        [1,2,3].forEach(i => AdminApp.removeImage(i));
+      },
+
+      resetForm() {
+        this.cancelEdit();
       }
-    };
+
+    };  // End ProductManager
 
     // Setup color input Enter key
     (function setupColorInput() {
