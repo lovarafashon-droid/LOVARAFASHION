@@ -18,6 +18,32 @@
  <link rel="icon" type="image/jpeg" href="LOVARA.jpeg">
   
 <base target="_blank">
+  <style>
+    /* Subcategory Tabs */
+    .subcategory-nav { padding: 1.2rem 0 0.6rem; background: #faf7f5; border-bottom: 1px solid #ece3dd; }
+    .subcategory-tabs { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+    .subcat-tab {
+      background: transparent;
+      border: 1.5px solid #c8a99b;
+      color: #6d4c41;
+      padding: 0.55rem 1.4rem;
+      border-radius: 999px;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-transform: capitalize;
+    }
+    .subcat-tab:hover { background: #f3e9e3; border-color: #a67c6d; color: #4a2c20; }
+    .subcat-tab.active { background: #6d4c41; border-color: #6d4c41; color: #fff; }
+    html[dir="rtl"] .subcategory-tabs { direction: rtl; }
+    @media (max-width: 480px) {
+      .subcat-tab { padding: 0.5rem 1rem; font-size: 0.85rem; }
+    }
+  </style>
+
+<base target="_blank">
 </head>
 <body data-category="lingerie">
 
@@ -100,7 +126,19 @@
     </div>
   </section>
 
-  <!-- PRODUCTS -->
+  <!-- SUBCATEGORIES -->
+<section class="subcategory-nav">
+  <div class="container">
+    <div class="subcategory-tabs" id="subcategoryTabs">
+      <button class="subcat-tab active" data-subcat="all" data-i18n="subcatAll">All</button>
+      <button class="subcat-tab" data-subcat="bras" data-i18n="subcatBras">Bras</button>
+      <button class="subcat-tab" data-subcat="panties" data-i18n="subcatPanties">Panties</button>
+      <button class="subcat-tab" data-subcat="nightgowns" data-i18n="subcatNightgowns">Nightgowns</button>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCTS -->
   <section class="products-section" id="shop">
     <div class="container">
       <div class="section-header">
@@ -557,6 +595,29 @@
 
   // Setup for category pages support form
   setupValidation('sCountryCode', 'sPhone', 'sPhoneError', 'supportForm');
+})();
+</script>
+
+
+<!-- SUBCATEGORY FILTER SCRIPT -->
+<script>
+(function() {
+  const tabs = document.querySelectorAll('.subcat-tab');
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      this.classList.add('active');
+      var subcat = this.dataset.subcat;
+      // Store selected subcategory for CategoryApp usage
+      window.__activeSubcategory = subcat;
+      // Dispatch custom event so categories-shared.js can listen
+      document.dispatchEvent(new CustomEvent('subcategoryChanged', { detail: subcat }));
+      // If CategoryApp.filterBySubcategory exists, call it
+      if (typeof CategoryApp !== 'undefined' && CategoryApp.filterBySubcategory) {
+        CategoryApp.filterBySubcategory(subcat);
+      }
+    });
+  });
 })();
 </script>
 
