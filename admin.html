@@ -643,6 +643,8 @@
 <base target="_blank">
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -748,7 +750,7 @@
 
               <div class="form-group">
                 <label data-i18n="category">Category *</label>
-                <select id="pCategory" required>
+                <select id="pCategory" required onchange="ProductManager.onCategoryChange(this.value)">
                   <option value="" data-i18n="selectCategory">Select Category</option>
                   <option value="dresses" data-i18n="dresses">Dresses</option>
                   <option value="tops" data-i18n="tops">Tops</option>
@@ -758,6 +760,14 @@
                   <option value="sets" data-i18n="sets">Sets</option>
                 </select>
               </div>
+            </div>
+
+            <!-- SUBCATEGORY -->
+            <div class="form-group hidden" id="subcategoryGroup">
+              <label><span data-i18n="subcategory">Subcategory</span></label>
+              <select id="pSubcategory" onchange="ProductManager.onSubcategoryChange(this.value)">
+                <option value="" data-i18n="selectSubcategory">Select Subcategory</option>
+              </select>
             </div>
 
             <!-- SIZES SELECTOR -->
@@ -772,6 +782,18 @@
                 <label class="selector-item"><input type="checkbox" name="size" value="XXL" /><span class="item-label"><i class="fas fa-check check-icon"></i> XXL</span></label>
                 <label class="selector-item"><input type="checkbox" name="size" value="3XL" /><span class="item-label"><i class="fas fa-check check-icon"></i> 3XL</span></label>
                 <label class="selector-item"><input type="checkbox" name="size" value="Free Size" /><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="freeSize">Free Size</span></span></label>
+              </div>
+            </div>
+
+            <!-- BAG SIZES SELECTOR (for Bags only) -->
+            <div class="selector-group hidden" id="bagSizeSelector">
+              <label><span data-i18n="bagSizes">Bag Sizes</span> <small style="color:var(--text-light)" data-i18n="selectAll">(select all that apply)</small></label>
+              <div class="selector-grid" id="bagSizeGrid">
+                <label class="selector-item"><input type="checkbox" name="bagSize" value="Small" /><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="sizeSmall">Small</span></span></label>
+                <label class="selector-item"><input type="checkbox" name="bagSize" value="Medium" /><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="sizeMedium">Medium</span></span></label>
+                <label class="selector-item"><input type="checkbox" name="bagSize" value="Large" /><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="sizeLarge">Large</span></span></label>
+                <label class="selector-item"><input type="checkbox" name="bagSize" value="XL" /><span class="item-label"><i class="fas fa-check check-icon"></i> XL</span></label>
+                <label class="selector-item"><input type="checkbox" name="bagSize" value="One Size" /><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="oneSize">One Size</span></span></label>
               </div>
             </div>
 
@@ -892,6 +914,12 @@
         error: "Error", productName: "Product Name *", price: "Price (EGP) *", oldPrice: "Old Price (EGP)",
         optional: "(optional)", category: "Category *", selectCategory: "Select Category",
         dresses: "Dresses", tops: "Tops", pants: "Pants", accessories: "Accessories", lingerie: "Lingerie", sets: "Sets",
+        subcategory: "Subcategory", selectSubcategory: "Select Subcategory",
+        subcatBags: "Bags", subcatCosmetics: "Cosmetics", subcatPersonalCare: "Personal Care",
+        subcatShoes: "Shoes", subcatJewelry: "Jewelry",
+        subcatBras: "Bras", subcatPanties: "Panties", subcatNightgowns: "Nightgowns",
+        bagSizes: "Bag Sizes",
+        sizeSmall: "Small", sizeMedium: "Medium", sizeLarge: "Large", oneSize: "One Size",
         availableSizes: "Available Sizes", availableColors: "Available Colors", selectAll: "(select all that apply)",
         freeSize: "Free Size", black: "Black", white: "White", beige: "Beige", nude: "Nude", red: "Red",
         burgundy: "Burgundy", pink: "Pink", rose: "Rose", blue: "Blue", navy: "Navy", green: "Green",
@@ -923,6 +951,12 @@
         error: "خطأ", productName: "اسم المنتج *", price: "السعر (ج.م) *", oldPrice: "السعر القديم (ج.م)",
         optional: "(اختياري)", category: "الفئة *", selectCategory: "اختر الفئة",
         dresses: "فساتين", tops: "بلوزات", pants: "بناطيل", accessories: "إكسسوارات", lingerie: "ملابس داخلية", sets: "طقم",
+        subcategory: "القسم الفرعي", selectSubcategory: "اختار القسم الفرعي",
+        subcatBags: "شنط", subcatCosmetics: "مستحضرات تجميل", subcatPersonalCare: "عناية شخصية",
+        subcatShoes: "كوتشيات", subcatJewelry: "مجوهرات",
+        subcatBras: "برهات", subcatPanties: "اندرات", subcatNightgowns: "قمصان نوم",
+        shoeSizes: "مقاسات الأحذية", bagSizes: "مقاسات الشنط",
+        sizeSmall: "صغير", sizeMedium: "وسط", sizeLarge: "كبير", oneSize: "مقاس واحد",
         availableSizes: "المقاسات المتاحة", availableColors: "الألوان المتاحة", selectAll: "(اختر كل ما ينطبق)",
         freeSize: "مقاس حر", black: "أسود", white: "أبيض", beige: "بيج", nude: "نود", red: "أحمر",
         burgundy: "نبيتي", pink: "وردي", rose: "روز", blue: "أزرق", navy: "كحلي", green: "أخضر",
@@ -981,6 +1015,7 @@
           const key = el.getAttribute('data-i18n');
           if (t[key]) {
             if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = t[key];
+            else if (el.tagName === 'OPTION') el.textContent = t[key];
             else el.textContent = t[key];
           }
         });
@@ -988,6 +1023,11 @@
           const key = el.getAttribute('data-i18n-placeholder');
           if (t[key]) el.placeholder = t[key];
         });
+        // Re-translate subcategory options if visible
+        const pCategory = document.getElementById('pCategory');
+        if (pCategory && pCategory.value) {
+          ProductManager.onCategoryChange(pCategory.value);
+        }
         document.getElementById('pageTitle').textContent = this.currentLang === 'ar' ? 'LOVARA – لوحة التحكم' : 'LOVARA – Admin';
       },
       applyTheme() {
@@ -1142,14 +1182,33 @@
         const t = translations[AppSettings.currentLang];
         if (!file.type.startsWith('image/')) { this.showError(t.selectImage); return; }
         if (file.size > 5 * 1024 * 1024) { this.showError(t.imageSize); return; }
+
+        // Compress image before storing
         const reader = new FileReader();
         reader.onload = function(e) {
-          const dataUrl = e.target.result;
-          document.getElementById('pImage' + index).value = dataUrl;
-          document.getElementById('uploadPreview' + index).style.display = 'block';
-          document.getElementById('uploadPlaceholder' + index).style.display = 'none';
-          document.getElementById('imageUploadArea' + index).classList.add('has-image');
-          document.getElementById('previewImage' + index).src = dataUrl;
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            // Max dimensions: 800x800
+            let w = img.width, h = img.height;
+            const maxDim = 800;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) { h = h * (maxDim / w); w = maxDim; }
+              else { w = w * (maxDim / h); h = maxDim; }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(img, 0, 0, w, h);
+            // Compress to JPEG quality 0.7
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            document.getElementById('pImage' + index).value = dataUrl;
+            document.getElementById('uploadPreview' + index).style.display = 'block';
+            document.getElementById('uploadPlaceholder' + index).style.display = 'none';
+            document.getElementById('imageUploadArea' + index).classList.add('has-image');
+            document.getElementById('previewImage' + index).src = dataUrl;
+          };
+          img.src = e.target.result;
         };
         reader.readAsDataURL(file);
       },
@@ -1182,7 +1241,62 @@
       },
 
       getSelectedSizes() {
+        const category = document.getElementById('pCategory').value;
+        const subcategory = document.getElementById('pSubcategory') ? document.getElementById('pSubcategory').value : '';
+        if (category === 'accessories' && subcategory === 'bags') {
+          return Array.from(document.querySelectorAll('#bagSizeGrid input[name="bagSize"]:checked')).map(cb => cb.value);
+        }
         return Array.from(document.querySelectorAll('#sizeSelector input[name="size"]:checked')).map(cb => cb.value);
+      },
+      onCategoryChange(category) {
+        const subcatGroup = document.getElementById('subcategoryGroup');
+        const subcatSelect = document.getElementById('pSubcategory');
+        const sizeSelector = document.getElementById('sizeSelector').closest('.selector-group');
+        const bagSizeSelector = document.getElementById('bagSizeSelector');
+        const t = translations[AppSettings.currentLang];
+
+        // Reset all first
+        if (subcatGroup) subcatGroup.classList.add('hidden');
+        if (sizeSelector) sizeSelector.classList.add('hidden');
+        if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
+        if (subcatSelect) subcatSelect.value = '';
+
+        if (category === 'accessories') {
+          if (subcatGroup) subcatGroup.classList.remove('hidden');
+          if (subcatSelect) {
+            subcatSelect.innerHTML = '<option value="">' + (t.selectSubcategory || 'Select Subcategory') + '</option>' +
+              '<option value="shoes">' + (t.subcatShoes || 'Shoes') + '</option>' +
+              '<option value="bags">' + (t.subcatBags || 'Bags') + '</option>' +
+              '<option value="cosmetics">' + (t.subcatCosmetics || 'Cosmetics') + '</option>' +
+              '<option value="personal-care">' + (t.subcatPersonalCare || 'Personal Care') + '</option>' +
+              '<option value="jewelry">' + (t.subcatJewelry || 'Jewelry') + '</option>';
+          }
+        } else if (category === 'lingerie') {
+          if (subcatGroup) subcatGroup.classList.remove('hidden');
+          if (subcatSelect) {
+            subcatSelect.innerHTML = '<option value="">' + (t.selectSubcategory || 'Select Subcategory') + '</option>' +
+              '<option value="bras">' + (t.subcatBras || 'Bras') + '</option>' +
+              '<option value="panties">' + (t.subcatPanties || 'Panties') + '</option>' +
+              '<option value="nightgowns">' + (t.subcatNightgowns || 'Nightgowns') + '</option>';
+          }
+        } else if (category === 'dresses' || category === 'tops' || category === 'pants' || category === 'sets') {
+          if (sizeSelector) sizeSelector.classList.remove('hidden');
+        }
+      },
+      onSubcategoryChange(subcategory) {
+        const bagSizeSelector = document.getElementById('bagSizeSelector');
+        const sizeSelector = document.getElementById('sizeSelector').closest('.selector-group');
+
+        if (subcategory === 'bags') {
+          if (bagSizeSelector) bagSizeSelector.classList.remove('hidden');
+          if (sizeSelector) sizeSelector.classList.add('hidden');
+        } else if (subcategory === 'shoes') {
+          if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
+          if (sizeSelector) sizeSelector.classList.remove('hidden');
+        } else {
+          if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
+          if (sizeSelector) sizeSelector.classList.add('hidden');
+        }
       },
       getSelectedColors() {
         const hidden = document.getElementById('pColors');
@@ -1229,12 +1343,17 @@
       },
       resetSelectors() {
         document.querySelectorAll('#sizeSelector input').forEach(cb => cb.checked = false);
+        document.querySelectorAll('#bagSizeGrid input').forEach(cb => cb.checked = false);
+        const subcat = document.getElementById('pSubcategory');
+        if (subcat) subcat.value = '';
         const hidden = document.getElementById('pColors');
         const display = document.getElementById('colorTagsDisplay');
         const input = document.getElementById('pColorsInput');
         if (hidden) hidden.value = '';
         if (display) display.innerHTML = '';
         if (input) input.value = '';
+        // Reset category-dependent visibility
+        this.onCategoryChange('');
       },
 
       // FIX #1: Use simple .get() without orderBy to avoid index issues
@@ -1305,6 +1424,7 @@
           price: parseFloat(document.getElementById('pPrice').value),
           oldPrice: document.getElementById('pOldPrice').value ? parseFloat(document.getElementById('pOldPrice').value) : null,
           category: document.getElementById('pCategory').value,
+          subcategory: document.getElementById('pSubcategory') ? document.getElementById('pSubcategory').value : '',
           sizes: sizes,
           colors: colors,
           images: images.length > 0 ? images : ['https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'],
@@ -1374,6 +1494,7 @@
         container.innerHTML = filtered.map(p => {
           const sizesHtml = p.sizes && p.sizes.length > 0 ? p.sizes.map(s => `<span class="meta-tag">${s}</span>`).join('') : '';
           const colorsHtml = p.colors && p.colors.length > 0 ? p.colors.map(c => `<span class="meta-tag">${c}</span>`).join('') : '';
+          const subcatHtml = p.subcategory ? `<span class="meta-tag" style="background:var(--primary);color:#fff;">${p.subcategory}</span>` : '';
           const viewText = t.all === 'الكل' ? 'عرض' : 'View';
 
           return `
@@ -1383,7 +1504,7 @@
             <div class="product-item-info">
               <h4>${p.name}</h4>
               <p>${p.category}${p.badge ? ' &bull; ' + p.badge : ''}${p.showOnHome ? ' &bull; 🏠' : ''}${p.showOnCategory ? ' &bull; 📁' : ''}</p>
-              <div class="product-meta">${sizesHtml}${colorsHtml}</div>
+              <div class="product-meta">${subcatHtml}${sizesHtml}${colorsHtml}</div>
             </div>
             <div class="product-item-price">EGP ${p.price}</div>
             <div class="product-item-actions">
