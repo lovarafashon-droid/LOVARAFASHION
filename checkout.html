@@ -14,6 +14,39 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="js/firebase-config.js"></script>
   <style>
+    /* ===== ITEM GALLERY ===== */
+    .item-gallery { flex-shrink: 0; width: 220px; }
+    .gallery-main { position: relative; width: 220px; height: 280px; border-radius: 14px; overflow: hidden; cursor: zoom-in; border: 1px solid #e8e4e0; background: #faf8f5; }
+    .gallery-main-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+    .gallery-main:hover .gallery-main-img { transform: scale(1.03); }
+    .gallery-badge { position: absolute; top: 10px; left: 10px; background: rgba(26,26,26,0.8); color: #fff; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .gallery-zoom { position: absolute; bottom: 10px; right: 10px; width: 36px; height: 36px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #333; font-size: 14px; opacity: 0; transition: opacity 0.2s; }
+    .gallery-main:hover .gallery-zoom { opacity: 1; }
+    .item-thumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .thumb-img { width: 55px; height: 55px; object-fit: cover; border-radius: 10px; cursor: pointer; border: 2.5px solid transparent; transition: all 0.2s ease; opacity: 0.7; }
+    .thumb-img:hover { opacity: 1; transform: translateY(-2px); }
+    .thumb-img.active { border-color: #c9a87c; opacity: 1; box-shadow: 0 3px 10px rgba(201,168,124,0.3); }
+    .item-desc { font-size: 13px; color: #777; margin: 8px 0; line-height: 1.6; }
+
+    /* ===== LIGHTBOX ===== */
+    .checkout-lightbox-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; opacity: 0; visibility: hidden; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
+    .checkout-lightbox-overlay.show { opacity: 1; visibility: visible; }
+    .checkout-lightbox { position: relative; max-width: 90vw; max-height: 90vh; }
+    .checkout-lightbox img { max-width: 90vw; max-height: 85vh; object-fit: contain; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    .lightbox-close { position: absolute; top: -50px; right: 0; width: 44px; height: 44px; background: rgba(255,255,255,0.15); border: none; border-radius: 50%; color: #fff; font-size: 20px; cursor: pointer; transition: all 0.2s; }
+    .lightbox-close:hover { background: rgba(255,255,255,0.3); }
+    .lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; background: rgba(255,255,255,0.15); border: none; border-radius: 50%; color: #fff; font-size: 18px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+    .lightbox-nav:hover { background: rgba(255,255,255,0.3); }
+    .lightbox-prev { left: -70px; }
+    .lightbox-next { right: -70px; }
+    .lightbox-counter { position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 14px; background: rgba(0,0,0,0.5); padding: 6px 18px; border-radius: 20px; }
+    @media (max-width: 768px) {
+      .item-gallery { width: 100%; }
+      .gallery-main { width: 100%; height: 350px; }
+      .lightbox-prev { left: 10px; }
+      .lightbox-next { right: 10px; }
+    }
+  
     :root { --primary:#c9a87c; --primary-dark:#b8956a; --primary-light:#f5efe8; --secondary:#1a1a1a; --text:#333; --text-light:#777; --bg:#f8f6f3; --white:#fff; --border:#e8e4e0; --shadow:0 4px 20px rgba(0,0,0,0.06); --shadow-lg:0 12px 40px rgba(0,0,0,0.1); --radius:16px; --radius-sm:10px; --transition:all 0.3s cubic-bezier(0.4,0,0.2,1); }
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:'Jost',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; overflow-x:hidden; }
@@ -176,6 +209,7 @@
     .item-option select { padding:6px 10px; font-size:13px; }
   }
   </style>
+<base target="_blank">
 <base target="_blank">
 <base target="_blank">
 <base target="_blank">
@@ -429,7 +463,18 @@
       renderCartItems() {
         const container = document.getElementById('orderItems');
         let subtotal = 0;
-        const sizes = ['XS','S','M','L','XL','XXL','One Size'];
+        const defaultSizes = ['XS','S','M','L','XL','XXL','One Size'];
+
+        // DEBUG: log cart items
+        console.log('[Checkout] Cart items:', this.cart.map(i => ({ name: i.name, hasImages: !!(i.images && i.images.length), hasDesc: !!i.description })));
+
+        // Initialize missing size/color on cart items and save
+        let cartModified = false;
+        this.cart.forEach(item => {
+          if (!item.size) { item.size = 'M'; cartModified = true; }
+          if (!item.color) { item.color = 'Black'; cartModified = true; }
+        });
+        if (cartModified) this.saveCart();
 
         container.innerHTML = this.cart.map((item, index) => {
           const price = parseFloat(item.price) || 0;
@@ -438,40 +483,57 @@
           subtotal += itemTotal;
 
           const currentSize = item.size || 'M';
-          // اللون المختار حالياً
           const currentColor = item.color || 'Black';
 
-          // الألوان المتاحة من المنتج (من صفحة الإدمن/المتجر)
+          // Build size options: include item's size + defaults
+          let sizeOptionsList = [...defaultSizes];
+          if (currentSize && !sizeOptionsList.includes(currentSize)) {
+            sizeOptionsList.unshift(currentSize);
+          }
+          const sizeOptions = sizeOptionsList.map(s => 
+            `<option value="${s}" ${s === currentSize ? 'selected' : ''}>${s}</option>`
+          ).join('');
+
+          // Build color options: include item's color + available colors
           let productColors = [];
           if (item.availableColors && Array.isArray(item.availableColors) && item.availableColors.length > 0) {
             productColors = [...item.availableColors];
           }
-
-          // التعديل المهم: لو اللون المختار مش في القائمة، نضيفه
           if (currentColor && !productColors.includes(currentColor)) {
             productColors.unshift(currentColor);
           }
-
-          // لو لسه القائمة فاضية بعد كل ده، نحط لون واحد على الأقل
           if (productColors.length === 0) {
             productColors = [currentColor];
           }
-
-          const sizeOptions = sizes.map(s => 
-            `<option value="${s}" ${s === currentSize ? 'selected' : ''}>${s}</option>`
-          ).join('');
-
           const colorOptions = productColors.map(c => 
             `<option value="${c}" ${c === currentColor ? 'selected' : ''}>${c}</option>`
           ).join('');
 
+          // Build images HTML (main + thumbnails gallery)
+          const itemImages = item.images && item.images.length > 0 ? item.images : [item.imageUrl || item.image || 'https://via.placeholder.com/300x300/c9a87c/ffffff?text=LOVARA'];
+          const mainImg = itemImages[0];
+          const galleryId = 'gallery-' + index;
+          const thumbsHtml = itemImages.length > 1 ? `
+            <div class="item-thumbs">
+              ${itemImages.map((img, i) => `<img src="${img}" class="thumb-img ${i===0?'active':''}" onclick="CheckoutApp.switchGalleryImage('${galleryId}', '${img}', this)" onerror="this.style.display='none'">`).join('')}
+            </div>
+          ` : '';
+          const descHtml = item.description ? `<p class="item-desc">${item.description}</p>` : '';
+
           return `
             <div class="order-item" data-index="${index}" style="animation-delay:${index * 0.05}s">
-              <img src="${item.imageUrl || 'https://via.placeholder.com/90x90/c9a87c/ffffff?text=LOVARA'}" 
-                   alt="${item.name}" loading="lazy"
-                   onerror="this.onerror=null; this.src='https://via.placeholder.com/90x90/c9a87c/ffffff?text=LOVARA';" />
+              <div class="item-gallery" id="${galleryId}">
+                <div class="gallery-main" onclick="CheckoutApp.openLightbox('${galleryId}')">
+                  <img src="${mainImg}" alt="${item.name}" class="gallery-main-img"
+                       onerror="this.onerror=null; this.src='https://via.placeholder.com/300x300/c9a87c/ffffff?text=LOVARA';" />
+                  ${itemImages.length > 1 ? '<span class="gallery-badge"><i class="fas fa-images"></i> ' + itemImages.length + '</span>' : ''}
+                  <span class="gallery-zoom"><i class="fas fa-expand"></i></span>
+                </div>
+                ${thumbsHtml}
+              </div>
               <div class="order-item-info">
                 <h4>${item.name || 'Product'}</h4>
+                ${descHtml}
                 <p class="item-meta">EGP ${price.toFixed(2)}</p>
                 <div class="item-options">
                   <div class="item-option">
