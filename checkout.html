@@ -40,9 +40,12 @@
     .lightbox-prev { left: -70px; }
     .lightbox-next { right: -70px; }
     .lightbox-counter { position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 14px; background: rgba(0,0,0,0.5); padding: 6px 18px; border-radius: 20px; }
-    @media (max-width: 768px) {
+    @media (max-width: 992px) {
       .item-gallery { width: 100%; }
-      .gallery-main { width: 100%; height: 350px; }
+      .gallery-main { width: 100%; height: auto; aspect-ratio: 3/4; max-height: 400px; }
+    }
+    @media (max-width: 768px) {
+      .gallery-main { max-height: 350px; }
       .lightbox-prev { left: 10px; }
       .lightbox-next { right: 10px; }
     }
@@ -125,11 +128,11 @@
     .order-items::-webkit-scrollbar { width:4px; }
     .order-items::-webkit-scrollbar-track { background:transparent; }
     .order-items::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
-    .order-item { display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); transition:var(--transition); animation:fadeInUp 0.4s ease both; }
+    .order-item { display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); transition:var(--transition); animation:fadeInUp 0.4s ease both; flex-wrap:nowrap; }
     .order-item:last-child { border-bottom:none; }
     .order-item:hover { background:rgba(201,168,124,0.02); margin:0 -10px; padding:14px 10px; border-radius:8px; }
     .order-item img { width:90px; height:90px; object-fit:cover; border-radius:var(--radius-sm); box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-    .order-item-info { flex:1; }
+    .order-item-info { flex:1; min-width:0; }
     .order-item-info h4 { font-size:15px; color:var(--secondary); margin-bottom:6px; font-weight:600; }
     .order-item-info p { font-size:12px; color:var(--text-light); }
     .order-item-price { font-weight:700; color:var(--primary); font-size:17px; }
@@ -148,10 +151,11 @@
     .btn-place-order:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
     .btn-place-order:disabled::after { display:none; }
     .qty-control { display:inline-flex; align-items:center; gap:0; border:1.5px solid var(--border); border-radius:8px; overflow:hidden; margin-top:8px; background:var(--white); }
-    .qty-control button { width:32px; height:32px; border:none; background:var(--bg); color:var(--secondary); font-size:16px; font-weight:600; cursor:pointer; transition:var(--transition); display:flex; align-items:center; justify-content:center; }
+    .qty-control button { width:36px; height:36px; border:none; background:var(--bg); color:var(--secondary); font-size:16px; font-weight:600; cursor:pointer; transition:var(--transition); display:flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; }
+    .qty-control .qty-value { width:44px; text-align:center; font-size:14px; font-weight:600; color:var(--secondary); border-left:1.5px solid var(--border); border-right:1.5px solid var(--border); line-height:36px; }
     .qty-control button:hover { background:var(--primary); color:var(--white); }
     .qty-control button:active { transform:scale(0.9); }
-    .qty-control .qty-value { width:40px; text-align:center; font-size:14px; font-weight:600; color:var(--secondary); border-left:1.5px solid var(--border); border-right:1.5px solid var(--border); line-height:32px; }
+
     .order-item-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
     .btn-remove-item { background:none; border:none; color:#ccc; font-size:14px; cursor:pointer; padding:4px; transition:var(--transition); border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; }
     .btn-remove-item:hover { color:#e74c3c; background:rgba(231,76,60,0.08); }
@@ -193,22 +197,56 @@
     @keyframes scaleIn { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
     @keyframes bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
     @media (max-width:992px) { .checkout-grid { grid-template-columns:1fr; } .order-summary-wrapper { position:static; } .nav-links { display:none; } .mobile-summary-toggle { display:flex; } .order-summary { display:none; } .order-summary.show { display:block; animation:slideDown 0.3s ease; } .checkout-steps { gap:0; } .step-connector { width:20px; } }
+    @media (max-width: 992px) and (min-width: 769px) {
+      .order-item { flex-wrap: wrap; }
+      .item-gallery { width: 160px; }
+      .gallery-main { width: 160px; height: 200px; }
+      .item-thumbs { display: none; }
+      .order-item-info { min-width: 200px; flex: 1; }
+    }
     @media (max-width:768px) { 
     .checkout-page { padding:80px 0 40px; } 
-    .checkout-header h1 { font-size:32px; } 
-    .checkout-form-wrapper,.order-summary { padding:25px; } 
+    .checkout-header h1 { font-size:28px; } 
+    .checkout-form-wrapper,.order-summary { padding:20px; } 
     .checkout-form .form-row { grid-template-columns:1fr; } 
-    .checkout-steps { flex-wrap:wrap; gap:10px; } 
+    .checkout-steps { flex-wrap:wrap; gap:8px; } 
     .step-connector { display:none; } 
-    .step { padding:8px 16px; font-size:12px; } 
-    .order-item { flex-direction:column; align-items:flex-start; gap:12px; padding:18px 0; }
-    .order-item img { width:100%; height:auto; max-height:180px; border-radius:var(--radius-sm); }
+    .step { padding:8px 14px; font-size:11px; } 
+    .order-item { flex-direction:column; align-items:flex-start; gap:12px; padding:16px 0; }
+    .order-item img { width:100%; height:auto; max-height:200px; border-radius:var(--radius-sm); }
     .order-item-info { width:100%; }
     .order-item-right { flex-direction:row; align-items:center; width:100%; justify-content:space-between; margin-top:8px; }
-    .item-options { gap:16px; }
-    .item-option select { padding:6px 10px; font-size:13px; }
+    .item-options { gap:12px; flex-wrap:wrap; }
+    .item-option select { padding:8px 12px; font-size:14px; min-height:44px; }
+    .qty-control button { width:44px; height:44px; font-size:18px; }
+    .qty-control .qty-value { width:50px; line-height:44px; font-size:16px; }
+    .btn-remove-item { width:36px; height:36px; font-size:16px; }
+    .order-items { max-height:none; overflow-y:visible; padding-right:0; }
+    .checkout-form .form-group input, .checkout-form .form-group select, .checkout-form .form-group textarea { font-size:16px; min-height:48px; padding:14px 16px; }
+    .payment-method { padding:18px 16px; min-height:56px; }
+    .payment-method label { font-size:15px; }
+    .btn-place-order { padding:20px; font-size:18px; min-height:56px; }
+    .mobile-summary-toggle { padding:18px 16px; min-height:56px; font-size:16px; }
+    .trust-badges { gap:15px; }
+    .trust-badge { font-size:12px; }
+    .trust-badge i { font-size:22px; }
+    .delivery-estimate { padding:16px; font-size:14px; }
+    .order-total-row.total { font-size:18px; }
+    .order-total-row.total span:last-child { font-size:20px; }
   }
+    /* iOS prevent zoom on inputs */
+    @supports (-webkit-touch-callout: none) {
+      .checkout-form .form-group input, .checkout-form .form-group select, .checkout-form .form-group textarea { font-size: 16px; }
+    }
+    /* Touch-friendly improvements */
+    @media (hover: none) and (pointer: coarse) {
+      .payment-method { min-height: 56px; }
+      .qty-control button { min-height: 48px; min-width: 48px; }
+      .item-option select { min-height: 44px; }
+      .btn-remove-item { min-width: 40px; min-height: 40px; }
+    }
   </style>
+<base target="_blank">
 <base target="_blank">
 <base target="_blank">
 <base target="_blank">
@@ -860,6 +898,59 @@
         html.setAttribute('lang', lang);
       },
 
+
+      // ===== LIGHTBOX =====
+      lightboxImages: [],
+      lightboxIndex: 0,
+
+      openLightbox(galleryId) {
+        const gallery = document.getElementById(galleryId);
+        if (!gallery) return;
+        const imgs = gallery.querySelectorAll('.thumb-img, .gallery-main-img');
+        this.lightboxImages = Array.from(imgs).map(img => img.src).filter((v, i, a) => a.indexOf(v) === i);
+        this.lightboxIndex = 0;
+        this.renderLightbox();
+        document.getElementById('lightboxOverlay').classList.add('show');
+        document.body.style.overflow = 'hidden';
+      },
+
+      closeLightbox() {
+        document.getElementById('lightboxOverlay').classList.remove('show');
+        document.body.style.overflow = '';
+      },
+
+      nextLightboxImage() {
+        if (this.lightboxImages.length === 0) return;
+        this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxImages.length;
+        this.renderLightbox();
+      },
+
+      prevLightboxImage() {
+        if (this.lightboxImages.length === 0) return;
+        this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxImages.length) % this.lightboxImages.length;
+        this.renderLightbox();
+      },
+
+      renderLightbox() {
+        const img = document.getElementById('lightboxImage');
+        const counter = document.getElementById('lightboxCounter');
+        if (img && this.lightboxImages[this.lightboxIndex]) {
+          img.src = this.lightboxImages[this.lightboxIndex];
+        }
+        if (counter) {
+          counter.textContent = (this.lightboxIndex + 1) + ' / ' + this.lightboxImages.length;
+        }
+      },
+
+      switchGalleryImage(galleryId, src, thumb) {
+        const gallery = document.getElementById(galleryId);
+        if (!gallery) return;
+        const mainImg = gallery.querySelector('.gallery-main-img');
+        if (mainImg) mainImg.src = src;
+        gallery.querySelectorAll('.thumb-img').forEach(t => t.classList.remove('active'));
+        if (thumb) thumb.classList.add('active');
+      },
+
       showToast(message, type) {
         const toast = document.getElementById('toast');
         const toastMsg = document.getElementById('toastMsg');
@@ -1019,5 +1110,16 @@
       CheckoutApp.init();
     }
   </script>
+
+  <!-- LIGHTBOX OVERLAY -->
+  <div class="checkout-lightbox-overlay" id="lightboxOverlay" onclick="CheckoutApp.closeLightbox()">
+    <div class="checkout-lightbox" onclick="event.stopPropagation()">
+      <button class="lightbox-close" onclick="CheckoutApp.closeLightbox()" aria-label="Close"><i class="fas fa-times"></i></button>
+      <button class="lightbox-nav lightbox-prev" onclick="CheckoutApp.prevLightboxImage()" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>
+      <img src="" alt="Lightbox" id="lightboxImage" />
+      <button class="lightbox-nav lightbox-next" onclick="CheckoutApp.nextLightboxImage()" aria-label="Next"><i class="fas fa-chevron-right"></i></button>
+      <div class="lightbox-counter" id="lightboxCounter">1 / 1</div>
+    </div>
+  </div>
 </body>
 </html>
