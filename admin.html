@@ -640,7 +640,68 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 /* Scrollbar hide for filters */
 .category-filter { -ms-overflow-style: none; scrollbar-width: none; }
 .category-filter::-webkit-scrollbar { display: none; }
-</style>
+
+    /* Product Profit Display */
+    .product-profit-info {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+    .profit-tag {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    .profit-tag.positive {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+    }
+    .profit-tag.zero {
+      background: #fff3e0;
+      color: #e65100;
+      border: 1px solid #ffcc80;
+    }
+    .cost-tag {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      background: #ffebee;
+      color: #c0392b;
+      border: 1px solid #ef9a9a;
+      font-weight: 500;
+    }
+
+  
+    /* Status Filter in Financial Dashboard */
+    .status-filter {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .status-filter-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      cursor: pointer;
+      font-size: 12px;
+      transition: var(--transition);
+      color: var(--secondary);
+      font-family: 'Jost', sans-serif;
+    }
+    .status-filter-btn:hover { border-color: var(--primary); }
+    .status-filter-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+  </style>
 <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="photo/favicon.ico">
   <link rel="icon" type="image/png" sizes="16x16" href="photo/favicon-16x16.png">
@@ -648,6 +709,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
   <link rel="apple-touch-icon" sizes="180x180" href="photo/apple-touch-icon.png">
   <link rel="manifest" href="photo/site.webmanifest">
   <meta name="theme-color" content="#c9a87c">
+<base target="_blank">
+<base target="_blank">
 <base target="_blank">
 <base target="_blank">
 </head>
@@ -812,6 +875,32 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               </div>
             </div>
 
+            <!-- SHOE SIZE INPUT (for Shoes only) -->
+            <div class="form-group hidden" id="shoeSizeGroup">
+              <label><span data-i18n="shoeSize">Shoe Size</span> <small style="color:var(--text-light)" data-i18n="shoeSizeHint">(e.g. 38, 39, 40, 41)</small></label>
+              <div class="color-input-row">
+                <input type="text" id="pShoeSizeInput" data-i18n-placeholder="shoeSizePlaceholder" placeholder="e.g. 38, 39, 40" style="direction: ltr; flex:1;" />
+                <button type="button" class="btn-done-colors" id="btnDoneShoeSize" onclick="ProductManager.addShoeSizeTags()">
+                  <i class="fas fa-check"></i> <span data-i18n="done">تم</span>
+                </button>
+              </div>
+              <div class="color-tags-display" id="shoeSizeTagsDisplay"></div>
+              <input type="hidden" id="pShoeSize" value="" />
+            </div>
+
+            <!-- VOLUME INPUT (for Personal Care & Cosmetics only) -->
+            <div class="form-group hidden" id="volumeGroup">
+              <label><span data-i18n="volume">Volume / Capacity</span> <small style="color:var(--text-light)" data-i18n="volumeHint">(e.g. 50ml, 100ml, 200ml)</small></label>
+              <div class="color-input-row">
+                <input type="text" id="pVolumeInput" data-i18n-placeholder="volumePlaceholder" placeholder="e.g. 50ml, 100ml" style="direction: ltr; flex:1;" />
+                <button type="button" class="btn-done-colors" id="btnDoneVolume" onclick="ProductManager.addVolumeTags()">
+                  <i class="fas fa-check"></i> <span data-i18n="done">تم</span>
+                </button>
+              </div>
+              <div class="color-tags-display" id="volumeTagsDisplay"></div>
+              <input type="hidden" id="pVolume" value="" />
+            </div>
+
             <!-- COLORS INPUT WITH SWATCH TAGS -->
             <div class="form-group">
               <label><span data-i18n="availableColors">Available Colors</span> <small style="color:var(--text-light)">(اكتب الألوان مفصولة بفاصلة)</small></label>
@@ -959,6 +1048,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         cost: "Cost (EGP)", costHint: "(purchase price)", stock: "Stock Quantity",
         categoryProfit: "Category Profit", revenue: "Revenue", totalCost: "Total Cost",
         itemsSold: "Items Sold", avgProfit: "Avg Profit/Item",
+        shoeSize: "Shoe Size", shoeSizeHint: "(e.g. 38, 39, 40, 41)",
+        shoeSizePlaceholder: "e.g. 38, 39, 40",
+        volume: "Volume / Capacity", volumeHint: "(e.g. 50ml, 100ml, 200ml)",
+        volumePlaceholder: "e.g. 50ml, 100ml",
         colorsPlaceholder: "e.g. Black, White, Red, Navy", done: "Done", langBtn: "العربية", themeLight: "Dark", themeDark: "Light",
         edit: "Edit", editProduct: "Edit Product", updateProduct: "Update Product", cancel: "Cancel", editMode: "Edit Mode", productUpdated: "Product updated successfully!"
       },
@@ -997,6 +1090,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         cost: "التكلفة (ج.م)", costHint: "(سعر الشراء)", stock: "الكمية في المخزن",
         categoryProfit: "ربح القسم", revenue: "الإيرادات", totalCost: "إجمالي التكلفة",
         itemsSold: "القطع المباعة", avgProfit: "متوسط الربح/قطعة",
+        shoeSize: "مقاس الكوتشي", shoeSizeHint: "(مثال: 38, 39, 40, 41)",
+        shoeSizePlaceholder: "مثال: 38, 39, 40",
+        volume: "الحجم / السعة", volumeHint: "(مثال: 50مل, 100مل, 200مل)",
+        volumePlaceholder: "مثال: 50مل, 100مل",
         colorsPlaceholder: "مثال: أسود, أبيض, أحمر, كحلي", done: "تم", ht: "داكن", themeDark: "فاتح",
         edit: "تعديل", editProduct: "تعديل المنتج", updateProduct: "تحديث المنتج", cancel: "إلغاء", editMode: "وضع التعديل", productUpdated: "تم تحديث المنتج بنجاح!"
       }
@@ -1266,6 +1363,12 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         if (category === 'accessories' && subcategory === 'bags') {
           return Array.from(document.querySelectorAll('#bagSizeGrid input[name="bagSize"]:checked')).map(cb => cb.value);
         }
+        if (category === 'accessories' && subcategory === 'shoes') {
+          return this.getSelectedShoeSizes();
+        }
+        if (category === 'accessories' && (subcategory === 'personal-care' || subcategory === 'cosmetics')) {
+          return this.getSelectedVolumes();
+        }
         return Array.from(document.querySelectorAll('#sizeSelector input[name="size"]:checked')).map(cb => cb.value);
       },
       onCategoryChange(category) {
@@ -1305,16 +1408,29 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       },
       onSubcategoryChange(subcategory) {
         const bagSizeSelector = document.getElementById('bagSizeSelector');
+        const shoeSizeGroup = document.getElementById('shoeSizeGroup');
+        const volumeGroup = document.getElementById('volumeGroup');
         const sizeSelector = document.getElementById('sizeSelector').closest('.selector-group');
 
         if (subcategory === 'bags') {
           if (bagSizeSelector) bagSizeSelector.classList.remove('hidden');
+          if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
+          if (volumeGroup) volumeGroup.classList.add('hidden');
           if (sizeSelector) sizeSelector.classList.add('hidden');
         } else if (subcategory === 'shoes') {
           if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
-          if (sizeSelector) sizeSelector.classList.remove('hidden');
+          if (shoeSizeGroup) shoeSizeGroup.classList.remove('hidden');
+          if (volumeGroup) volumeGroup.classList.add('hidden');
+          if (sizeSelector) sizeSelector.classList.add('hidden');
+        } else if (subcategory === 'personal-care' || subcategory === 'cosmetics') {
+          if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
+          if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
+          if (volumeGroup) volumeGroup.classList.remove('hidden');
+          if (sizeSelector) sizeSelector.classList.add('hidden');
         } else {
           if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
+          if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
+          if (volumeGroup) volumeGroup.classList.add('hidden');
           if (sizeSelector) sizeSelector.classList.add('hidden');
         }
       },
@@ -1361,9 +1477,97 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           return `<span class="color-tag-box"><span class="color-dot" style="background:${bg};${border}"></span>${c}<button type="button" class="btn-remove-tag" onclick="ProductManager.removeColorTag('${c}')" title="Remove"><i class="fas fa-times"></i></button></span>`;
         }).join('');
       },
+
+      // ===== VOLUME TAGS =====
+      addVolumeTags() {
+        const input = document.getElementById('pVolumeInput');
+        const display = document.getElementById('volumeTagsDisplay');
+        const hidden = document.getElementById('pVolume');
+        if (!input || !display) return;
+        const raw = input.value.trim();
+        if (!raw) return;
+        const newVolumes = raw.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        const existing = this.getSelectedVolumes();
+        const combined = [...new Set([...existing, ...newVolumes])];
+        hidden.value = combined.join(',');
+        input.value = '';
+        this.renderVolumeTags();
+      },
+      removeVolumeTag(volume) {
+        const hidden = document.getElementById('pVolume');
+        if (!hidden) return;
+        const volumes = hidden.value.split(',').map(c => c.trim()).filter(c => c.length > 0 && c !== volume);
+        hidden.value = volumes.join(',');
+        this.renderVolumeTags();
+      },
+      getSelectedVolumes() {
+        const hidden = document.getElementById('pVolume');
+        if (!hidden || !hidden.value) return [];
+        return hidden.value.split(',').map(c => c.trim()).filter(c => c.length > 0);
+      },
+      renderVolumeTags() {
+        const display = document.getElementById('volumeTagsDisplay');
+        const hidden = document.getElementById('pVolume');
+        if (!display || !hidden) return;
+        const volumes = hidden.value.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        display.innerHTML = volumes.map(v => {
+          return `<span class="color-tag-box"><span class="color-dot" style="background:#c9a87c;"></span>${v}<button type="button" class="btn-remove-tag" onclick="ProductManager.removeVolumeTag('${v}')" title="Remove"><i class="fas fa-times"></i></button></span>`;
+        }).join('');
+      },
+
+      // ===== SHOE SIZE TAGS =====
+      addShoeSizeTags() {
+        const input = document.getElementById('pShoeSizeInput');
+        const display = document.getElementById('shoeSizeTagsDisplay');
+        const hidden = document.getElementById('pShoeSize');
+        if (!input || !display) return;
+        const raw = input.value.trim();
+        if (!raw) return;
+        const newSizes = raw.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        const existing = this.getSelectedShoeSizes();
+        const combined = [...new Set([...existing, ...newSizes])];
+        hidden.value = combined.join(',');
+        input.value = '';
+        this.renderShoeSizeTags();
+      },
+      removeShoeSizeTag(size) {
+        const hidden = document.getElementById('pShoeSize');
+        if (!hidden) return;
+        const sizes = hidden.value.split(',').map(c => c.trim()).filter(c => c.length > 0 && c !== size);
+        hidden.value = sizes.join(',');
+        this.renderShoeSizeTags();
+      },
+      getSelectedShoeSizes() {
+        const hidden = document.getElementById('pShoeSize');
+        if (!hidden || !hidden.value) return [];
+        return hidden.value.split(',').map(c => c.trim()).filter(c => c.length > 0);
+      },
+      renderShoeSizeTags() {
+        const display = document.getElementById('shoeSizeTagsDisplay');
+        const hidden = document.getElementById('pShoeSize');
+        if (!display || !hidden) return;
+        const sizes = hidden.value.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        display.innerHTML = sizes.map(s => {
+          return `<span class="color-tag-box"><span class="color-dot" style="background:#3498db;"></span>${s}<button type="button" class="btn-remove-tag" onclick="ProductManager.removeShoeSizeTag('${s}')" title="Remove"><i class="fas fa-times"></i></button></span>`;
+        }).join('');
+      },
       resetSelectors() {
         document.querySelectorAll('#sizeSelector input').forEach(cb => cb.checked = false);
         document.querySelectorAll('#bagSizeGrid input').forEach(cb => cb.checked = false);
+        // Shoe size tags
+        const shoeSizeInput = document.getElementById('pShoeSizeInput');
+        if (shoeSizeInput) shoeSizeInput.value = '';
+        const shoeSizeHidden = document.getElementById('pShoeSize');
+        if (shoeSizeHidden) shoeSizeHidden.value = '';
+        const shoeSizeDisplay = document.getElementById('shoeSizeTagsDisplay');
+        if (shoeSizeDisplay) shoeSizeDisplay.innerHTML = '';
+        // Volume tags
+        const volumeInput = document.getElementById('pVolumeInput');
+        if (volumeInput) volumeInput.value = '';
+        const volumeHidden = document.getElementById('pVolume');
+        if (volumeHidden) volumeHidden.value = '';
+        const volumeDisplay = document.getElementById('volumeTagsDisplay');
+        if (volumeDisplay) volumeDisplay.innerHTML = '';
         const subcat = document.getElementById('pSubcategory');
         if (subcat) subcat.value = '';
         const hidden = document.getElementById('pColors');
@@ -1460,8 +1664,20 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
         try {
           if (isEdit) {
-            // Update existing product
-            await AdminApp.db.collection('products').doc(editId).update(product);
+            // Update existing product — use .set() with merge:false to FULLY REPLACE
+            // the document so removed fields/images/sizes/colors are actually deleted
+            const originalProduct = this.products.find(p => p.id === editId);
+            if (originalProduct && originalProduct.createdAt) {
+              product.createdAt = originalProduct.createdAt;
+            } else {
+              product.createdAt = new Date().getTime();
+            }
+            product.updatedAt = new Date().getTime();
+            // Ensure arrays are always sent (even empty) so old values get wiped
+            product.colors = product.colors || [];
+            product.sizes = product.sizes || [];
+            product.images = product.images || [];
+            await AdminApp.db.collection('products').doc(editId).set(product, { merge: false });
             // Show custom success for update
             const successEl = document.getElementById('successMsg');
             const successSpan = successEl.querySelector('span[data-i18n="productAdded"]');
@@ -1483,6 +1699,9 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             this.cancelEdit();
           } else {
             // Add new product
+            product.colors = product.colors || [];
+            product.sizes = product.sizes || [];
+            product.images = product.images || [];
             await AdminApp.db.collection('products').add(product);
             AdminApp.showSuccess();
             document.getElementById('productForm').reset();
@@ -1541,6 +1760,12 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           const colorsHtml = p.colors && p.colors.length > 0 ? p.colors.map(c => `<span class="meta-tag">${c}</span>`).join('') : '';
           const subcatHtml = p.subcategory ? `<span class="meta-tag" style="background:var(--primary);color:#fff;">${p.subcategory}</span>` : '';
           const viewText = t.all === 'الكل' ? 'عرض' : 'View';
+          const cost = parseFloat(p.cost) || 0;
+          const price = parseFloat(p.price) || 0;
+          const profit = cost > 0 ? price - cost : 0;
+          const profitHtml = cost > 0 
+            ? `<span class="profit-tag ${profit > 0 ? 'positive' : 'zero'}"><i class="fas fa-chart-line"></i> Profit: EGP ${profit.toFixed(2)}</span>`
+            : `<span class="profit-tag zero"><i class="fas fa-exclamation-circle"></i> No cost set</span>`;
 
           return `
           <div class="product-item">
@@ -1550,6 +1775,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               <h4>${p.name}</h4>
               <p>${p.category}${p.badge ? ' &bull; ' + p.badge : ''}${p.showOnHome ? ' &bull; 🏠' : ''}${p.showOnCategory ? ' &bull; 📁' : ''}</p>
               <div class="product-meta">${subcatHtml}${sizesHtml}${colorsHtml}</div>
+              <div class="product-profit-info">
+                <span class="cost-tag"><i class="fas fa-industry"></i> Cost: EGP ${cost.toFixed(2)}</span>
+                ${profitHtml}
+              </div>
             </div>
             <div class="product-item-price">EGP ${p.price}</div>
             <div class="product-item-actions">
@@ -1619,12 +1848,22 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               if (cb) cb.checked = true;
             });
           }
-        } else if (['dresses','tops','pants','sets'].includes(category) || (category === 'accessories' && subcategory === 'shoes')) {
+        } else if (['dresses','tops','pants','sets'].includes(category)) {
           if (product.sizes && Array.isArray(product.sizes)) {
             product.sizes.forEach(s => {
               const cb = document.querySelector('#sizeSelector input[name="size"][value="' + s + '"]');
               if (cb) cb.checked = true;
             });
+          }
+        } else if (category === 'accessories' && subcategory === 'shoes') {
+          if (product.sizes && Array.isArray(product.sizes)) {
+            document.getElementById('pShoeSize').value = product.sizes.join(',');
+            this.renderShoeSizeTags();
+          }
+        } else if (category === 'accessories' && (subcategory === 'personal-care' || subcategory === 'cosmetics')) {
+          if (product.sizes && Array.isArray(product.sizes)) {
+            document.getElementById('pVolume').value = product.sizes.join(',');
+            this.renderVolumeTags();
           }
         }
 
@@ -1708,6 +1947,32 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       }
     })();
 
+    // Setup volume input Enter key
+    (function setupVolumeInput() {
+      const input = document.getElementById('pVolumeInput');
+      if (input) {
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            ProductManager.addVolumeTags();
+          }
+        });
+      }
+    })();
+
+    // Setup shoe size input Enter key
+    (function setupShoeSizeInput() {
+      const input = document.getElementById('pShoeSizeInput');
+      if (input) {
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            ProductManager.addShoeSizeTags();
+          }
+        });
+      }
+    })();
+
     // Setup image upload events for 3 images
     (function setupImageUpload() {
       [1, 2, 3].forEach(idx => {
@@ -1756,11 +2021,12 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
     
     // ============================================
-    // FINANCIAL DASHBOARD
+    // FINANCIAL DASHBOARD — Based on ORDERS (purchases)
     // ============================================
     const FinancialDashboard = {
       currentMonth: 'all',
-      products: [],
+      currentStatus: 'confirmed',
+      orders: [],
 
       toggle() {
         const panel = document.getElementById('financialPanel');
@@ -1788,97 +2054,163 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         this.calculateAndRender();
       },
 
+      setStatus(status) {
+        this.currentStatus = status;
+        document.querySelectorAll('.status-filter-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.status === status);
+        });
+        this.calculateAndRender();
+      },
+
       async loadData() {
         const content = document.getElementById('financialContent');
         const t = translations[AppSettings.currentLang];
         content.innerHTML = '<div class="empty-products"><i class="fas fa-spinner fa-spin"></i><p>' + t.loading + '</p></div>';
 
         try {
-          const snapshot = await AdminApp.db.collection('products').get();
-          this.products = snapshot.docs.map(doc => {
+          // Load ORDERS collection (actual purchases)
+          const snapshot = await AdminApp.db.collection('orders').get();
+          this.orders = snapshot.docs.map(doc => {
             const data = doc.data();
+            // Handle Firestore timestamp
+            let createdAt = 0;
+            if (data.date) {
+              if (typeof data.date.toMillis === 'function') {
+                createdAt = data.date.toMillis();
+              } else if (data.date.seconds) {
+                createdAt = data.date.seconds * 1000;
+              } else if (typeof data.date === 'number') {
+                createdAt = data.date;
+              } else if (typeof data.date === 'string') {
+                createdAt = new Date(data.date).getTime();
+              }
+            } else if (data.createdAt) {
+              if (typeof data.createdAt.toMillis === 'function') {
+                createdAt = data.createdAt.toMillis();
+              } else if (data.createdAt.seconds) {
+                createdAt = data.createdAt.seconds * 1000;
+              } else if (typeof data.createdAt === 'number') {
+                createdAt = data.createdAt;
+              }
+            }
             return {
               id: doc.id,
               ...data,
-              cost: data.cost || 0,
-              price: data.price || 0,
-              stock: data.stock || 1,
-              category: data.category || 'unknown',
-              createdAt: data.createdAt || 0
+              items: data.items || [],
+              totalAmount: data.totalAmount || 0,
+              createdAt: createdAt,
+              profit: parseFloat(data.profit) || 0
             };
           });
           this.calculateAndRender();
         } catch (error) {
-          console.error('Error loading financial data:', error);
-          content.innerHTML = '<div class="empty-products"><i class="fas fa-exclamation-circle"></i><p>Error loading data</p></div>';
+          console.error('Error loading orders:', error);
+          content.innerHTML = '<div class="empty-products"><i class="fas fa-exclamation-circle"></i><p>Error loading orders data</p></div>';
         }
       },
 
-      filterByMonth(products) {
-        if (this.currentMonth === 'all') return products;
+      filterByMonth(orders) {
+        let filtered = orders;
 
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
+        // Filter by status
+        if (this.currentStatus !== 'all') {
+          filtered = filtered.filter(o => (o.confirmationStatus || 'pending') === this.currentStatus);
+        }
 
-        return products.filter(p => {
-          if (!p.createdAt) return false;
-          const date = new Date(p.createdAt);
-          if (this.currentMonth === 'current') {
-            return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-          } else if (this.currentMonth === 'last') {
-            const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-            const lastYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-            return date.getMonth() === lastMonth && date.getFullYear() === lastYear;
-          }
-          return true;
-        });
+        // Filter by month
+        if (this.currentMonth !== 'all') {
+          const now = new Date();
+          const currentMonth = now.getMonth();
+          const currentYear = now.getFullYear();
+
+          filtered = filtered.filter(o => {
+            if (!o.createdAt) return false;
+            const date = new Date(o.createdAt);
+            if (this.currentMonth === 'current') {
+              return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+            } else if (this.currentMonth === 'last') {
+              const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+              const lastYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+              return date.getMonth() === lastMonth && date.getFullYear() === lastYear;
+            }
+            return true;
+          });
+        }
+
+        return filtered;
       },
 
       calculateAndRender() {
         const content = document.getElementById('financialContent');
         const t = translations[AppSettings.currentLang];
-        const filtered = this.filterByMonth(this.products);
+        const filtered = this.filterByMonth(this.orders);
 
         if (filtered.length === 0) {
-          content.innerHTML = '<div class="empty-products"><i class="fas fa-box-open"></i><p>No data available</p></div>';
+          const statusLabel = this.currentStatus === 'confirmed' ? 'confirmed' : this.currentStatus === 'rejected' ? 'rejected' : this.currentStatus === 'pending' ? 'pending' : '';
+          content.innerHTML = '<div class="empty-products"><i class="fas fa-box-open"></i><p>No ' + statusLabel + ' orders found for this period.</p></div>';
           document.getElementById('totalProfitAmount').textContent = 'EGP 0';
+          document.querySelector('.financial-total .total-label').textContent = (t.profitMargin || 'Profit Margin') + ': 0% | ' + (t.totalCost || 'Cost') + ': EGP 0';
           return;
         }
 
-        // Group by category
+        // Group by category from order items
         const categories = {};
-        filtered.forEach(p => {
-          if (!categories[p.category]) {
-            categories[p.category] = {
-              items: 0,
-              totalCost: 0,
-              totalRevenue: 0,
-              totalProfit: 0
-            };
-          }
-          const itemCost = p.cost * (p.stock || 1);
-          const itemRevenue = p.price * (p.stock || 1);
-          const itemProfit = itemRevenue - itemCost;
-
-          categories[p.category].items += (p.stock || 1);
-          categories[p.category].totalCost += itemCost;
-          categories[p.category].totalRevenue += itemRevenue;
-          categories[p.category].totalProfit += itemProfit;
-        });
-
-        // Calculate totals
         let grandTotalCost = 0;
         let grandTotalRevenue = 0;
         let grandTotalProfit = 0;
+        let totalItems = 0;
 
-        Object.values(categories).forEach(cat => {
-          grandTotalCost += cat.totalCost;
-          grandTotalRevenue += cat.totalRevenue;
-          grandTotalProfit += cat.totalProfit;
+        filtered.forEach(order => {
+          // If order has pre-calculated profit, use it for total
+          const orderProfit = parseFloat(order.profit) || 0;
+
+          if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(item => {
+              const cat = item.category || order.customer?.country || 'unknown';
+              if (!categories[cat]) {
+                categories[cat] = {
+                  items: 0,
+                  totalCost: 0,
+                  totalRevenue: 0,
+                  totalProfit: 0
+                };
+              }
+              const qty = item.quantity || 1;
+              const itemCost = (parseFloat(item.cost) || 0) * qty;
+              const itemRevenue = (parseFloat(item.price) || 0) * qty;
+              // Use item cost if available, otherwise fallback to order profit proportion
+              let itemProfit = itemRevenue - itemCost;
+              if (itemCost === 0 && orderProfit > 0) {
+                // Distribute order profit proportionally
+                const orderRevenue = order.items.reduce((s, it) => s + ((parseFloat(it.price) || 0) * (it.quantity || 1)), 0);
+                if (orderRevenue > 0) {
+                  itemProfit = (itemRevenue / orderRevenue) * orderProfit;
+                }
+              }
+
+              categories[cat].items += qty;
+              categories[cat].totalCost += itemCost;
+              categories[cat].totalRevenue += itemRevenue;
+              categories[cat].totalProfit += itemProfit;
+
+              grandTotalCost += itemCost;
+              grandTotalRevenue += itemRevenue;
+              grandTotalProfit += itemProfit;
+              totalItems += qty;
+            });
+          } else if (orderProfit > 0) {
+            // Order has profit but no items breakdown
+            grandTotalProfit += orderProfit;
+          }
         });
 
+        // If we calculated profit from items but it's 0, use order.profit sum
+        if (grandTotalProfit === 0) {
+          grandTotalProfit = filtered.reduce((sum, o) => sum + (parseFloat(o.profit) || 0), 0);
+        }
+
         const profitMargin = grandTotalRevenue > 0 ? ((grandTotalProfit / grandTotalRevenue) * 100).toFixed(1) : 0;
+        const totalCost = grandTotalRevenue - grandTotalProfit;
 
         // Render category cards
         let html = '';
@@ -1901,11 +2233,11 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           <div class="financial-card">
             <h4><i class="fas fa-tag"></i> ${catName}</h4>
             <div class="financial-row">
-              <span class="label">${t.itemsSold || 'Items'}</span>
+              <span class="label">${t.itemsSold || 'Items Sold'}</span>
               <span class="value">${data.items}</span>
             </div>
             <div class="financial-row">
-              <span class="label">${t.totalCost || 'Cost'}</span>
+              <span class="label">${t.totalCost || 'Total Cost'}</span>
               <span class="value">EGP ${data.totalCost.toLocaleString()}</span>
             </div>
             <div class="financial-row">
@@ -1917,8 +2249,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               <span class="value ${profitClass}"><i class="fas ${profitIcon}"></i> EGP ${data.totalProfit.toLocaleString()}</span>
             </div>
             <div class="financial-row">
-              <span class="label">${t.profitMargin || 'Margin'}</span>
-              <span class="value ${profitClass}">${catMargin}%</span>
+              <span class="label">${t.totalCost || 'Cost'}</span>
+              <span class="value">EGP ${data.totalCost.toLocaleString()}</span>
             </div>
           </div>`;
         });
@@ -1926,12 +2258,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         content.innerHTML = html;
 
         // Update total
-        const totalProfitClass = grandTotalProfit >= 0 ? '' : '';
         document.getElementById('totalProfitAmount').textContent = 'EGP ' + grandTotalProfit.toLocaleString();
         document.getElementById('totalProfitAmount').style.color = grandTotalProfit >= 0 ? '#fff' : '#ff9999';
         document.querySelector('.financial-total .total-label').textContent = 
-          (t.profitMargin || 'Profit Margin') + ': ' + profitMargin + '% | ' + 
-          (t.totalCost || 'Cost') + ': EGP ' + grandTotalCost.toLocaleString();
+          'Cost: EGP ' + totalCost.toLocaleString() + ' | Revenue: EGP ' + grandTotalRevenue.toLocaleString() + ' | Orders: ' + filtered.length;
       }
     };
 
@@ -1957,6 +2287,14 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       </button>
       <h3><i class="fas fa-chart-pie"></i> <span data-i18n="financialDashboard">Financial Dashboard</span></h3>
       <p data-i18n="profitOverview">Profit Overview by Category</p>
+    </div>
+
+    <!-- Status Filter -->
+    <div class="status-filter" id="statusFilter">
+      <button class="status-filter-btn" data-status="all" onclick="FinancialDashboard.setStatus('all')">All Orders</button>
+      <button class="status-filter-btn active" data-status="confirmed" onclick="FinancialDashboard.setStatus('confirmed')">Confirmed Only</button>
+      <button class="status-filter-btn" data-status="pending" onclick="FinancialDashboard.setStatus('pending')">Pending</button>
+      <button class="status-filter-btn" data-status="rejected" onclick="FinancialDashboard.setStatus('rejected')">Rejected</button>
     </div>
 
     <!-- Month Selector -->
