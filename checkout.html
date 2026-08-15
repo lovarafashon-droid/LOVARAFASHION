@@ -390,6 +390,7 @@
   <base target="_blank">
 
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
   <header class="navbar" id="navbar">
@@ -584,8 +585,9 @@
       db: null,
       draftKey: 'lovara_checkout_draft',
 
-      init() {
+      async init() {
         this.cart = JSON.parse(localStorage.getItem('lovara_cart')) || [];
+        await this.enrichCartCosts();
         this.loadOrderItems();
         this.setupPaymentMethods();
         this.setupAutoSave();
@@ -615,6 +617,44 @@
           }
         };
         setTimeout(check, 200);
+      },
+
+      async enrichCartCosts() {
+        if (!this.db || this.cart.length === 0) return;
+        let updated = false;
+        let missingCost = [];
+        for (let i = 0; i < this.cart.length; i++) {
+          const item = this.cart[i];
+          if (item.cost !== undefined && item.cost !== null && item.cost > 0) continue;
+          let found = false;
+          try {
+            // Try by name first
+            let snapshot = await this.db.collection('products').where('name', '==', item.name).limit(1).get();
+            // If not found, try by id
+            if (snapshot.empty && item.id) {
+              const doc = await this.db.collection('products').doc(item.id).get();
+              if (doc.exists) snapshot = { empty: false, docs: [doc] };
+            }
+            if (!snapshot.empty) {
+              const product = snapshot.docs[0].data();
+              if (product.cost !== undefined && product.cost !== null && parseFloat(product.cost) > 0) {
+                this.cart[i].cost = parseFloat(product.cost);
+                updated = true;
+                found = true;
+              }
+            }
+          } catch (e) {
+            console.warn('[LOVARA Checkout] Could not fetch cost for:', item.name);
+          }
+          if (!found) missingCost.push(item.name);
+        }
+        if (updated) {
+          this.saveCart();
+          console.log('[LOVARA Checkout] Cart costs enriched from Firestore');
+        }
+        if (missingCost.length > 0) {
+          console.warn('[LOVARA Checkout] Missing cost for:', missingCost.join(', '));
+        }
       },
 
       loadOrderItems() {
@@ -761,6 +801,15 @@
         return shipping;
       },
 
+      calculateProfit() {
+        return this.cart.reduce((sum, item) => {
+          const price = parseFloat(item.price) || 0;
+          const cost = parseFloat(item.cost) || parseFloat(item.originalPrice) || 0;
+          const qty = item.quantity || 1;
+          return sum + ((price - cost) * qty);
+        }, 0);
+      },
+
 
 
       updateSize(index, size) {
@@ -901,6 +950,12 @@
       },
 
       async placeOrder() {
+        // Ensure costs are fetched
+        await this.enrichCartCosts();
+        const profit = this.calculateProfit();
+        if (profit <= 0) {
+          console.warn('[LOVARA Checkout] Profit is zero or negative. Costs may not be set in admin.');
+        }
         if (!this.validateForm()) {
           const firstError = document.querySelector('.error');
           if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -951,8 +1006,11 @@
             notes: document.getElementById('orderNotes').value.trim()
           },
           payment: { method: paymentMethod, transactionId: transactionId, methodName: this.getPaymentMethodName(paymentMethod) },
-          items: this.cart.map(item => ({ name: item.name || 'Product', price: parseFloat(item.price) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
-          totals: { subtotal: subtotalText, shipping: shippingText, total: totalText }
+          items: this.cart.map(item => ({ name: item.name || 'Product', price: parseFloat(item.price) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
+          totals: { subtotal: subtotalText, shipping: shippingText, total: totalText },
+          profit: this.calculateProfit(),
+          confirmationStatus: 'pending',
+          rejectionReason: '' 
         };
 
         try {
@@ -1172,7 +1230,8 @@
         easyReturns: 'Easy Returns',
         support24: '24/7 Support',
         sizeUpdated: 'Size updated',
-        colorUpdated: 'Color updated'
+        colorUpdated: 'Color updated',
+        profit: 'Profit'
       },
       ar: {
         pageTitle: '\u0644\u0648\u06a4\u0627\u0631\u0627 \u2013 \u0625\u062a\u0645\u0627\u0645 \u0627\u0644\u0634\u0631\u0627\u0621',
