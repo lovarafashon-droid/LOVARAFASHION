@@ -287,7 +287,36 @@
       .profit-value { font-size: 20px; }
       .modal-box { padding: 22px; }
     }
-</style>
+
+    /* Auth Protection */
+    .auth-overlay {
+      position: fixed; inset: 0; background: var(--bg);
+      z-index: 9999; display: flex; align-items: center; justify-content: center;
+    }
+    .auth-box {
+      background: var(--white); padding: 40px; border-radius: var(--radius);
+      box-shadow: var(--shadow-lg); text-align: center; max-width: 400px; width: 90%;
+    }
+    .auth-box i { font-size: 48px; color: var(--primary); margin-bottom: 15px; }
+    .auth-box h3 { font-family: 'Cormorant Garamond', serif; font-size: 28px; color: var(--secondary); margin-bottom: 8px; }
+    .auth-box p { color: var(--text-light); margin-bottom: 20px; }
+    .auth-box input {
+      width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 14px; margin-bottom: 12px;
+      background: var(--bg); color: var(--secondary);
+    }
+    .auth-box input:focus { outline: none; border-color: var(--primary); }
+    .auth-box button {
+      width: 100%; padding: 14px; background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius-sm); font-size: 15px;
+      font-weight: 600; cursor: pointer; transition: var(--transition);
+    }
+    .auth-box button:hover { background: var(--primary-dark); }
+    .auth-error { color: #e74c3c; font-size: 13px; margin-top: 10px; display: none; }
+    .auth-error.show { display: block; }
+    .hidden { display: none !important; }
+
+  </style>
 
 <base target="_blank">
 <base target="_blank">
@@ -300,11 +329,32 @@
       <div class="nav-actions">
         <a href="index.html" class="nav-btn outline"><i class="fas fa-home"></i> Home</a>
         <a href="checkout.html" class="nav-btn"><i class="fas fa-shopping-bag"></i> New Order</a>
+        <button class="nav-btn" style="background:var(--secondary);color:#fff;" onclick="OrdersApp.logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
       </div>
     </div>
   </header>
 
-  <section class="orders-page">
+  
+  <!-- AUTH OVERLAY -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-box">
+      <i class="fas fa-lock"></i>
+      <h3>Authentication Required</h3>
+      <p>Please sign in with your admin account to view orders.</p>
+      <input type="email" id="authEmail" placeholder="admin@lovara.com" autocomplete="username" />
+      <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password" />
+      <button onclick="OrdersApp.login()">
+        <i class="fas fa-sign-in-alt"></i> Sign In
+      </button>
+      <div class="auth-error" id="authError">
+        <i class="fas fa-exclamation-circle"></i> <span id="authErrorText">Invalid credentials</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="orders-page" id="ordersPage">
     <div class="container">
       <div class="page-header">
         <div>
@@ -348,8 +398,9 @@
           } else if (attempts < 30) {
             setTimeout(check, 300);
           } else {
-            console.warn('[LOVARA Orders] Firebase not loaded, falling back to localStorage');
-            this.loadFromLocalStorage();
+            console.warn('[LOVARA Orders] Firebase not loaded');
+            document.getElementById('authErrorText').textContent = 'Firebase not loaded. Check your config.';
+            document.getElementById('authError').classList.add('show');
           }
         };
         setTimeout(check, 200);
@@ -358,37 +409,76 @@
       setupAuthCheck() {
         firebase.auth().onAuthStateChanged((user) => {
           if (!user) {
-            this.showAuthState();
+            this.showLogin();
             return;
           }
+          // Check if user is admin
           this.db.collection('users').doc(user.uid).get()
             .then(doc => {
               const role = doc.exists ? doc.data().role : 'user';
               if (role === 'admin') {
+                this.hideLogin();
                 this.loadFromFirestore();
               } else {
-                this.loadFromFirestore();
+                this.showAccessDenied();
               }
             })
             .catch(() => {
-              this.loadFromFirestore();
+              this.showAccessDenied();
             });
         });
       },
 
-      showAuthState() {
-        const container = document.getElementById('ordersList');
-        const countBadge = document.getElementById('orderCount');
-        countBadge.textContent = '0 Orders';
-        container.innerHTML = `
-          <div class="auth-state">
-            <i class="fas fa-lock"></i>
-            <h3>Authentication Required</h3>
-            <p>Please sign in to view orders dashboard.</p>
-            <a href="index.html" class="nav-btn" style="margin-top:10px;"><i class="fas fa-sign-in-alt"></i> Go to Login</a>
-          </div>
+      showLogin() {
+        document.getElementById('authOverlay').classList.remove('hidden');
+        document.getElementById('ordersPage').classList.add('hidden');
+      },
+
+      hideLogin() {
+        document.getElementById('authOverlay').classList.add('hidden');
+        document.getElementById('ordersPage').classList.remove('hidden');
+      },
+
+      showAccessDenied() {
+        document.getElementById('authOverlay').classList.remove('hidden');
+        document.getElementById('ordersPage').classList.add('hidden');
+        document.querySelector('.auth-box').innerHTML = `
+          <i class="fas fa-ban" style="color:#e74c3c;"></i>
+          <h3>Access Denied</h3>
+          <p>You do not have permission to view this page. Admins only.</p>
+          <button onclick="OrdersApp.logout()" style="margin-top:10px;">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </button>
         `;
       },
+
+      async login() {
+        const email = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value;
+        const errorDiv = document.getElementById('authError');
+        const errorText = document.getElementById('authErrorText');
+
+        if (!email || !password) {
+          errorText.textContent = 'Please enter email and password';
+          errorDiv.classList.add('show');
+          return;
+        }
+
+        try {
+          await firebase.auth().signInWithEmailAndPassword(email, password);
+          // Auth state change will handle the rest
+        } catch (error) {
+          errorText.textContent = error.message || 'Invalid credentials';
+          errorDiv.classList.add('show');
+        }
+      },
+
+      logout() {
+        firebase.auth().signOut();
+        location.reload();
+      },
+
+
 
       showErrorState(msg) {
         const container = document.getElementById('ordersList');
