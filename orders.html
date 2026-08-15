@@ -217,8 +217,79 @@
       .totals-right { text-align: center; }
       .order-actions { justify-content: center; }
     }
-  </style>
+  
+    /* Confirmation Status */
+    .confirmation-status {
+      padding: 5px 14px; border-radius: 20px; font-size: 11px;
+      font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+      margin-left: 10px;
+    }
+    .status-confirmed-ok { background: rgba(76,175,80,0.2); color: #2e7d32; border: 1px solid #a5d6a7; }
+    .status-rejected { background: rgba(231,76,60,0.15); color: #c0392b; border: 1px solid #ef9a9a; }
+    .status-pending-confirm { background: rgba(255,193,7,0.15); color: #f57f17; border: 1px solid #ffe082; }
 
+    .confirmation-box {
+      background: #e8f5e9; border: 1.5px solid #a5d6a7; border-radius: var(--radius-sm);
+      padding: 14px 18px; margin: 15px 25px 0; display: flex; align-items: center; gap: 10px;
+      font-size: 14px; color: #2e7d32; font-weight: 500;
+    }
+    .confirmation-box.rejected {
+      background: #ffebee; border-color: #ef9a9a; color: #c0392b;
+    }
+    .confirmation-box i { font-size: 18px; }
+
+    .btn-confirm { background: #e8f5e9; color: #2e7d32; border: 1.5px solid #a5d6a7; }
+    .btn-confirm:hover { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+    .btn-reject { background: #ffebee; color: #c0392b; border: 1.5px solid #ef9a9a; }
+    .btn-reject:hover { background: #c0392b; color: #fff; border-color: #c0392b; }
+
+    .profit-box {
+      background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e9 100%);
+      border: 1.5px solid #c5e1a5; border-radius: var(--radius-sm);
+      padding: 14px 20px; margin-bottom: 20px; display: flex;
+      justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    }
+    .profit-label { font-size: 12px; color: #689f38; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    .profit-value { font-size: 22px; font-weight: 700; color: #2e7d32; font-family: 'Cormorant Garamond', serif; }
+
+    /* Reject Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 5000; display: none; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: var(--white); border-radius: var(--radius);
+      padding: 30px; max-width: 450px; width: 90%; box-shadow: var(--shadow-lg);
+      animation: fadeInUp 0.3s ease;
+    }
+    .modal-box h3 {
+      font-family: 'Cormorant Garamond', serif; font-size: 24px;
+      color: var(--secondary); margin-bottom: 8px;
+    }
+    .modal-box p { color: var(--text-light); font-size: 14px; margin-bottom: 18px; }
+    .modal-box textarea {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); font-family: inherit; font-size: 14px;
+      resize: vertical; min-height: 100px; margin-bottom: 18px;
+    }
+    .modal-box textarea:focus { outline: none; border-color: var(--primary); }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-modal-cancel { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-modal-cancel:hover { background: var(--border); }
+    .btn-modal-reject { background: #c0392b; color: #fff; }
+    .btn-modal-reject:hover { background: #a93226; }
+
+    @media (max-width: 768px) {
+      .confirmation-box { margin: 10px 18px 0; font-size: 13px; padding: 12px 14px; }
+      .profit-box { padding: 12px 16px; }
+      .profit-value { font-size: 20px; }
+      .modal-box { padding: 22px; }
+    }
+</style>
+
+<base target="_blank">
 <base target="_blank">
 </head>
 <body>
@@ -264,9 +335,9 @@
       db: null,
       orders: [],
       unsubscribe: null,
+      rejectModalIndex: null,
 
       init() {
-        // Wait for Firebase to be ready
         let attempts = 0;
         const check = () => {
           attempts++;
@@ -290,19 +361,16 @@
             this.showAuthState();
             return;
           }
-          // Optional: check if admin
           this.db.collection('users').doc(user.uid).get()
             .then(doc => {
               const role = doc.exists ? doc.data().role : 'user';
               if (role === 'admin') {
                 this.loadFromFirestore();
               } else {
-                // Allow any logged-in user to view orders (or restrict to admin only)
                 this.loadFromFirestore();
               }
             })
             .catch(() => {
-              // If can't check role, still load orders (fail-open for now)
               this.loadFromFirestore();
             });
         });
@@ -336,13 +404,11 @@
         `;
       },
 
-      // ===================== FIRESTORE MODE =====================
       loadFromFirestore() {
         if (!this.db) {
           this.loadFromLocalStorage();
           return;
         }
-
         const container = document.getElementById('ordersList');
         container.innerHTML = `
           <div class="loading-state">
@@ -350,15 +416,12 @@
             <p>Loading orders from cloud...</p>
           </div>
         `;
-
-        // Real-time listener: orders collection ordered by date descending
         this.unsubscribe = this.db.collection('orders')
           .orderBy('date', 'desc')
           .onSnapshot((snapshot) => {
             this.orders = [];
             snapshot.forEach(doc => {
               const data = doc.data();
-              // Add Firestore doc ID for deletion
               data._docId = doc.id;
               this.orders.push(data);
             });
@@ -375,7 +438,6 @@
           });
       },
 
-      // ===================== LOCALSTORAGE FALLBACK =====================
       loadFromLocalStorage() {
         this.orders = JSON.parse(localStorage.getItem('lovara_orders')) || [];
         this.renderOrders();
@@ -384,9 +446,7 @@
       renderOrders() {
         const container = document.getElementById('ordersList');
         const countBadge = document.getElementById('orderCount');
-
         countBadge.textContent = `${this.orders.length} Order${this.orders.length !== 1 ? 's' : ''}`;
-
         if (this.orders.length === 0) {
           container.innerHTML = `
             <div class="empty-state">
@@ -397,7 +457,6 @@
           `;
           return;
         }
-
         container.innerHTML = this.orders.map((order, index) => this.renderOrder(order, index)).join('');
       },
 
@@ -407,11 +466,23 @@
           weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
           hour: '2-digit', minute: '2-digit'
         });
-
         const statusClass = `status-${order.status || 'pending'}`;
         const statusText = (order.status || 'pending').toUpperCase();
+        const confirmStatus = order.confirmationStatus || 'pending';
+        const rejectionReason = order.rejectionReason || '';
 
-        // Customer info (handle both old localStorage shape and Firestore shape)
+        // Calculate profit from items
+        const items = order.items || [];
+        let profit = parseFloat(order.profit) || 0;
+        if (profit === 0 && items.length > 0) {
+          profit = items.reduce((sum, item) => {
+            const p = parseFloat(item.price) || 0;
+            const c = parseFloat(item.cost) || 0;
+            const q = parseInt(item.quantity) || 1;
+            return sum + ((p - c) * q);
+          }, 0);
+        }
+
         const customer = order.customer || {};
         const firstName = customer.firstName || '';
         const lastName = customer.lastName || '';
@@ -461,11 +532,11 @@
           </div>
         `;
 
-        // Items
-        const items = order.items || [];
-        const itemsHtml = items.map(item => {
+        const itemsHtml = items.map((item, itemIdx) => {
           const itemPrice = parseFloat(item.price) || 0;
+          const itemCost = parseFloat(item.cost) || 0;
           const itemQty = parseInt(item.quantity) || 1;
+          const itemProfit = (itemPrice - itemCost) * itemQty;
           return `
             <div class="item-card">
               <img src="${item.imageUrl || item.image || 'https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA'}" 
@@ -477,7 +548,14 @@
                   <span class="item-tag"><i class="fas fa-palette"></i> ${item.color || 'N/A'}</span>
                   <span class="item-tag"><i class="fas fa-ruler"></i> ${item.size || 'N/A'}</span>
                   <span class="item-tag"><i class="fas fa-times"></i> Qty: ${itemQty}</span>
-                  <span class="item-tag"><i class="fas fa-tag"></i> EGP ${itemPrice.toFixed(2)} each</span>
+                  <span class="item-tag"><i class="fas fa-tag"></i> Sell: EGP ${itemPrice.toFixed(2)}</span>
+                  <span class="item-tag" style="background:#ffebee;color:#c0392b;"><i class="fas fa-industry"></i> Cost: 
+                    <input type="number" min="0" step="0.01" value="${itemCost > 0 ? itemCost : ''}" placeholder="0"
+                           onchange="OrdersApp.updateItemCost(${index}, ${itemIdx}, this.value)"
+                           style="width:60px;padding:2px 6px;border:1px solid #ef9a9a;border-radius:4px;font-size:11px;font-family:'Jost',sans-serif;color:#c0392b;font-weight:600;text-align:center;"
+                           onclick="event.stopPropagation()" />
+                  </span>
+                  <span class="item-tag" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-chart-line"></i> Profit: EGP ${itemProfit.toFixed(2)}</span>
                 </div>
               </div>
               <div class="item-total">EGP ${(itemPrice * itemQty).toFixed(2)}</div>
@@ -485,13 +563,11 @@
           `;
         }).join('');
 
-        // Payment info
         const payment = order.payment || {};
         const paymentExtra = payment.method !== 'cod' 
           ? `<div class="info-item"><div class="info-label">Transaction ID</div><div class="info-value">${payment.transactionId || '-'}</div></div>` 
           : '';
 
-        // Totals
         const totals = order.totals || {};
         const subtotal = totals.subtotal || 'EGP 0.00';
         const shipping = totals.shipping || 'EGP 0.00';
@@ -508,10 +584,19 @@
                 <div class="order-id">#${orderNum}</div>
                 <div class="order-date"><i class="far fa-clock" style="margin-right:5px;"></i>${date}</div>
               </div>
-              <div class="order-status ${statusClass}">${statusText}</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="order-status ${statusClass}">${statusText}</div>
+                <div class="confirmation-status ${confirmStatus === 'confirmed' ? 'status-confirmed-ok' : confirmStatus === 'rejected' ? 'status-rejected' : 'status-pending-confirm'}">
+                  ${confirmStatus === 'confirmed' ? '✓ Confirmed' : confirmStatus === 'rejected' ? '✗ Rejected' : '⏳ Pending'}
+                </div>
+              </div>
             </div>
 
             <div class="order-body">
+              <div class="profit-box" id="profitBox-${index}">
+                <div class="profit-label"><i class="fas fa-chart-line" style="margin-right:6px;color:#689f38;"></i>Order Profit</div>
+                <div class="profit-value" id="profitValue-${index}">EGP ${profit.toFixed(2)}</div>
+              </div>
               ${customerHtml}
 
               <div class="items-section">
@@ -540,32 +625,186 @@
             </div>
 
             <div class="order-actions">
+              ${confirmStatus === 'pending' ? `
+              <button type="button" class="btn btn-confirm" onclick="OrdersApp.confirmOrder(${index})">
+                <i class="fas fa-check-circle"></i> Confirm Order
+              </button>
+              <button type="button" class="btn btn-reject" onclick="OrdersApp.showRejectModal(${index})">
+                <i class="fas fa-times-circle"></i> Reject Order
+              </button>
+              ` : confirmStatus === 'confirmed' ? `
+              <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;">
+                <i class="fas fa-check-circle"></i> Confirmed
+              </button>
+              ` : `
+              <button type="button" class="btn btn-reject" disabled style="opacity:0.7;cursor:default;">
+                <i class="fas fa-times-circle"></i> Rejected
+              </button>
+              `}
               <button type="button" class="btn btn-delete" onclick="OrdersApp.deleteOrder(${index})">
-                <i class="fas fa-trash"></i> Delete Order
+                <i class="fas fa-trash"></i> Delete
               </button>
               <a href="tel:${phoneClean}" class="btn btn-call">
                 <i class="fas fa-phone"></i> Call
               </a>
               <a href="${whatsappLink}" class="btn btn-whatsapp" target="_blank">
-                <i class="fab fa-whatsapp"></i> WhatsApp Customer
+                <i class="fab fa-whatsapp"></i> WhatsApp
               </a>
             </div>
+            ${confirmStatus !== 'pending' ? `
+            <div class="confirmation-box ${confirmStatus === 'rejected' ? 'rejected' : ''}">
+              <i class="fas ${confirmStatus === 'confirmed' ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+              <span>${confirmStatus === 'confirmed' ? 'Order Confirmed ✓' : 'Order Rejected ✗' + (rejectionReason ? ' — Reason: ' + rejectionReason : '')}</span>
+            </div>
+            ` : ''}
           </div>
         `;
       },
 
-      getCountryName(code) {
-        const map = { EG: 'Egypt', SA: 'Saudi Arabia', AE: 'UAE', KW: 'Kuwait', QA: 'Qatar', BH: 'Bahrain', JO: 'Jordan', LB: 'Lebanon', IQ: 'Iraq', OTHER: 'Other' };
-        return map[code] || code || 'Unknown';
+      updateItemCost(orderIndex, itemIndex, costValue) {
+        const order = this.orders[orderIndex];
+        if (!order || !order.items || !order.items[itemIndex]) return;
+        const cost = parseFloat(costValue);
+        if (isNaN(cost) || cost < 0) {
+          this.showToast('Please enter a valid cost', 'error');
+          return;
+        }
+        order.items[itemIndex].cost = cost;
+        const totalProfit = order.items.reduce((sum, item) => {
+          const p = parseFloat(item.price) || 0;
+          const c = parseFloat(item.cost) || 0;
+          const q = parseInt(item.quantity) || 1;
+          return sum + ((p - c) * q);
+        }, 0);
+        order.profit = totalProfit;
+        const profitValueEl = document.getElementById('profitValue-' + orderIndex);
+        if (profitValueEl) profitValueEl.textContent = 'EGP ' + totalProfit.toFixed(2);
+        if (this.db && order._docId) {
+          this.db.collection('orders').doc(order._docId).update({
+            items: order.items,
+            profit: totalProfit
+          }).then(() => {
+            this.showToast('Cost updated! Profit: EGP ' + totalProfit.toFixed(2), 'success');
+          }).catch(err => {
+            console.error('[LOVARA Orders] Cost update error:', err);
+          });
+        } else {
+          localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
+          this.showToast('Cost updated! Profit: EGP ' + totalProfit.toFixed(2), 'success');
+        }
+      },
+
+      async recalculateOrderProfit(orderIndex) {
+        const order = this.orders[orderIndex];
+        if (!order || !order.items) return 0;
+        let recalculated = false;
+        for (let i = 0; i < order.items.length; i++) {
+          const item = order.items[i];
+          if (item.cost !== undefined && item.cost !== null && parseFloat(item.cost) > 0) continue;
+          try {
+            if (this.db) {
+              const snapshot = await this.db.collection('products').where('name', '==', item.name).limit(1).get();
+              if (!snapshot.empty) {
+                const product = snapshot.docs[0].data();
+                if (product.cost !== undefined && product.cost !== null) {
+                  order.items[i].cost = parseFloat(product.cost);
+                  recalculated = true;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('[LOVARA Orders] Could not fetch cost for:', item.name);
+          }
+        }
+        const totalProfit = order.items.reduce((sum, item) => {
+          const p = parseFloat(item.price) || 0;
+          const c = parseFloat(item.cost) || 0;
+          const q = parseInt(item.quantity) || 1;
+          return sum + ((p - c) * q);
+        }, 0);
+        order.profit = totalProfit;
+        if (recalculated && this.db && order._docId) {
+          await this.db.collection('orders').doc(order._docId).update({
+            items: order.items,
+            profit: totalProfit
+          });
+        }
+        return totalProfit;
+      },
+
+      confirmOrder(index) {
+        const order = this.orders[index];
+        if (!order) return;
+        if (!confirm('Are you sure you want to CONFIRM this order?')) return;
+        this.recalculateOrderProfit(index).then(() => {
+          const updates = { confirmationStatus: 'confirmed', rejectionReason: '' };
+          const currentOrder = this.orders[index];
+          if (this.db && currentOrder._docId) {
+            this.db.collection('orders').doc(currentOrder._docId).update(updates)
+              .then(() => {
+                console.log('[LOVARA Orders] Order confirmed:', currentOrder._docId);
+                this.showToast('Order confirmed successfully!', 'success');
+              })
+              .catch(err => {
+                console.error('[LOVARA Orders] Confirm error:', err);
+                alert('Failed to confirm: ' + err.message);
+              });
+          } else {
+            this.orders[index] = { ...this.orders[index], ...updates };
+            localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
+            this.renderOrders();
+            this.showToast('Order confirmed successfully!', 'success');
+          }
+        });
+      },
+
+      showRejectModal(index) {
+        this.rejectModalIndex = index;
+        document.getElementById('rejectReasonInput').value = '';
+        document.getElementById('rejectModal').classList.add('show');
+      },
+
+      closeRejectModal() {
+        this.rejectModalIndex = null;
+        document.getElementById('rejectModal').classList.remove('show');
+      },
+
+      submitRejection() {
+        const index = this.rejectModalIndex;
+        if (index === null) return;
+        const reason = document.getElementById('rejectReasonInput').value.trim();
+        if (!reason) {
+          alert('Please enter a rejection reason.');
+          return;
+        }
+        this.recalculateOrderProfit(index).then(() => {
+          const updates = { confirmationStatus: 'rejected', rejectionReason: reason };
+          const order = this.orders[index];
+          if (this.db && order._docId) {
+            this.db.collection('orders').doc(order._docId).update(updates)
+              .then(() => {
+                console.log('[LOVARA Orders] Order rejected:', order._docId);
+                this.closeRejectModal();
+                this.showToast('Order rejected.', 'error');
+              })
+              .catch(err => {
+                console.error('[LOVARA Orders] Reject error:', err);
+                alert('Failed to reject: ' + err.message);
+              });
+          } else {
+            this.orders[index] = { ...this.orders[index], ...updates };
+            localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
+            this.closeRejectModal();
+            this.renderOrders();
+            this.showToast('Order rejected.', 'error');
+          }
+        });
       },
 
       deleteOrder(index) {
         if (!confirm('Are you sure you want to delete this order?')) return;
-
         const order = this.orders[index];
         if (!order) return;
-
-        // If Firestore is available and order has a docId, delete from cloud
         if (this.db && order._docId) {
           this.db.collection('orders').doc(order._docId).delete()
             .then(() => {
@@ -576,19 +815,52 @@
               alert('Failed to delete order: ' + err.message);
             });
         } else {
-          // Fallback: delete from localStorage
           this.orders.splice(index, 1);
           localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
           this.renderOrders();
         }
-      }
-    };
+      },
 
-    if (document.readyState === 'loading') {
+      getCountryName(code) {
+        const map = { EG: 'Egypt', SA: 'Saudi Arabia', AE: 'UAE', KW: 'Kuwait', QA: 'Qatar', BH: 'Bahrain', JO: 'Jordan', LB: 'Lebanon', IQ: 'Iraq', OTHER: 'Other' };
+        return map[code] || code || 'Unknown';
+      },
+
+      showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+          background: ${type === 'error' ? '#e74c3c' : '#4CAF50'}; color: #fff; padding: 16px 32px;
+          border-radius: 50px; display: flex; align-items: center; gap: 12px; font-size: 14px;
+          font-weight: 500; box-shadow: 0 12px 40px rgba(0,0,0,0.25); z-index: 9999;
+          transition: all 0.4s cubic-bezier(0.68,-0.55,0.265,1.55); font-family: 'Jost', sans-serif;
+        `;
+        toast.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${message}`;
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => { toast.style.transform = 'translateX(-50%) translateY(0)'; });
+        setTimeout(() => {
+          toast.style.transform = 'translateX(-50%) translateY(100px)';
+          setTimeout(() => toast.remove(), 400);
+        }, 3000);
+      }
+    };if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => OrdersApp.init());
     } else {
       OrdersApp.init();
     }
   </script>
+
+  <!-- Reject Order Modal -->
+  <div class="modal-overlay" id="rejectModal">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <h3><i class="fas fa-times-circle" style="color:#c0392b;margin-right:8px;"></i>Reject Order</h3>
+      <p>Please provide a reason for rejecting this order:</p>
+      <textarea id="rejectReasonInput" placeholder="e.g. Out of stock, customer requested cancellation, invalid address..."></textarea>
+      <div class="modal-actions">
+        <button class="btn btn-modal-cancel" onclick="OrdersApp.closeRejectModal()">Cancel</button>
+        <button class="btn btn-modal-reject" onclick="OrdersApp.submitRejection()">Reject Order</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
