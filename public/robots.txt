@@ -5,4 +5,4 @@ Disallow: /checkout/
 Disallow: /admin/
 Disallow: /api/
 
-Sitemap: https://lovarafashion-jh7v.vercel.app/sitemap.xml
+Sitemap: https://lovarafashion.com/sitemap.xml
