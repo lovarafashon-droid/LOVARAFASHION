@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /cart/
+Disallow: /checkout/
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://lovarafashion-jh7v.vercel.app/sitemap.xml
