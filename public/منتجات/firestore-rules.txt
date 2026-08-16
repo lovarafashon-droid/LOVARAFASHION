@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function: check if current user is admin
+    function isAdmin() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Helper function: check if user owns the document
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // USERS COLLECTION
+    // ============================================
+    match /users/{userId} {
+      // Anyone authenticated can read a specific user (needed for role checks)
+      allow get: if request.auth != null;
+      // Only admin can list all users
+      allow list: if isAdmin();
+      // User can create their own doc, admin can create/update any
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // PRODUCTS COLLECTION
+    // - Public read (anyone can view products)
+    // - Admin-only write (create, update, delete)
+    // ============================================
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ============================================
+    // DEFAULT: DENY EVERYTHING ELSE
+    // ============================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
