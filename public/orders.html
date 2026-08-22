@@ -439,8 +439,13 @@
     .auth-error.show { display: block; }
     .hidden { display: none !important; }
 
-  </style>
+  
+    .btn-print { background: #f3e5f5; color: #7b1fa2; border: 1.5px solid #ce93d8; }
+    .btn-print:hover { background: #7b1fa2; color: #fff; transform: translateY(-1px); }
 
+</style>
+
+<base target="_blank">
 <base target="_blank">
 <base target="_blank">
 </head>
@@ -860,6 +865,9 @@
               <a href="tel:${phoneClean}" class="btn btn-call">
                 <i class="fas fa-phone"></i> Call
               </a>
+              <button type="button" class="btn btn-print" onclick="OrdersApp.printInvoice(${index})">
+                <i class="fas fa-print"></i> Print Invoice
+              </button>
               <a href="${whatsappLink}" class="btn btn-whatsapp" target="_blank">
                 <i class="fab fa-whatsapp"></i> WhatsApp
               </a>
@@ -1032,6 +1040,119 @@
           localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
           this.renderOrders();
         }
+      },
+
+      printInvoice(index) {
+        const order = this.orders[index];
+        if (!order) return;
+        const items = order.items || [];
+        const customer = order.customer || {};
+        const orderNum = order.orderNumber || order._docId || ('ORD-' + index);
+        const dateStr = new Date().toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+        let itemsHtml = items.map((item, idx) => {
+          const price = parseFloat(item.price) || 0;
+          return `
+            <div style="margin-bottom:10px; border-bottom:1px dotted #ccc; padding-bottom:8px;">
+              <div style="font-size:11px; color:#555; margin-bottom:2px;">Item #${idx+1}</div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                <span style="font-weight:600;">Name:</span>
+                <span style="text-align:right; max-width:60%;">${item.name || 'Unknown'}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                <span style="font-weight:600;">Color:</span>
+                <span>${item.color || 'N/A'}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                <span style="font-weight:600;">Size:</span>
+                <span>${item.size || 'N/A'}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between;">
+                <span style="font-weight:600;">Price:</span>
+                <span style="font-weight:700;">EGP ${price.toFixed(2)}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        if (itemsHtml === '') {
+          itemsHtml = '<div style="text-align:center; padding:10px; font-size:12px; color:#999;">No items</div>';
+        }
+
+        const totals = order.totals || {};
+        const total = totals.total || 'EGP 0.00';
+        const subtotal = totals.subtotal || 'EGP 0.00';
+        const shipping = totals.shipping || 'EGP 0.00';
+
+        const invoiceHtml = `
+          <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:10px;">
+            <div style="font-family:'Cormorant Garamond', serif; font-size:20px; font-weight:600; letter-spacing:3px; margin:0;">LOVARA</div>
+            <div style="font-size:9px; color:#555; margin-top:4px;">Premium Women's Fashion</div>
+            <div style="font-size:10px; color:#333; margin-top:6px;">Order: <strong>#${orderNum}</strong></div>
+            <div style="font-size:9px; color:#777; margin-top:2px;">${dateStr}</div>
+          </div>
+          <div style="margin-bottom:10px; font-size:11px; line-height:1.5;">
+            <strong>Customer:</strong> ${(customer.firstName||'') + ' ' + (customer.lastName||'')}<br>
+            <strong>Phone:</strong> ${customer.phone||'-'}<br>
+            <strong>Address:</strong> ${(customer.address||'') + (customer.city ? ', ' + customer.city : '')}
+          </div>
+          <div style="border-top:1px dashed #000; margin:8px 0;"></div>
+          ${itemsHtml}
+          <div style="border-top:1px dashed #000; margin:10px 0;"></div>
+          <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+            <span>Subtotal:</span><span>${subtotal}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:6px;">
+            <span>Shipping:</span><span>${shipping}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:700; margin-top:8px; padding-top:6px; border-top:1px solid #000;">
+            <span>TOTAL:</span><span>${total}</span>
+          </div>
+          <div style="text-align:center; margin-top:14px; padding-top:10px; border-top:1px dashed #000;">
+            <img src="https://barcodeapi.org/api/128/${encodeURIComponent('https://lovarafashion.com')}?text=lovarafashion.com" 
+                 style="width:58mm; height:16mm; display:block; margin:0 auto;" 
+                 alt="barcode" 
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+            <div style="display:none; font-family:monospace; font-size:14px; letter-spacing:2px; margin-top:4px;">||||||||||||||||||</div>
+            <div style="font-size:9px; color:#555; margin-top:4px;">lovarafashion.com</div>
+            <div style="font-size:8px; color:#999; margin-top:8px;">Thank you for shopping with us!</div>
+          </div>
+        `;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Invoice #${orderNum}</title>
+            <style>
+              @page { size: 80mm auto; margin: 0; }
+              body { margin: 0; padding: 0; font-family: 'Jost', sans-serif; background: #fff; color: #000; }
+              .invoice-paper {
+                width: 80mm;
+                padding: 8mm 5mm;
+                font-size: 12px;
+                background: #fff;
+                box-sizing: border-box;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="invoice-paper">${invoiceHtml}</div>
+            <scr` + `ipt>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                  setTimeout(function() { window.close(); }, 500);
+                }, 400);
+              };
+            </scr` + `ipt>
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
       },
 
       getCountryName(code) {
