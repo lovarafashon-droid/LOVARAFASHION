@@ -408,7 +408,6 @@
 <base target="_blank">
 <base target="_blank">
 <base target="_blank">
-<base target="_blank">
 </head>
 <body>
 
@@ -2264,89 +2263,6 @@
 }
 </script>
 
-
-
-
-<!-- ====== Touch Swipe for Product Carousel ====== -->
-<script>
-(function() {
-  function setupSwipe(containerSelector) {
-    const containers = document.querySelectorAll(containerSelector);
-    containers.forEach(container => {
-      if (container.dataset.swipeSetup) return;
-      container.dataset.swipeSetup = 'true';
-
-      let isDown = false;
-      let startX;
-      let scrollLeft;
-
-      // Touch events
-      container.addEventListener('touchstart', (e) => {
-        isDown = true;
-        startX = e.touches[0].pageX - container.offsetLeft;
-        scrollLeft = container.scrollLeft;
-      }, { passive: true });
-
-      container.addEventListener('touchend', () => {
-        isDown = false;
-      }, { passive: true });
-
-      container.addEventListener('touchmove', (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.touches[0].pageX - container.offsetLeft;
-        const walk = (x - startX) * 1.5;
-        container.scrollLeft = scrollLeft - walk;
-      }, { passive: false });
-
-      // Mouse drag support
-      container.addEventListener('mousedown', (e) => {
-        isDown = true;
-        container.style.cursor = 'grabbing';
-        startX = e.pageX - container.offsetLeft;
-        scrollLeft = container.scrollLeft;
-      });
-
-      container.addEventListener('mouseleave', () => {
-        isDown = false;
-        container.style.cursor = 'grab';
-      });
-
-      container.addEventListener('mouseup', () => {
-        isDown = false;
-        container.style.cursor = 'grab';
-      });
-
-      container.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - container.offsetLeft;
-        const walk = (x - startX) * 1.5;
-        container.scrollLeft = scrollLeft - walk;
-      });
-
-      container.style.cursor = 'grab';
-    });
-  }
-
-  function init() {
-    setupSwipe('.products-grid');
-    setupSwipe('.carousel-products-container');
-  }
-
-  init();
-
-  // Re-setup when products are dynamically loaded
-  const grid = document.getElementById('productsGrid');
-  if (grid) {
-    const observer = new MutationObserver(() => {
-      setupSwipe('.products-grid');
-      setupSwipe('.carousel-products-container');
-    });
-    observer.observe(grid, { childList: true, subtree: true });
-  }
-})();
-</script>
 
 </body>
 </html>
