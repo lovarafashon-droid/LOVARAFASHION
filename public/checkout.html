@@ -274,7 +274,7 @@
     .order-total-row { display:flex; justify-content:space-between; margin-bottom:12px; font-size:14px; color:var(--text-light); }
     .order-total-row.total { font-size:20px; font-weight:700; color:var(--secondary); border-top:1px solid var(--border); padding-top:18px; margin-top:18px; }
     .order-total-row.total span:last-child { color:var(--primary); font-size:22px; }
-    .free-shipping { color:#4CAF50; font-weight:600; }
+
     .trust-badges { display:flex; justify-content:center; gap:20px; margin-top:20px; padding-top:20px; border-top:1px solid var(--border); }
     .trust-badge { text-align:center; color:var(--text-light); font-size:11px; }
     .trust-badge i { font-size:20px; color:var(--primary); margin-bottom:4px; display:block; }
@@ -301,6 +301,7 @@
     .item-option select:focus { outline:none; border-color:var(--primary); }
     .item-option .color-select { min-width:90px; }
     .shipping-info-row { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--text-light); margin-bottom:8px; padding:8px 0; border-bottom:1px dashed var(--border); }
+    .free-shipping { color:#4CAF50; font-weight:600; }
     .shipping-info-row .governorate-name { color:var(--primary); font-weight:600; }
     .empty-cart-message { text-align:center; padding:60px 20px; color:var(--text-light); animation:fadeInUp 0.6s ease; }
     .empty-cart-message i { font-size:56px; color:var(--border); margin-bottom:20px; display:block; animation:bounce 2s infinite; }
@@ -514,6 +515,7 @@
 
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
   <header class="navbar" id="navbar">
@@ -594,27 +596,40 @@
                     <input type="text" id="city" required autocomplete="address-level2" data-field="city" />
                     <span class="error-msg" id="cityError"><i class="fas fa-exclamation-circle"></i> <span data-i18n="requiredField">This field is required</span></span>
                   </div>
-                  <div class="form-group">
-                    <label data-i18n="postalCode">Postal Code</label>
-                    <input type="text" id="postalCode" autocomplete="postal-code" data-field="postalCode" />
-                  </div>
                 </div>
                 <div class="form-group">
-                  <label data-i18n="country">Country *</label>
-                  <select id="country" required autocomplete="country" data-field="country">
-                    <option value="" data-i18n="selectCountry">Select Country</option>
-                    <option value="EG">Egypt</option>
-                    <option value="SA">Saudi Arabia</option>
-                    <option value="AE">UAE</option>
-                    <option value="KW">Kuwait</option>
-                    <option value="QA">Qatar</option>
-                    <option value="BH">Bahrain</option>
-                    <option value="JO">Jordan</option>
-                    <option value="LB">Lebanon</option>
-                    <option value="IQ">Iraq</option>
-                    <option value="OTHER" data-i18n="otherCountry">Other</option>
+                  <label data-i18n="governorate">Governorate *</label>
+                  <select id="governorate" required autocomplete="address-level1" data-field="governorate">
+                    <option value="" data-i18n="selectGovernorate">Select Governorate</option>
+                    <option value="Cairo">Cairo</option>
+                    <option value="Giza">Giza</option>
+                    <option value="Alexandria">Alexandria</option>
+                    <option value="Qalyubia">Qalyubia</option>
+                    <option value="Monufia">Monufia</option>
+                    <option value="Gharbia">Gharbia</option>
+                    <option value="Dakahlia">Dakahlia</option>
+                    <option value="Sharqia">Sharqia</option>
+                    <option value="Kafr El Sheikh">Kafr El Sheikh</option>
+                    <option value="Beheira">Beheira</option>
+                    <option value="Damietta">Damietta</option>
+                    <option value="Port Said">Port Said</option>
+                    <option value="Ismailia">Ismailia</option>
+                    <option value="Suez">Suez</option>
+                    <option value="North Sinai">North Sinai</option>
+                    <option value="South Sinai">South Sinai</option>
+                    <option value="Fayoum">Fayoum</option>
+                    <option value="Beni Suef">Beni Suef</option>
+                    <option value="Minya">Minya</option>
+                    <option value="Assiut">Assiut</option>
+                    <option value="Sohag">Sohag</option>
+                    <option value="Qena">Qena</option>
+                    <option value="Luxor">Luxor</option>
+                    <option value="Aswan">Aswan</option>
+                    <option value="Red Sea">Red Sea</option>
+                    <option value="Matrouh">Matrouh</option>
+                    <option value="New Valley">New Valley</option>
                   </select>
-                  <span class="error-msg" id="countryError"><i class="fas fa-exclamation-circle"></i> <span data-i18n="requiredField">This field is required</span></span>
+                  <span class="error-msg" id="governorateError"><i class="fas fa-exclamation-circle"></i> <span data-i18n="requiredField">This field is required</span></span>
                 </div>
               </div>
               <div class="form-section" style="animation-delay:0.3s">
@@ -671,6 +686,10 @@
               <div class="order-items" id="orderItems"></div>
               <div class="order-totals">
                 <div class="order-total-row"><span data-i18n="subtotal">Subtotal</span><span id="subtotal">EGP 0.00</span></div>
+                <div class="shipping-info-row" id="shippingInfoRow" style="display:none;">
+                  <span><span data-i18n="shippingTo">Shipping to</span> <span class="governorate-name" id="governorateName"></span></span>
+                  <span id="governoratePrice"></span>
+                </div>
                 <div class="order-total-row"><span data-i18n="shipping">Shipping</span><span id="shipping">EGP 0.00</span></div>
                 <div class="order-total-row total"><span data-i18n="total">Total</span><span id="total">EGP 0.00</span></div>
               </div>
@@ -719,6 +738,17 @@
         this.applyLang(this.currentLang);
         this.initFirebase();
         this.updateSteps(1);
+        this.setupGovernorateListener();
+      },
+
+      setupGovernorateListener() {
+        const govSelect = document.getElementById('governorate');
+        if (govSelect) {
+          govSelect.addEventListener('change', () => {
+            this.renderCartItems();
+            this.saveDraft();
+          });
+        }
       },
 
       t(key) {
@@ -825,8 +855,15 @@
           const currentSize = item.size || 'M';
           const currentColor = item.color || 'Black';
 
-          // Build size options: include item's size + defaults
-          let sizeOptionsList = [...defaultSizes];
+          // Build size options from product sizes or defaults
+          let sizeOptionsList = [];
+          if (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0) {
+            sizeOptionsList = [...item.sizes];
+          } else if (item.availableSizes && Array.isArray(item.availableSizes) && item.availableSizes.length > 0) {
+            sizeOptionsList = [...item.availableSizes];
+          } else {
+            sizeOptionsList = [...defaultSizes];
+          }
           if (currentSize && !sizeOptionsList.includes(currentSize)) {
             sizeOptionsList.unshift(currentSize);
           }
@@ -904,8 +941,44 @@
         this.calculateShipping(subtotal);
       },
 
+      shippingPrices: {
+        'Cairo': 50,
+        'Giza': 50,
+        'Qalyubia': 60,
+        'Monufia': 70,
+        'Gharbia': 80,
+        'Dakahlia': 80,
+        'Sharqia': 80,
+        'Kafr El Sheikh': 90,
+        'Beheira': 80,
+        'Damietta': 90,
+        'Port Said': 100,
+        'Ismailia': 90,
+        'Suez': 80,
+        'North Sinai': 120,
+        'South Sinai': 150,
+        'Alexandria': 80,
+        'Matrouh': 120,
+        'Fayoum': 70,
+        'Beni Suef': 80,
+        'Minya': 90,
+        'Assiut': 100,
+        'Sohag': 110,
+        'Qena': 120,
+        'Luxor': 130,
+        'Aswan': 140,
+        'Red Sea': 130,
+        'New Valley': 150
+      },
+
+      getShippingPrice(governorate) {
+        if (!governorate) return 0;
+        return this.shippingPrices[governorate] || 100;
+      },
+
       calculateShipping(subtotal) {
-        let shipping = 120;
+        const governorate = document.getElementById('governorate')?.value || '';
+        let shipping = this.getShippingPrice(governorate);
         if (subtotal >= 2500) {
           shipping = 0;
         }
@@ -921,7 +994,23 @@
         }
         document.getElementById('total').textContent = 'EGP ' + total.toFixed(2);
         this.updateMobileBadge();
+        this.updateShippingInfoRow(governorate, shipping);
         return shipping;
+      },
+
+      updateShippingInfoRow(governorate, shipping) {
+        const row = document.getElementById('shippingInfoRow');
+        const nameEl = document.getElementById('governorateName');
+        const priceEl = document.getElementById('governoratePrice');
+        if (row && nameEl && priceEl) {
+          if (governorate) {
+            row.style.display = 'flex';
+            nameEl.textContent = governorate;
+            priceEl.textContent = 'EGP ' + this.getShippingPrice(governorate).toFixed(2);
+          } else {
+            row.style.display = 'none';
+          }
+        }
       },
 
       calculateProfit() {
@@ -1124,8 +1213,7 @@
             phone: document.getElementById('phone').value.trim(),
             address: document.getElementById('address').value.trim(),
             city: document.getElementById('city').value.trim(),
-            postalCode: document.getElementById('postalCode').value.trim(),
-            country: document.getElementById('country').value,
+            governorate: document.getElementById('governorate').value,
             notes: document.getElementById('orderNotes').value.trim()
           },
           payment: { method: paymentMethod, transactionId: transactionId, methodName: this.getPaymentMethodName(paymentMethod) },
@@ -1304,10 +1392,9 @@
         shippingAddress: 'Shipping Address',
         address: 'Address *',
         city: 'City *',
-        postalCode: 'Postal Code',
         country: 'Country *',
-        selectCountry: 'Select Country',
-        otherCountry: 'Other',
+        selectGovernorate: 'Select Governorate',
+        governorate: 'Governorate *',
         paymentMethod: 'Payment Method',
         cashOnDelivery: 'Cash on Delivery',
         vodafoneCash: 'Vodafone Cash',
@@ -1319,6 +1406,7 @@
         shipping: 'Shipping',
         total: 'Total',
         free: 'FREE',
+        shippingTo: 'Shipping to',
         placeOrder: 'Place Order',
         processing: 'Processing...',
         cartEmpty: 'Your cart is empty',
@@ -1372,7 +1460,6 @@
         shippingAddress: '\u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0634\u062d\u0646',
         address: '\u0627\u0644\u0639\u0646\u0648\u0627\u0646 *',
         city: '\u0627\u0644\u0645\u062f\u064a\u0646\u0629 *',
-        postalCode: '\u0627\u0644\u0631\u0645\u0632 \u0627\u0644\u0628\u0631\u064a\u062f\u064a',
         country: '\u0627\u0644\u062f\u0648\u0644\u0629 *',
         selectCountry: '\u0627\u062e\u062a\u064a\u0627\u0631 \u0627\u0644\u062f\u0648\u0644\u0629',
         otherCountry: '\u0623\u062e\u0631\u0649',
