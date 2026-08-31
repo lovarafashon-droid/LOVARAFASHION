@@ -874,7 +874,6 @@
 
         let itemsHtml = items.map((item, idx) => {
           const price = parseFloat(item.price) || 0;
-          const supplierName = item.supplier || item.factory || item.madeBy || '';
           return `
             <div style="margin-bottom:10px; border-bottom:1px dotted #ccc; padding-bottom:8px;">
               <div style="font-size:11px; color:#555; margin-bottom:2px;">Item #${idx+1}</div>
@@ -894,7 +893,6 @@
                 <span style="font-weight:600;">Price:</span>
                 <span style="font-weight:700;">EGP ${price.toFixed(2)}</span>
               </div>
-              ${supplierName ? `<div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span style="font-weight:600;">Factory:</span><span style="color:#1565c0;font-weight:500;">${supplierName}</span></div>` : ''}
             </div>
           `;
         }).join('');
