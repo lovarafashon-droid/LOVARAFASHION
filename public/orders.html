@@ -449,6 +449,7 @@
 <base target="_blank">
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -512,6 +513,7 @@
   <script>
     const OrdersApp = {
       db: null,
+      productsMap: {},
       orders: [],
       unsubscribe: null,
       rejectModalIndex: null,
@@ -522,6 +524,7 @@
           attempts++;
           if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0 && firebase.firestore) {
             this.db = firebase.firestore();
+          this.loadProducts();
             this.setupAuthCheck();
             console.log('[LOVARA Orders] Firebase ready');
           } else if (attempts < 30) {
@@ -533,6 +536,22 @@
           }
         };
         setTimeout(check, 200);
+      },
+
+        async loadProducts() {
+        try {
+          const snapshot = await this.db.collection('products').get();
+          this.productsMap = {};
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.name && data.factoryName) {
+              this.productsMap[data.name.trim()] = data.factoryName.trim();
+            }
+          });
+          console.log('[LOVARA Orders] Products loaded:', Object.keys(this.productsMap).length);
+        } catch (err) {
+          console.warn('[LOVARA Orders] Could not load products:', err);
+        }
       },
 
       setupAuthCheck() {
@@ -644,8 +663,6 @@
               data._docId = doc.id;
               this.orders.push(data);
             });
-            // Enrich items with supplier from products if missing
-            await this.enrichWithSuppliers();
             this.renderOrders();
           }, (err) => {
             console.error('[LOVARA Orders] Firestore error:', err);
@@ -661,44 +678,7 @@
 
       loadFromLocalStorage() {
         this.orders = JSON.parse(localStorage.getItem('lovara_orders')) || [];
-        this.enrichWithSuppliers().then(() => this.renderOrders());
-      },
-
-      async enrichWithSuppliers() {
-        if (!this.db) return;
-        const cache = {};
-        for (const order of this.orders) {
-          if (!order.items) continue;
-          let updated = false;
-          for (const item of order.items) {
-            if (item.supplier) continue;
-            const name = item.name;
-            if (!name) continue;
-            if (cache[name] !== undefined) {
-              item.supplier = cache[name];
-              updated = true;
-              continue;
-            }
-            try {
-              const snap = await this.db.collection('products').where('name', '==', name).limit(1).get();
-              if (!snap.empty) {
-                const supplier = snap.docs[0].data().supplier || '';
-                cache[name] = supplier;
-                item.supplier = supplier;
-                updated = true;
-              } else {
-                cache[name] = '';
-              }
-            } catch (e) {
-              cache[name] = '';
-            }
-          }
-          if (updated && order._docId) {
-            try {
-              await this.db.collection('orders').doc(order._docId).update({ items: order.items });
-            } catch (e) {}
-          }
-        }
+        this.renderOrders();
       },
 
       renderOrders() {
@@ -807,7 +787,6 @@
                   <span class="item-tag"><i class="fas fa-ruler"></i> ${item.size || 'N/A'}</span>
                   <span class="item-tag"><i class="fas fa-times"></i> Qty: ${itemQty}</span>
                   <span class="item-tag"><i class="fas fa-tag"></i> Sell: EGP ${itemPrice.toFixed(2)}</span>
-                  ${item.supplier ? `<span class="item-tag" style="background:#e3f2fd;color:#1565c0;"><i class="fas fa-industry"></i> ${item.supplier}</span>` : ''}
                   <span class="item-tag" style="background:#ffebee;color:#c0392b;"><i class="fas fa-industry"></i> Cost: 
                     <input type="number" min="0" step="0.01" value="${itemCost > 0 ? itemCost : ''}" placeholder="0"
                            onchange="OrdersApp.updateItemCost(${index}, ${itemIdx}, this.value)"
@@ -815,6 +794,7 @@
                            onclick="event.stopPropagation()" />
                   </span>
                   <span class="item-tag" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-chart-line"></i> Profit: EGP ${itemProfit.toFixed(2)}</span>
+                  <span class="item-tag" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80;"><i class="fas fa-industry"></i> Factory: ${this.productsMap[item.name] || item.factoryName || 'N/A'}</span>
                 </div>
               </div>
               <div class="item-total">EGP ${(itemPrice * itemQty).toFixed(2)}</div>
@@ -883,7 +863,11 @@
               </div>
             </div>
 
-            <div class="order-actions">
+            
+            <div style="padding: 10px 25px; background: #fff8e1; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 13px; color: #e65100; font-weight: 500;">
+              <i class="fas fa-industry" style="color: #c9a87c;"></i>
+              <span>Factory: ${items.map(i => this.productsMap[i.name] || i.factoryName || 'N/A').filter((v,i,a) => v !== 'N/A' && a.indexOf(v) === i).join(', ') || 'N/A'}</span>
+            </div><div class="order-actions">
               ${confirmStatus === 'pending' ? `
               <button type="button" class="btn btn-confirm" onclick="OrdersApp.confirmOrder(${index})">
                 <i class="fas fa-check-circle"></i> Confirm Order
@@ -1112,7 +1096,6 @@
                 <span style="font-weight:600;">Price:</span>
                 <span style="font-weight:700;">EGP ${price.toFixed(2)}</span>
               </div>
-              ${item.supplier ? `<div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span style="font-weight:600;">Factory:</span><span style="color:#1565c0;font-weight:500;">${item.supplier}</span></div>` : ''}
             </div>
           `;
         }).join('');
@@ -1198,9 +1181,8 @@
       },
 
       getCountryName(code) {
-        if (!code || code === 'Unknown') return '';
         const map = { EG: 'Egypt', SA: 'Saudi Arabia', AE: 'UAE', KW: 'Kuwait', QA: 'Qatar', BH: 'Bahrain', JO: 'Jordan', LB: 'Lebanon', IQ: 'Iraq', OTHER: 'Other' };
-        return map[code] || code;
+        return map[code] || code || 'Unknown';
       },
 
       showToast(message, type) {
