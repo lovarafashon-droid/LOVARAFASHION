@@ -836,6 +836,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 <base target="_blank">
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -936,6 +937,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               <div class="form-group">
                 <label><span data-i18n="oldPrice">Old Price (EGP)</span> <small style="color:var(--text-light)" data-i18n="optional">(optional)</small></label>
                 <input type="number" id="pOldPrice" placeholder="e.g. 2499" step="0.01" min="0" />
+              </div>
+              <div class="form-group">
+                <label><span data-i18n="supplier">Supplier / Factory</span> <small style="color:var(--text-light)" data-i18n="optional">(optional)</small></label>
+                <input type="text" id="pSupplier" placeholder="e.g. Al-Amal Factory" />
               </div>
             </div>
             <div class="form-row">
@@ -1173,6 +1178,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         itemsSold: "Items Sold", avgProfit: "Avg Profit/Item",
         shoeSize: "Shoe Size", shoeSizeHint: "(e.g. 38, 39, 40, 41)",
         shoeSizePlaceholder: "e.g. 38, 39, 40",
+        supplier: "Supplier / Factory",
         volume: "Volume / Capacity", volumeHint: "(e.g. 50ml, 100ml, 200ml)",
         volumePlaceholder: "e.g. 50ml, 100ml",
         colorsPlaceholder: "e.g. Black, White, Red, Navy", done: "Done", langBtn: "العربية", themeLight: "Dark", themeDark: "Light",
@@ -1215,6 +1221,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         itemsSold: "القطع المباعة", avgProfit: "متوسط الربح/قطعة",
         shoeSize: "مقاس الكوتشي", shoeSizeHint: "(مثال: 38, 39, 40, 41)",
         shoeSizePlaceholder: "مثال: 38, 39, 40",
+        supplier: "المصنع / المورد",
         volume: "الحجم / السعة", volumeHint: "(مثال: 50مل, 100مل, 200مل)",
         volumePlaceholder: "مثال: 50مل, 100مل",
         colorsPlaceholder: "مثال: أسود, أبيض, أحمر, كحلي", done: "تم", ht: "داكن", themeDark: "فاتح",
@@ -1770,6 +1777,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           name: document.getElementById('pName').value.trim(),
           price: parseFloat(document.getElementById('pPrice').value),
           oldPrice: document.getElementById('pOldPrice').value ? parseFloat(document.getElementById('pOldPrice').value) : null,
+          supplier: document.getElementById('pSupplier').value.trim() || '',
           category: document.getElementById('pCategory').value,
           subcategory: document.getElementById('pSubcategory') ? document.getElementById('pSubcategory').value : '',
           sizes: sizes,
@@ -1882,6 +1890,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           const sizesHtml = p.sizes && p.sizes.length > 0 ? p.sizes.map(s => `<span class="meta-tag">${s}</span>`).join('') : '';
           const colorsHtml = p.colors && p.colors.length > 0 ? p.colors.map(c => `<span class="meta-tag">${c}</span>`).join('') : '';
           const subcatHtml = p.subcategory ? `<span class="meta-tag" style="background:var(--primary);color:#fff;">${p.subcategory}</span>` : '';
+          const supplierHtml = p.supplier ? `<span class="meta-tag" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9;"><i class="fas fa-industry" style="margin-right:4px;font-size:9px;"></i>${p.supplier}</span>` : '';
           const viewText = t.all === 'الكل' ? 'عرض' : 'View';
           const cost = parseFloat(p.cost) || 0;
           const price = parseFloat(p.price) || 0;
@@ -1897,7 +1906,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             <div class="product-item-info">
               <h4>${p.name}</h4>
               <p>${p.category}${p.badge ? ' &bull; ' + p.badge : ''}${p.showOnHome ? ' &bull; 🏠' : ''}${p.showOnCategory ? ' &bull; 📁' : ''}</p>
-              <div class="product-meta">${subcatHtml}${sizesHtml}${colorsHtml}</div>
+              <div class="product-meta">${subcatHtml}${sizesHtml}${colorsHtml}${supplierHtml}</div>
               <div class="product-profit-info">
                 <span class="cost-tag"><i class="fas fa-industry"></i> Cost: EGP ${cost.toFixed(2)}</span>
                 ${profitHtml}
@@ -1935,6 +1944,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         document.getElementById('pStock').value = product.stock !== undefined && product.stock !== null ? product.stock : 1;
         document.getElementById('pCategory').value = product.category || '';
         document.getElementById('pDesc').value = product.description || '';
+        document.getElementById('pSupplier').value = product.supplier || '';
         document.getElementById('pBadge').value = product.badge || '';
 
         // Update badge selector UI
@@ -2033,6 +2043,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         document.getElementById('productForm').reset();
         document.getElementById('editProductId').value = '';
         document.getElementById('pCost').value = '';
+        document.getElementById('pSupplier').value = '';
         document.getElementById('pStock').value = '1';
         document.getElementById('editModeBadge').classList.add('hidden');
         document.getElementById('cancelEditBtn').classList.add('hidden');
