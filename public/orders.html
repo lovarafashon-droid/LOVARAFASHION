@@ -448,6 +448,7 @@
 <base target="_blank">
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -767,6 +768,7 @@
                   <span class="item-tag"><i class="fas fa-ruler"></i> ${item.size || 'N/A'}</span>
                   <span class="item-tag"><i class="fas fa-times"></i> Qty: ${itemQty}</span>
                   <span class="item-tag"><i class="fas fa-tag"></i> Sell: EGP ${itemPrice.toFixed(2)}</span>
+                  ${item.supplier ? `<span class="item-tag" style="background:#e3f2fd;color:#1565c0;"><i class="fas fa-industry"></i> ${item.supplier}</span>` : ''}
                   <span class="item-tag" style="background:#ffebee;color:#c0392b;"><i class="fas fa-industry"></i> Cost: 
                     <input type="number" min="0" step="0.01" value="${itemCost > 0 ? itemCost : ''}" placeholder="0"
                            onchange="OrdersApp.updateItemCost(${index}, ${itemIdx}, this.value)"
