@@ -644,6 +644,8 @@
               data._docId = doc.id;
               this.orders.push(data);
             });
+            // Enrich items with supplier from products if missing
+            await this.enrichWithSuppliers();
             this.renderOrders();
           }, (err) => {
             console.error('[LOVARA Orders] Firestore error:', err);
@@ -659,7 +661,44 @@
 
       loadFromLocalStorage() {
         this.orders = JSON.parse(localStorage.getItem('lovara_orders')) || [];
-        this.renderOrders();
+        this.enrichWithSuppliers().then(() => this.renderOrders());
+      },
+
+      async enrichWithSuppliers() {
+        if (!this.db) return;
+        const cache = {};
+        for (const order of this.orders) {
+          if (!order.items) continue;
+          let updated = false;
+          for (const item of order.items) {
+            if (item.supplier) continue;
+            const name = item.name;
+            if (!name) continue;
+            if (cache[name] !== undefined) {
+              item.supplier = cache[name];
+              updated = true;
+              continue;
+            }
+            try {
+              const snap = await this.db.collection('products').where('name', '==', name).limit(1).get();
+              if (!snap.empty) {
+                const supplier = snap.docs[0].data().supplier || '';
+                cache[name] = supplier;
+                item.supplier = supplier;
+                updated = true;
+              } else {
+                cache[name] = '';
+              }
+            } catch (e) {
+              cache[name] = '';
+            }
+          }
+          if (updated && order._docId) {
+            try {
+              await this.db.collection('orders').doc(order._docId).update({ items: order.items });
+            } catch (e) {}
+          }
+        }
       },
 
       renderOrders() {
@@ -1073,6 +1112,7 @@
                 <span style="font-weight:600;">Price:</span>
                 <span style="font-weight:700;">EGP ${price.toFixed(2)}</span>
               </div>
+              ${item.supplier ? `<div style="display:flex; justify-content:space-between; margin-bottom:3px;"><span style="font-weight:600;">Factory:</span><span style="color:#1565c0;font-weight:500;">${item.supplier}</span></div>` : ''}
             </div>
           `;
         }).join('');
@@ -1158,8 +1198,9 @@
       },
 
       getCountryName(code) {
+        if (!code || code === 'Unknown') return '';
         const map = { EG: 'Egypt', SA: 'Saudi Arabia', AE: 'UAE', KW: 'Kuwait', QA: 'Qatar', BH: 'Bahrain', JO: 'Jordan', LB: 'Lebanon', IQ: 'Iraq', OTHER: 'Other' };
-        return map[code] || code || 'Unknown';
+        return map[code] || code;
       },
 
       showToast(message, type) {
