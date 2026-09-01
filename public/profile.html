@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" id="htmlRoot">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Account | LOVARA</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+
+  <style>
+    :root {
+      --pink: #f8c3cd;
+      --pink-light: #fce4ec;
+      --pink-dark: #e91e63;
+      --off-black: #1a1a1a;
+      --off-white: #f8f6f3;
+      --white: #ffffff;
+      --mid: #888;
+      --gold: #c9a87c;
+      --radius-lg: 16px;
+      --radius-full: 999px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.06);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
+      --transition: all 0.3s ease;
+      --font-serif: 'Cormorant Garamond', 'Noto Naskh Arabic', serif;
+      --font-sans: 'Jost', 'Noto Sans Arabic', sans-serif;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: var(--font-sans); background: var(--off-white); color: var(--off-black); }
+    a { text-decoration:none; color:inherit; }
+
+    /* ===== Navbar ===== */
+    .navbar { position:fixed; top:0; left:0; right:0; z-index:1000; background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); border-bottom:1px solid rgba(0,0,0,0.05); }
+    .nav-container { max-width:1280px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; }
+    .logo { font-family: var(--font-serif); font-size:1.6rem; font-weight:600; letter-spacing:2px; color:var(--off-black); }
+    .nav-actions { display:flex; align-items:center; gap:16px; }
+    .nav-btn { width:40px; height:40px; border-radius:50%; border:1px solid rgba(0,0,0,0.08); background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:var(--transition); color:var(--off-black); }
+    .nav-btn:hover { background:var(--pink-light); border-color:var(--pink); color:var(--pink-dark); }
+    .nav-btn i { font-size:1rem; }
+
+    /* ===== Layout ===== */
+    .profile-layout { display:grid; grid-template-columns:280px 1fr; gap:24px; max-width:1280px; margin:100px auto 60px; padding:0 24px; min-height:calc(100vh - 160px); }
+    @media (max-width:900px) { .profile-layout { grid-template-columns:1fr; margin-top:80px; } }
+
+    /* ===== Sidebar ===== */
+    .sidebar { background:#fff; border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:28px; height:fit-content; position:sticky; top:100px; }
+    .user-card { text-align:center; padding-bottom:24px; border-bottom:1px solid #eee; margin-bottom:20px; }
+    .user-avatar { width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg, var(--pink-light), var(--pink)); display:flex; align-items:center; justify-content:center; font-family:var(--font-serif); font-size:2rem; color:#fff; margin:0 auto 12px; text-transform:uppercase; }
+    .user-card h3 { font-family:var(--font-serif); font-size:1.3rem; font-weight:600; margin-bottom:4px; }
+    .user-card p { font-size:.85rem; color:var(--mid); }
+    .sidebar-menu { list-style:none; display:flex; flex-direction:column; gap:4px; }
+    .sidebar-menu li button, .sidebar-menu li a { width:100%; display:flex; align-items:center; gap:12px; padding:12px 16px; border-radius:12px; border:none; background:transparent; font-family:var(--font-sans); font-size:.95rem; color:var(--off-black); cursor:pointer; transition:var(--transition); text-align:left; }
+    .sidebar-menu li button:hover, .sidebar-menu li a:hover { background:var(--off-white); color:var(--pink-dark); }
+    .sidebar-menu li.active button, .sidebar-menu li.active a { background:var(--pink-light); color:var(--pink-dark); font-weight:500; }
+    .sidebar-menu li button i, .sidebar-menu li a i { width:20px; text-align:center; }
+    .logout-btn { margin-top:12px; color:#e74c3c !important; }
+    .logout-btn:hover { background:#ffebee !important; }
+
+    /* ===== Content ===== */
+    .content-area { background:#fff; border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:32px; }
+    .tab-panel { display:none; animation:fadeIn 0.3s ease; }
+    .tab-panel.active { display:block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    .page-header { margin-bottom:28px; }
+    .page-header h1 { font-family:var(--font-serif); font-size:1.8rem; font-weight:600; margin-bottom:6px; }
+    .page-header p { color:var(--mid); font-size:.9rem; }
+
+    /* Stats Grid */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:28px; }
+    .stat-card { background:var(--off-white); border-radius:var(--radius-lg); padding:20px; text-align:center; transition:var(--transition); }
+    .stat-card:hover { transform:translateY(-2px); box-shadow:var(--shadow); }
+    .stat-card i { font-size:1.4rem; color:var(--gold); margin-bottom:8px; }
+    .stat-card .num { font-family:var(--font-serif); font-size:1.6rem; font-weight:600; display:block; }
+    .stat-card .label { font-size:.8rem; color:var(--mid); }
+
+    /* Orders Table */
+    .orders-table-wrap { overflow-x:auto; }
+    .orders-table { width:100%; border-collapse:collapse; font-size:.9rem; }
+    .orders-table th { text-align:left; padding:14px 12px; border-bottom:2px solid #eee; font-weight:600; font-size:.8rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--mid); white-space:nowrap; }
+    .orders-table td { padding:14px 12px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+    .orders-table tr:hover td { background:#fafafa; }
+    .order-status { display:inline-block; padding:4px 12px; border-radius:20px; font-size:.75rem; font-weight:600; }
+    .status-pending { background:#fff3e0; color:#ef6c00; }
+    .status-processing { background:#e3f2fd; color:#1565c0; }
+    .status-shipped { background:#e8f5e9; color:#2e7d32; }
+    .status-delivered { background:#e8f5e9; color:#2e7d32; }
+    .status-cancelled { background:#ffebee; color:#c62828; }
+    .order-id { font-family:monospace; font-size:.85rem; color:var(--mid); }
+
+    /* Wishlist Grid */
+    .wishlist-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:16px; }
+    .wl-item { background:var(--off-white); border-radius:var(--radius-lg); overflow:hidden; position:relative; transition:var(--transition); }
+    .wl-item:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+    .wl-img { width:100%; aspect-ratio:3/4; object-fit:cover; display:block; }
+    .wl-info { padding:12px; }
+    .wl-info h4 { font-size:.85rem; font-weight:500; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .wl-info .price { color:var(--gold); font-weight:600; font-size:.9rem; }
+    .wl-remove { position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:50%; border:none; background:rgba(255,255,255,0.9); color:#e74c3c; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.8rem; }
+
+    /* Forms */
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width:600px) { .form-grid { grid-template-columns:1fr; } }
+    .form-group { margin-bottom:16px; }
+    .form-group label { display:block; font-size:.8rem; font-weight:500; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; color:var(--mid); }
+    .form-group input, .form-group textarea, .form-group select { width:100%; padding:12px 14px; border:1.5px solid #e8e4e0; border-radius:10px; font-family:var(--font-sans); font-size:.9rem; background:#fff; transition:var(--transition); }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(201,168,124,0.1); }
+    .btn-primary { background:var(--gold); color:#fff; border:none; padding:12px 28px; border-radius:10px; font-family:var(--font-sans); font-size:.9rem; font-weight:600; cursor:pointer; transition:var(--transition); display:inline-flex; align-items:center; gap:8px; }
+    .btn-primary:hover { background:#b8956a; transform:translateY(-1px); box-shadow:0 4px 12px rgba(201,168,124,0.3); }
+    .btn-outline { background:transparent; color:var(--off-black); border:1.5px solid #e8e4e0; padding:12px 28px; border-radius:10px; font-family:var(--font-sans); font-size:.9rem; font-weight:600; cursor:pointer; transition:var(--transition); }
+    .btn-outline:hover { border-color:var(--gold); color:var(--gold); }
+    .form-actions { display:flex; gap:12px; margin-top:8px; }
+
+    /* Empty State */
+    .empty-state { text-align:center; padding:40px 20px; color:var(--mid); }
+    .empty-state i { font-size:2.5rem; margin-bottom:12px; opacity:0.4; }
+    .empty-state p { font-size:.95rem; }
+
+    /* Toast */
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px); background:var(--off-black); color:#fff; padding:14px 28px; border-radius:var(--radius-full); font-size:.9rem; display:flex; align-items:center; gap:10px; box-shadow:var(--shadow-lg); z-index:3000; opacity:0; transition:all 0.4s cubic-bezier(0.16,1,0.3,1); pointer-events:none; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .toast i { color:#4CAF50; }
+
+    /* Loading */
+    .loading-skeleton { background:linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size:200% 100%; animation:shimmer 1.2s infinite; border-radius:8px; height:20px; }
+    @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
+
+    /* RTL */
+    body.lang-ar { direction:rtl; }
+    body.lang-ar .sidebar-menu li button, body.lang-ar .sidebar-menu li a { text-align:right; flex-direction:row-reverse; }
+    body.lang-ar .orders-table th { text-align:right; }
+  </style>
+</head>
+<body class="lang-en">
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="logo">LOVARA</a>
+      <div class="nav-actions">
+        <a href="index.html" class="nav-btn" title="Home"><i class="fas fa-home"></i></a>
+        <button class="nav-btn" onclick="toggleLang()" title="Language"><i class="fas fa-globe"></i></button>
+        <button class="nav-btn logout-btn" onclick="logout()" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Layout -->
+  <div class="profile-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="user-card">
+        <div class="user-avatar" id="profileAvatar">U</div>
+        <h3 id="profileName">User Name</h3>
+        <p id="profileEmail">user@email.com</p>
+      </div>
+      <ul class="sidebar-menu">
+        <li class="active" data-tab="dashboard"><button onclick="switchTab('dashboard')"><i class="fas fa-th-large"></i> <span data-i18n="tabDashboard">Dashboard</span></button></li>
+        <li data-tab="orders"><button onclick="switchTab('orders')"><i class="fas fa-box"></i> <span data-i18n="tabOrders">My Orders</span></button></li>
+        <li data-tab="wishlist"><button onclick="switchTab('wishlist')"><i class="fas fa-heart"></i> <span data-i18n="tabWishlist">Wishlist</span></button></li>
+        <li data-tab="account"><button onclick="switchTab('account')"><i class="fas fa-user-edit"></i> <span data-i18n="tabAccount">Account Info</span></button></li>
+        <li data-tab="security"><button onclick="switchTab('security')"><i class="fas fa-lock"></i> <span data-i18n="tabSecurity">Security</span></button></li>
+        <li><button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span data-i18n="logout">Logout</span></button></li>
+      </ul>
+    </aside>
+
+    <!-- Content -->
+    <div class="content-area">
+      <!-- Dashboard -->
+      <div class="tab-panel active" id="tab-dashboard">
+        <div class="page-header">
+          <h1 data-i18n="dashTitle">Dashboard</h1>
+          <p data-i18n="dashSub">Overview of your account activity</p>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><i class="fas fa-shopping-bag"></i><span class="num" id="statOrders">0</span><span class="label" data-i18n="statOrders">Orders</span></div>
+          <div class="stat-card"><i class="fas fa-heart"></i><span class="num" id="statWishlist">0</span><span class="label" data-i18n="statWishlist">Wishlist Items</span></div>
+          <div class="stat-card"><i class="fas fa-wallet"></i><span class="num" id="statSpent">EGP 0</span><span class="label" data-i18n="statSpent">Total Spent</span></div>
+        </div>
+        <div class="page-header" style="margin-top:24px;">
+          <h2 data-i18n="recentOrder">Recent Order</h2>
+        </div>
+        <div id="recentOrderContainer">
+          <div class="empty-state"><i class="fas fa-box-open"></i><p data-i18n="noOrdersYet">No orders yet</p></div>
+        </div>
+      </div>
+
+      <!-- Orders -->
+      <div class="tab-panel" id="tab-orders">
+        <div class="page-header">
+          <h1 data-i18n="ordersTitle">My Orders</h1>
+          <p data-i18n="ordersSub">Track and view your order history</p>
+        </div>
+        <div class="orders-table-wrap" id="ordersTableWrap">
+          <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading orders...</p></div>
+        </div>
+      </div>
+
+      <!-- Wishlist -->
+      <div class="tab-panel" id="tab-wishlist">
+        <div class="page-header">
+          <h1 data-i18n="wishlistTitle">My Wishlist</h1>
+          <p data-i18n="wishlistSub">Products you have saved for later</p>
+        </div>
+        <div class="wishlist-grid" id="wishlistGrid">
+          <div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-heart"></i><p data-i18n="wishlistEmpty">Your wishlist is empty</p></div>
+        </div>
+      </div>
+
+      <!-- Account -->
+      <div class="tab-panel" id="tab-account">
+        <div class="page-header">
+          <h1 data-i18n="accountTitle">Account Information</h1>
+          <p data-i18n="accountSub">Update your personal details</p>
+        </div>
+        <form id="accountForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label data-i18n="labelFirstName">First Name</label>
+              <input type="text" id="accFirstName" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="labelLastName">Last Name</label>
+              <input type="text" id="accLastName" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="labelPhone">Phone</label>
+              <input type="tel" id="accPhone" placeholder="+20 123 456 7890" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="labelCity">City</label>
+              <input type="text" id="accCity" placeholder="Cairo" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="labelAddress">Address</label>
+            <textarea id="accAddress" rows="3" placeholder="Street, building, floor..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary"><i class="fas fa-save"></i> <span data-i18n="btnSave">Save Changes</span></button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Security -->
+      <div class="tab-panel" id="tab-security">
+        <div class="page-header">
+          <h1 data-i18n="securityTitle">Security</h1>
+          <p data-i18n="securitySub">Change your password</p>
+        </div>
+        <form id="passwordForm" style="max-width:480px;">
+          <div class="form-group">
+            <label data-i18n="labelCurrentPassword">Current Password</label>
+            <input type="password" id="currPassword" required />
+          </div>
+          <div class="form-group">
+            <label data-i18n="labelNewPassword">New Password</label>
+            <input type="password" id="newPassword" required minlength="6" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="labelConfirmPassword">Confirm New Password</label>
+            <input type="password" id="confirmPassword" required minlength="6" />
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary"><i class="fas fa-key"></i> <span data-i18n="btnUpdatePassword">Update Password</span></button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"><i class="fas fa-check-circle"></i> <span id="toastMsg">Done</span></div>
+
+  <script>
+    /* ========== TRANSLATIONS ========== */
+    const translations = {
+      en: {
+        tabDashboard:"Dashboard", tabOrders:"My Orders", tabWishlist:"Wishlist", tabAccount:"Account Info", tabSecurity:"Security", logout:"Logout",
+        dashTitle:"Dashboard", dashSub:"Overview of your account activity",
+        statOrders:"Orders", statWishlist:"Wishlist Items", statSpent:"Total Spent",
+        recentOrder:"Recent Order", noOrdersYet:"No orders yet",
+        ordersTitle:"My Orders", ordersSub:"Track and view your order history",
+        wishlistTitle:"My Wishlist", wishlistSub:"Products you have saved for later", wishlistEmpty:"Your wishlist is empty",
+        accountTitle:"Account Information", accountSub:"Update your personal details",
+        labelFirstName:"First Name", labelLastName:"Last Name", labelPhone:"Phone", labelCity:"City", labelAddress:"Address",
+        btnSave:"Save Changes",
+        securityTitle:"Security", securitySub:"Change your password",
+        labelCurrentPassword:"Current Password", labelNewPassword:"New Password", labelConfirmPassword:"Confirm New Password",
+        btnUpdatePassword:"Update Password",
+        toastSaved:"Saved successfully!", toastPasswordUpdated:"Password updated!", toastError:"Something went wrong", toastReauth:"Please login again to change password",
+        orderId:"Order ID", orderDate:"Date", orderItems:"Items", orderTotal:"Total", orderStatus:"Status",
+        statusPending:"Pending", statusProcessing:"Processing", statusShipped:"Shipped", statusDelivered:"Delivered", statusCancelled:"Cancelled"
+      },
+      ar: {
+        tabDashboard:"لوحة التحكم", tabOrders:"طلباتي", tabWishlist:"المفضلة", tabAccount:"بيانات الحساب", tabSecurity:"الأمان", logout:"تسجيل الخروج",
+        dashTitle:"لوحة التحكم", dashSub:"نظرة عامة على نشاط حسابك",
+        statOrders:"الطلبات", statWishlist:"المفضلة", statSpent:"إجمالي الشراء",
+        recentOrder:"آخر طلب", noOrdersYet:"لا توجد طلبات بعد",
+        ordersTitle:"طلباتي", ordersSub:"تتبع وعرض سجل طلباتك",
+        wishlistTitle:"المفضلة", wishlistSub:"المنتجات اللي حفظتيها", wishlistEmpty:"المفضلة فارغة",
+        accountTitle:"بيانات الحساب", accountSub:"حدثي بياناتك الشخصية",
+        labelFirstName:"الاسم الأول", labelLastName:"اسم العائلة", labelPhone:"الهاتف", labelCity:"المدينة", labelAddress:"العنوان",
+        btnSave:"حفظ التغييرات",
+        securityTitle:"الأمان", securitySub:"تغيير كلمة المرور",
+        labelCurrentPassword:"كلمة المرور الحالية", labelNewPassword:"كلمة المرور الجديدة", labelConfirmPassword:"تأكيد كلمة المرور",
+        btnUpdatePassword:"تحديث كلمة المرور",
+        toastSaved:"تم الحفظ بنجاح!", toastPasswordUpdated:"تم تحديث كلمة المرور!", toastError:"حدث خطأ", toastReauth:"يرجى تسجيل الدخول مرة أخرى لتغيير كلمة المرور",
+        orderId:"رقم الطلب", orderDate:"التاريخ", orderItems:"المنتجات", orderTotal:"الإجمالي", orderStatus:"الحالة",
+        statusPending:"معلق", statusProcessing:"جاري التجهيز", statusShipped:"تم الشحن", statusDelivered:"تم التوصيل", statusCancelled:"ملغي"
+      }
+    };
+    let currentLang = localStorage.getItem('lovara_lang') || 'en';
+    function t(key){ return translations[currentLang][key] || key; }
+    function applyLang(){
+      document.body.className = 'lang-'+currentLang;
+      document.documentElement.dir = currentLang==='ar'?'rtl':'ltr';
+      document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(translations[currentLang][k]) el.textContent=translations[currentLang][k]; });
+    }
+    function toggleLang(){ currentLang = currentLang==='en'?'ar':'en'; localStorage.setItem('lovara_lang',currentLang); applyLang(); location.reload(); }
+    applyLang();
+
+    /* ========== GLOBALS ========== */
+    let db, auth, currentUser, userData={};
+
+    /* ========== FIREBASE INIT ========== */
+    function initFirebase(){
+      return new Promise((resolve)=>{
+        let tries=0; const iv=setInterval(()=>{
+          if(typeof firebase!=='undefined' && firebase.apps && firebase.apps.length){
+            db=firebase.firestore(); auth=firebase.auth(); clearInterval(iv); resolve(true);
+          } else if(++tries>30){ clearInterval(iv); resolve(false); }
+        },200);
+      });
+    }
+
+    /* ========== TABS & UI ========== */
+    function switchTab(tab){
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('.sidebar-menu li').forEach(l=>l.classList.remove('active'));
+      const panel = document.getElementById('tab-'+tab);
+      const menuLi = document.querySelector('.sidebar-menu li[data-tab="'+tab+'"]');
+      if(panel) panel.classList.add('active');
+      if(menuLi) menuLi.classList.add('active');
+      if(tab==='wishlist') renderWishlist();
+      if(tab==='orders' && db) loadOrders();
+    }
+
+    function showToast(msg, type='success'){
+      const toast=document.getElementById('toast'); 
+      const txt=document.getElementById('toastMsg'); 
+      const icon=toast.querySelector('i');
+      txt.textContent=msg; 
+      icon.className=type==='error'?'fas fa-exclamation-circle':'fas fa-check-circle'; 
+      icon.style.color=type==='error'?'#e74c3c':'#4CAF50';
+      toast.classList.add('show'); 
+      setTimeout(()=>toast.classList.remove('show'),3000);
+    }
+
+    function logout(){
+      if(auth && auth.signOut){
+        auth.signOut().then(()=>{ localStorage.removeItem('lovara_user'); window.location.href='index.html'; });
+      } else {
+        localStorage.removeItem('lovara_user'); 
+        window.location.href='index.html';
+      }
+    }
+
+    /* ========== PROFILE ========== */
+    async function loadProfile(){
+      try {
+        let name = currentUser.displayName || 'User';
+        let email = currentUser.email || 'user@email.com';
+        let first = '', last = '';
+        if(db){
+          const snap = await db.collection('users').doc(currentUser.uid).get();
+          if(snap.exists){ 
+            userData = snap.data(); 
+            first = userData.firstName || ''; 
+            last = userData.lastName || '';
+          }
+        }
+        name = (first + ' ' + last).trim() || currentUser.displayName || 'User';
+        document.getElementById('profileName').textContent = name;
+        document.getElementById('profileEmail').textContent = email;
+        document.getElementById('profileAvatar').textContent = (first || email || 'U')[0].toUpperCase();
+        document.getElementById('accFirstName').value = first;
+        document.getElementById('accLastName').value = last;
+        document.getElementById('accPhone').value = userData.phone || '';
+        document.getElementById('accCity').value = userData.city || '';
+        document.getElementById('accAddress').value = userData.address || '';
+      } catch(e){ console.error(e); }
+    }
+
+    /* ========== ORDERS ========== */
+    async function loadOrders(){
+      const container = document.getElementById('ordersTableWrap');
+      if(!db || !currentUser){
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>${t('noOrdersYet')}</p></div>`;
+        return;
+      }
+      try {
+        const snap = await db.collection('orders').where('userId','==',currentUser.uid).orderBy('createdAt','desc').get();
+        const orders = snap.docs.map(d=>({id:d.id, ...d.data()}));
+        document.getElementById('statOrders').textContent = orders.length;
+        const totalSpent = orders.reduce((s,o)=>s+(parseFloat(o.total)||0),0);
+        document.getElementById('statSpent').textContent = 'EGP ' + totalSpent.toFixed(2);
+
+        if(orders.length===0){
+          container.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>${t('noOrdersYet')}</p></div>`;
+          document.getElementById('recentOrderContainer').innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>${t('noOrdersYet')}</p></div>`;
+          return;
+        }
+
+        const recent = orders[0];
+        document.getElementById('recentOrderContainer').innerHTML = `
+          <div style="background:var(--off-white); border-radius:12px; padding:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <div class="order-id">#${recent.id.slice(-6).toUpperCase()}</div>
+              <div style="font-weight:500; margin-top:4px;">${recent.items ? recent.items.length : 0} ${currentLang==='ar'?'منتج':'items'} — EGP ${(parseFloat(recent.total)||0).toFixed(2)}</div>
+            </div>
+            <span class="order-status status-${(recent.status||'pending').toLowerCase()}">${t('status'+((recent.status||'Pending').replace(/\s/g,''))) || recent.status}</span>
+          </div>`;
+
+        let html = `<table class="orders-table"><thead><tr>
+          <th>${t('orderId')}</th><th>${t('orderDate')}</th><th>${t('orderItems')}</th><th>${t('orderTotal')}</th><th>${t('orderStatus')}</th>
+        </tr></thead><tbody>`;
+        orders.forEach(o=>{
+          const date = o.createdAt ? (o.createdAt.toDate ? o.createdAt.toDate().toLocaleDateString() : new Date(o.createdAt).toLocaleDateString()) : '-';
+          html += `<tr>
+            <td class="order-id">#${o.id.slice(-6).toUpperCase()}</td>
+            <td>${date}</td>
+            <td>${o.items ? o.items.length : 0} ${currentLang==='ar'?'منتج':'items'}</td>
+            <td style="font-weight:600; color:var(--gold);">EGP ${(parseFloat(o.total)||0).toFixed(2)}</td>
+            <td><span class="order-status status-${(o.status||'pending').toLowerCase()}">${t('status'+((o.status||'Pending').replace(/\s/g,''))) || o.status}</span></td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+      } catch(e){
+        console.error(e);
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>${t('toastError')}</p></div>`;
+      }
+    }
+
+    /* ========== WISHLIST ========== */
+    function renderWishlist(){
+      const list = JSON.parse(localStorage.getItem('lovara_wishlist')||'[]');
+      document.getElementById('statWishlist').textContent = list.length;
+      const grid = document.getElementById('wishlistGrid');
+      if(list.length===0){
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-heart"></i><p>${t('wishlistEmpty')}</p></div>`;
+        return;
+      }
+      grid.innerHTML = list.map((item,idx)=>`
+        <div class="wl-item">
+          <button class="wl-remove" onclick="removeWishlist(${idx})"><i class="fas fa-times"></i></button>
+          <img src="${item.imageUrl||item.image||'https://via.placeholder.com/300x400?text=LOVARA'}" class="wl-img" alt="${item.name}" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">
+          <div class="wl-info"><h4>${item.name}</h4><div class="price">EGP ${(parseFloat(item.price)||0).toFixed(2)}</div></div>
+        </div>
+      `).join('');
+    }
+    function removeWishlist(idx){
+      let list = JSON.parse(localStorage.getItem('lovara_wishlist')||'[]');
+      list.splice(idx,1); 
+      localStorage.setItem('lovara_wishlist',JSON.stringify(list));
+      renderWishlist(); 
+      showToast('Removed from wishlist');
+    }
+
+    /* ========== SECURITY ========== */
+    function setupSecurityForm(){
+      const form = document.getElementById('passwordForm');
+      if(!form) return;
+      form.addEventListener('submit', async e=>{
+        e.preventDefault();
+        if(!auth || !currentUser){ showToast(t('toastReauth'),'error'); return; }
+        const curr = document.getElementById('currPassword').value;
+        const neu = document.getElementById('newPassword').value;
+        const conf = document.getElementById('confirmPassword').value;
+        if(neu!==conf){ showToast('Passwords do not match','error'); return; }
+        try {
+          const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, curr);
+          await currentUser.reauthenticateWithCredential(cred);
+          await currentUser.updatePassword(neu);
+          showToast(t('toastPasswordUpdated'));
+          form.reset();
+        } catch(err){
+          if(err.code==='auth/wrong-password') showToast('Wrong current password','error');
+          else if(err.code==='auth/requires-recent-login') showToast(t('toastReauth'),'error');
+          else showToast(err.message,'error');
+        }
+      });
+    }
+
+    /* ========== ACCOUNT FORM ========== */
+    function setupAccountForm(){
+      const form = document.getElementById('accountForm');
+      if(!form) return;
+      form.addEventListener('submit', async e=>{
+        e.preventDefault();
+        if(!db || !currentUser){ showToast(t('toastError'),'error'); return; }
+        const payload = {
+          firstName: document.getElementById('accFirstName').value.trim(),
+          lastName: document.getElementById('accLastName').value.trim(),
+          phone: document.getElementById('accPhone').value.trim(),
+          city: document.getElementById('accCity').value.trim(),
+          address: document.getElementById('accAddress').value.trim(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        try {
+          await db.collection('users').doc(currentUser.uid).set(payload, {merge:true});
+          showToast(t('toastSaved'));
+          loadProfile();
+        } catch(err){ showToast(err.message, 'error'); }
+      });
+    }
+
+    /* ========== INIT ========== */
+    document.addEventListener('DOMContentLoaded', ()=>{
+      setupAccountForm();
+      setupSecurityForm();
+      initFirebase().then(ok=>{
+        if(ok && auth){
+          auth.onAuthStateChanged(user=>{
+            if(!user){ window.location.href='index.html'; return; }
+            currentUser=user; 
+            loadProfile(); 
+            loadOrders(); 
+            renderWishlist();
+          });
+        } else {
+          // Fallback: demo mode if Firebase not loaded
+          console.warn('Firebase not available - running in demo mode');
+          currentUser = { uid:'demo123', email:'demo@lovara.com', displayName:'Demo User' };
+          loadProfile(); 
+          renderWishlist();
+          document.getElementById('ordersTableWrap').innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>${t('noOrdersYet')}</p></div>`;
+          document.getElementById('recentOrderContainer').innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>${t('noOrdersYet')}</p></div>`;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
