@@ -409,6 +409,8 @@
 <base target="_blank">
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -448,13 +450,13 @@
           <button class="btn btn-sm btn-primary" id="openSignup" data-i18n="navSignup">Sign Up</button>
         </div>
         <button class="btn btn-sm btn-outline" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
-        <div class="user-info" id="userDisplay" style="display:none;">
+        <a href="profile.html" class="user-info" id="userDisplay" style="display:none; text-decoration:none;">
           <i class="fas fa-user-circle"></i>
           <div class="user-details">
             <span id="userName" class="user-name">User</span>
             <span id="userEmail" class="user-email"></span>
           </div>
-        </div>
+        </a>
         <button class="wishlist-btn" onclick="CategoryApp.openWishlistModal()" aria-label="Wishlist">
           <i class="fas fa-heart"></i>
           <span class="wishlist-count" id="wishlistCount">0</span>
@@ -1057,7 +1059,7 @@
       en: {
         pageTitle: "LOVARA – Women's Fashion",
         navHome: "Home", navShop: "Shop", navCategories: "Categories", navAbout: "About", navContact: "Contact",
-        navLogin: "Login", navSignup: "Sign Up",
+        navLogin: "Login", navSignup: "Sign Up", navProfile: "My Account",
         heroEyebrow: "New Collection · SS 2026",
         heroTitle1: "Wear Your", heroTitle2: "Confidence",
         heroSub: "Curated luxury fashion for the modern woman —<br>timeless elegance, effortless style.",
@@ -1136,7 +1138,7 @@
       ar: {
         pageTitle: "LOVARA – أزياء نسائية",
         navHome: "الرئيسية", navShop: "المتجر", navCategories: "التصنيفات", navAbout: "من نحن", navContact: "تواصل معنا",
-        navLogin: "تسجيل الدخول", navSignup: "إنشاء حساب",
+        navLogin: "تسجيل الدخول", navSignup: "إنشاء حساب", navProfile: "حسابي",
         heroEyebrow: "تشكيلة جديدة · صيف 2026",
         heroTitle1: "ارتدي", heroTitle2: "ثقتكِ",
         heroSub: "أزياء فاخرة مختارة للمرأة العصرية —<br>أناقة خالدة، أسلوب بلا جهد.",
@@ -1671,9 +1673,13 @@
         showToast('Proceeding to checkout...');
       },
       handleAddToCart(productId) {
-        if (window.CategoryApp) { CategoryApp.handleAddToCart(productId); return; }
         const product = (window.carouselState && window.carouselState.products) ? window.carouselState.products.find(p => p.id === productId) : null;
         if (!product) return;
+        if (product.badge === 'Coming Soon' || product.comingSoon === true) {
+          showToast('This product is coming soon!');
+          return;
+        }
+        if (window.CategoryApp) { CategoryApp.handleAddToCart(productId); return; }
         if ((product.sizes && product.sizes.length > 0) || (product.colors && product.colors.length > 0)) {
           this.openBuyNowModal(product, false);
         } else {
@@ -1681,9 +1687,13 @@
         }
       },
       handleBuyNow(productId) {
-        if (window.CategoryApp) { CategoryApp.handleBuyNow(productId); return; }
         const product = (window.carouselState && window.carouselState.products) ? window.carouselState.products.find(p => p.id === productId) : null;
         if (!product) return;
+        if (product.badge === 'Coming Soon' || product.comingSoon === true) {
+          showToast('This product is coming soon!');
+          return;
+        }
+        if (window.CategoryApp) { CategoryApp.handleBuyNow(productId); return; }
         this.openBuyNowModal(product, true);
       },
       openBuyNowModal(product, isDirectBuy) {
@@ -1965,6 +1975,11 @@
 
     function pmAddToCart() {
       if (!pmCurrentProduct) return;
+      if (pmCurrentProduct.badge === 'Coming Soon' || pmCurrentProduct.comingSoon === true) {
+        showToast('This product is coming soon!');
+        closeProductModal();
+        return;
+      }
       const item = {
         ...pmCurrentProduct,
         size: pmSelectedSize,
