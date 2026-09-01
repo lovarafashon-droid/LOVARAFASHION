@@ -804,8 +804,8 @@ const CategoryApp = {
         }
       }
       if (!product) return;
-      if (e.target.closest('.add-to-cart, .btn-add-cart')) { e.preventDefault(); e.stopPropagation(); if ((product.sizes && product.sizes.length > 0) || (product.colors && product.colors.length > 0)) this.openBuyNowModal(product, false); else this.addToCart(product, null, null); return; }
-      if (e.target.closest('.btn-buy-now')) { e.preventDefault(); e.stopPropagation(); this.openBuyNowModal(product, true); return; }
+      if (e.target.closest('.add-to-cart, .btn-add-cart')) { e.preventDefault(); e.stopPropagation(); if (product.badge === 'Coming Soon' || product.comingSoon === true) { this.showToast(this.currentLang === 'ar' ? 'هذا المنتج سيتوفر قريباً!' : 'This product is coming soon!'); return; } if ((product.sizes && product.sizes.length > 0) || (product.colors && product.colors.length > 0)) this.openBuyNowModal(product, false); else this.addToCart(product, null, null); return; }
+      if (e.target.closest('.btn-buy-now')) { e.preventDefault(); e.stopPropagation(); if (product.badge === 'Coming Soon' || product.comingSoon === true) { this.showToast(this.currentLang === 'ar' ? 'هذا المنتج سيتوفر قريباً!' : 'This product is coming soon!'); return; } this.openBuyNowModal(product, true); return; }
       if (e.target.closest('.product-wishlist, .wishlist-btn')) { e.preventDefault(); e.stopPropagation(); this.toggleWishlist(product); const btn = card.querySelector('.product-wishlist, .wishlist-btn'); if (btn) btn.classList.toggle('active'); return; }
       if (e.target.closest('.btn-share, .share-btn')) { e.preventDefault(); e.stopPropagation(); this.shareProduct(productId); return; }
     });
@@ -823,7 +823,7 @@ const CategoryApp = {
     const sizesHtml = product.sizes ? product.sizes.map(s => `<span class="product-size-tag">${s}</span>`).join('') : '';
     const colorsHtml = product.colors ? product.colors.map(c => `<span class="product-color-tag" style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span>`).join('') : '';
     const isWished = this.isInWishlist(product.id);
-    card.innerHTML = `<div class="product-img-wrap" onclick="CategoryApp.openProductDetail('${product.id}')" style="cursor:pointer;"><img src="${product.imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA'}" alt="${product.name}" class="product-img" loading="lazy" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">${badgeHtml}<button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="event.stopPropagation(); CategoryApp.handleWishlistClick('${product.id}')"><i class="fas fa-heart"></i></button></div><div class="product-info"><h4 class="product-name">${product.name}</h4><p class="product-price">EGP ${product.price ? (parseFloat(product.price) || 0).toFixed(2) : '0.00'} ${oldPriceHtml}</p>${sizesHtml ? `<div class="product-sizes"><span class="product-meta-label">${this.t('size')}:</span>${sizesHtml}</div>` : ''}${colorsHtml ? `<div class="product-colors"><span class="product-meta-label">${this.t('color')}:</span>${colorsHtml}</div>` : ''}<div class="product-actions"><button class="add-to-cart" onclick="CategoryApp.handleAddToCart('${product.id}')"><i class="fas fa-bag-shopping"></i> ${this.t('addToCart')}</button><button class="btn-buy-now" onclick="CategoryApp.handleBuyNow('${product.id}')"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share"><i class="fas fa-share-nodes"></i></button></div></div>`;
+    card.innerHTML = `<div class="product-img-wrap" onclick="CategoryApp.openProductDetail('${product.id}')" style="cursor:pointer;"><img src="${product.imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA'}" alt="${product.name}" class="product-img" loading="lazy" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">${badgeHtml}<button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="event.stopPropagation(); CategoryApp.handleWishlistClick('${product.id}')"><i class="fas fa-heart"></i></button></div><div class="product-info"><h4 class="product-name">${product.name}</h4><p class="product-price">EGP ${product.price ? (parseFloat(product.price) || 0).toFixed(2) : '0.00'} ${oldPriceHtml}</p>${sizesHtml ? `<div class="product-sizes"><span class="product-meta-label">${this.t('size')}:</span>${sizesHtml}</div>` : ''}${colorsHtml ? `<div class="product-colors"><span class="product-meta-label">${this.t('color')}:</span>${colorsHtml}</div>` : ''}${product.badge === 'Coming Soon' || product.comingSoon === true ? `<div class="product-actions coming-soon-actions"><span class="coming-soon-label" style="flex:1;text-align:center;padding:10px 14px;background:#f5f5f5;border-radius:8px;color:#888;font-size:13px;font-weight:500;"><i class="fas fa-clock" style="margin-right:6px;"></i>${this.badgeTranslations[this.currentLang]?.['Coming Soon'] || 'Coming Soon'}</span><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share" style="width:40px;height:40px;border-radius:8px;border:1px solid #e8e4e0;background:#fff;color:#666;cursor:pointer;"><i class="fas fa-share-nodes"></i></button></div>` : `<div class="product-actions"><button class="add-to-cart" onclick="CategoryApp.handleAddToCart('${product.id}')"><i class="fas fa-bag-shopping"></i> ${this.t('addToCart')}</button><button class="btn-buy-now" onclick="CategoryApp.handleBuyNow('${product.id}')"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share"><i class="fas fa-share-nodes"></i></button></div>`}</div>`;
     return card;
   },
 
@@ -839,6 +839,10 @@ const CategoryApp = {
     let product = this.products.find(p => p.id === productId);
     if (!product && window.carouselState && window.carouselState.products) product = window.carouselState.products.find(p => p.id === productId);
     if (!product) return;
+    if (product.badge === 'Coming Soon' || product.comingSoon === true) {
+      this.showToast(this.currentLang === 'ar' ? 'هذا المنتج سيتوفر قريباً!' : 'This product is coming soon!');
+      return;
+    }
     if ((product.sizes && product.sizes.length > 0) || (product.colors && product.colors.length > 0)) this.openBuyNowModal(product);
     else this.addToCart(product, null, null);
   },
@@ -847,10 +851,18 @@ const CategoryApp = {
     let product = this.products.find(p => p.id === productId);
     if (!product && window.carouselState && window.carouselState.products) product = window.carouselState.products.find(p => p.id === productId);
     if (!product) return;
+    if (product.badge === 'Coming Soon' || product.comingSoon === true) {
+      this.showToast(this.currentLang === 'ar' ? 'هذا المنتج سيتوفر قريباً!' : 'This product is coming soon!');
+      return;
+    }
     this.openBuyNowModal(product, true);
   },
 
   openBuyNowModal(product, isDirectBuy = false) {
+    if (product.badge === 'Coming Soon' || product.comingSoon === true) {
+      this.showToast(this.currentLang === 'ar' ? 'هذا المنتج سيتوفر قريباً!' : 'This product is coming soon!');
+      return;
+    }
     const existing = document.getElementById('buyNowModal');
     if (existing) existing.remove();
     const sizesHtml = product.sizes ? product.sizes.map((s, i) => `<label class="buy-now-option"><input type="radio" name="buySize" value="${s}" ${i === 0 ? 'checked' : ''}><span>${s}</span></label>`).join('') : '';
@@ -871,6 +883,10 @@ const CategoryApp = {
   confirmBuyNow(productId, isDirectBuy) {
     const product = this.products.find(p => p.id === productId);
     if (!product) return;
+    if (product.badge === 'Coming Soon' || product.comingSoon === true) {
+      this.showToast(this.currentLang === 'ar' ? 'هذا المنتج سيتوفر قريباً!' : 'This product is coming soon!');
+      return;
+    }
     const sizeEl = document.querySelector('input[name="buySize"]:checked');
     const colorEl = document.querySelector('input[name="buyColor"]:checked');
     const size = sizeEl ? sizeEl.value : null;
