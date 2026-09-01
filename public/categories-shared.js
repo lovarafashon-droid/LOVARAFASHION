@@ -4,6 +4,12 @@
 // ============================================
 
 const CategoryApp = {
+  badgeTranslations: {
+    en: { 'New': 'New', 'Sale': 'Sale', 'Bestseller': 'Bestseller', 'Limited': 'Limited', 'Coming Soon': 'Coming Soon' },
+    ar: { 'New': 'جديد', 'Sale': 'تخفيض', 'Bestseller': 'الأكثر مبيعاً', 'Limited': 'محدود', 'Coming Soon': 'قريباً' }
+  },
+
+
   currentLang: localStorage.getItem('lovara_lang') || 'en',
   cart: JSON.parse(localStorage.getItem('lovara_cart') || '[]'),
   wishlist: JSON.parse(localStorage.getItem('lovara_wishlist') || '[]'),
@@ -811,7 +817,8 @@ const CategoryApp = {
     card.setAttribute('data-category', product.category || '');
     card.setAttribute('data-subcategory', product.subcategory || '');
     card.setAttribute('data-product-id', product.id || '');
-    const badgeHtml = product.badge ? `<div class="product-badge">${product.badge}</div>` : '';
+    const badgeText = this.badgeTranslations[this.currentLang]?.[product.badge] || product.badge;
+    const badgeHtml = product.badge ? `<div class="product-badge">${badgeText}</div>` : '';
     const oldPriceHtml = product.oldPrice ? `<span class="old-price">EGP ${product.oldPrice.toFixed(2)}</span>` : '';
     const sizesHtml = product.sizes ? product.sizes.map(s => `<span class="product-size-tag">${s}</span>`).join('') : '';
     const colorsHtml = product.colors ? product.colors.map(c => `<span class="product-color-tag" style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span>`).join('') : '';
