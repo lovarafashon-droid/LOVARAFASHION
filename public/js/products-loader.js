@@ -193,6 +193,13 @@ let carouselState = {
   currentFilter: 'all'
 };
 
+const badgeTranslations = {
+  en: { 'New': 'New', 'Sale': 'Sale', 'Bestseller': 'Bestseller', 'Limited': 'Limited', 'Coming Soon': 'Coming Soon' },
+  ar: { 'New': 'جديد', 'Sale': 'تخفيض', 'Bestseller': 'الأكثر مبيعاً', 'Limited': 'محدود', 'Coming Soon': 'قريباً' }
+};
+
+
+
 function initProductCarousel(grid, products) {
   carouselState.products = products;
   carouselState.filteredProducts = products;
@@ -334,7 +341,9 @@ function createProductCard(id, product) {
   const imageUrl = product.imageUrl || product.image || product.imageURL || product.photo || product.img || product.thumbnail || '';
   const finalImage = imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA';
 
-  const badgeHtml = product.badge ? `<div class="product-badge">${product.badge}</div>` : '';
+  const lang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : (localStorage.getItem('lovara_lang') || 'en');
+  const badgeText = badgeTranslations[lang]?.[product.badge] || product.badge;
+  const badgeHtml = product.badge ? `<div class="product-badge">${badgeText}</div>` : '';
   const oldPriceHtml = oldPrice > 0 ? `<span class="old-price">EGP ${oldPrice.toFixed(2)}</span>` : '';
 
   // Sizes
