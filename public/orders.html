@@ -4,39 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<title>LOVARA | ملابس حريمي فاخرة - فساتين - توبس - لانجري - اكسسوارات</title>
-<meta name="description" content="LOVARA - متجر أزياء حريمي فاخر في مصر. فساتين، توبس، بناطيل، لانجري، قمصان نوم، شنط، شباشب، عطور، مكياج ومجوهرات. توصيل مجاني للطلبات فوق 2500 جنيه.">
-<meta name="keywords" content="LOVARA, ملابس حريمي, فساتين, توبس, بناطيل, لانجري, قمصان نوم, شنط حريمي, شباشب, عطور نسائية, مكياج, مجوهرات, اكسسوارات, أزياء مصر, موضة 2026">
-<meta name="author" content="LOVARA">
-<meta name="robots" content="index, follow">
-<meta name="language" content="ar">
-<meta name="geo.region" content="EG">
-<meta name="geo.placename" content="Cairo, Egypt">
-
-<meta property="og:title" content="LOVARA | ملابس حريمي فاخرة - فساتين - توبس - لانجري - اكسسوارات">
-<meta property="og:description" content="LOVARA - متجر أزياء حريمي فاخر في مصر. فساتين، توبس، بناطيل، لانجري، قمصان نوم، شنط، شباشب، عطور، مكياج ومجوهرات.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://lovarafashion-jh7v.vercel.app/">
-<meta property="og:image" content="https://lovarafashion-jh7v.vercel.app/images/og-image.jpg">
-<meta property="og:site_name" content="LOVARA">
-<meta property="og:locale" content="ar_EG">
-
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="LOVARA | ملابس حريمي فاخرة">
-<meta name="twitter:description" content="LOVARA - متجر أزياء حريمي فاخر في مصر. توصيل مجاني للطلبات فوق 2500 جنيه.">
-<meta name="twitter:image" content="https://lovarafashion-jh7v.vercel.app/images/og-image.jpg">
-
-<link rel="canonical" href="https://lovarafashion-jh7v.vercel.app/">
-<link rel="icon" type="image/png" href="/favicon.png">
-
-  <title>LOVARA – Orders Dashboard</title>
+<title>LOVARA – Orders Dashboard</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-
-  <link rel="icon" type="image/jpeg" href="LOVARA.jpeg">
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -45,7 +18,7 @@
 
   <style>
     :root {
-      --primary: #c9a87c;
+      --primary: hsl(34, 42%, 64%);
       --primary-dark: #b8956a;
       --secondary: #1a1a1a;
       --text: #333;
@@ -220,7 +193,10 @@
     .supplier-tag i { color: #1565c0 !important; }
   </style>
 
-  <base target="_blank">
+  <script>
+  window.logout = function() { if(window.OrdersApp && OrdersApp.logout) OrdersApp.logout(); else alert('Page loading, please wait...'); };
+  window.login = function() { if(window.OrdersApp && OrdersApp.login) OrdersApp.login(); else alert('Page loading, please wait...'); };
+</script>
 <base target="_blank">
 </head>
 <body>
@@ -231,7 +207,7 @@
       <div class="nav-actions">
         <a href="index.html" class="nav-btn outline"><i class="fas fa-home"></i> Home</a>
         <a href="checkout.html" class="nav-btn"><i class="fas fa-shopping-bag"></i> New Order</a>
-        <button class="nav-btn" style="background:var(--secondary);color:#fff;" onclick="OrdersApp.logout()">
+        <button class="nav-btn" style="background:var(--secondary);color:#fff;" onclick="logout()">
           <i class="fas fa-sign-out-alt"></i> Logout
         </button>
       </div>
@@ -245,7 +221,7 @@
       <p>Please sign in with your admin account to view orders.</p>
       <input type="email" id="authEmail" placeholder="admin@lovara.com" autocomplete="username" />
       <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password" />
-      <button onclick="OrdersApp.login()">
+      <button onclick="login()">
         <i class="fas fa-sign-in-alt"></i> Sign In
       </button>
       <div class="auth-error" id="authError">
@@ -343,7 +319,7 @@
           <i class="fas fa-ban" style="color:#e74c3c;"></i>
           <h3>Access Denied</h3>
           <p>You do not have permission to view this page. Admins only.</p>
-          <button onclick="OrdersApp.logout()" style="margin-top:10px;">
+          <button onclick="logout()" style="margin-top:10px;">
             <i class="fas fa-sign-out-alt"></i> Logout
           </button>
         `;
@@ -942,6 +918,7 @@
         `;
 
         const printWindow = window.open('', '_blank');
+        if (!printWindow) { alert('Please allow popups to print invoices.'); return; }
         printWindow.document.write(`
           <!DOCTYPE html>
           <html lang="en">
@@ -963,17 +940,12 @@
           </head>
           <body>
             <div class="invoice-paper">${invoiceHtml}</div>
-            <scr` + `ipt>
-              window.onload = function() {
-                setTimeout(function() {
-                  window.print();
-                  setTimeout(function() { window.close(); }, 500);
-                }, 400);
-              };
-            </scr` + `ipt>
           </body>
           </html>
         `);
+        const s = printWindow.document.createElement('script');
+        s.textContent = "window.onload = function() { setTimeout(function() { window.print(); setTimeout(function() { window.close(); }, 500); }, 400); };";
+        printWindow.document.body.appendChild(s);
         printWindow.document.close();
       },
 
@@ -1001,6 +973,8 @@
         }, 3000);
       }
     };
+
+    window.OrdersApp = OrdersApp;
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => OrdersApp.init());
