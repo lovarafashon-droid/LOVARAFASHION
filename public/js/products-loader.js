@@ -380,7 +380,12 @@ function createProductCard(id, product) {
       <p class="product-price">EGP ${price.toFixed(2)} ${oldPriceHtml}</p>
       ${sizesHtml}
       ${colorsHtml}
-      <div class="product-actions">
+      ${(() => {
+        const isCS = product.badge === 'Coming Soon' || product.comingSoon === true;
+        if (isCS) {
+          return `<div class="product-actions coming-soon-actions"><span class="coming-soon-label" style="flex:1;text-align:center;padding:10px 14px;background:#f5f5f5;border-radius:8px;color:#888;font-size:13px;font-weight:500;"><i class="fas fa-clock" style="margin-right:6px;"></i>${badgeTranslations[lang]?.['Coming Soon'] || 'Coming Soon'}</span><button class="btn-share" onclick="CartApp.shareProduct('${id}')" aria-label="Share" style="width:40px;height:40px;border-radius:8px;border:1px solid #e8e4e0;background:#fff;color:#666;cursor:pointer;"><i class="fas fa-share-nodes"></i></button></div>`;
+        }
+        return `<div class="product-actions">
         <button class="add-to-cart" onclick="CartApp.handleAddToCart('${id}')">
           <i class="fas fa-bag-shopping"></i> Add to Cart
         </button>
@@ -390,7 +395,8 @@ function createProductCard(id, product) {
         <button class="btn-share" onclick="CartApp.shareProduct('${id}')" aria-label="Share">
           <i class="fas fa-share-nodes"></i>
         </button>
-      </div>
+      </div>`;
+      })()}
     </div>
   `;
 
@@ -412,7 +418,11 @@ function getCategoryPage(category) {
 // ============================================
 // ADD TO CART FROM PRODUCT CARD
 // ============================================
-function addToCartFromCard(id, name, price, image, category) {
+function addToCartFromCard(id, name, price, image, category, badge, comingSoon) {
+  if (badge === 'Coming Soon' || comingSoon === true) {
+    showProductToast('This product is coming soon!');
+    return;
+  }
   if (typeof CartApp !== 'undefined' && CartApp.add) {
     CartApp.add({
       id: id,
@@ -446,7 +456,11 @@ function addToCartFromCard(id, name, price, image, category) {
 // ============================================
 // BUY NOW - Add to cart then go to checkout
 // ============================================
-function buyNow(id, name, price, image, category) {
+function buyNow(id, name, price, image, category, badge, comingSoon) {
+  if (badge === 'Coming Soon' || comingSoon === true) {
+    showProductToast('This product is coming soon!');
+    return;
+  }
   // Add to cart first
   if (typeof CartApp !== 'undefined' && CartApp.add) {
     CartApp.add({
