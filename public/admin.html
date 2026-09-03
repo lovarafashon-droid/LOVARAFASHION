@@ -708,6 +708,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 <base target="_blank">
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -835,6 +836,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
                   <option value="accessories" data-i18n="accessories">Accessories</option>
                   <option value="lingerie" data-i18n="lingerie">Lingerie</option>
                   <option value="sets" data-i18n="sets">Sets</option>
+                  <option value="hijab" data-i18n="hijab">Hijab</option>
                 </select>
               </div>
 
@@ -991,6 +993,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             <button class="filter-pill" data-filter="accessories" onclick="ProductManager.setFilter('accessories')" data-i18n="accessories">Accessories</button>
             <button class="filter-pill" data-filter="lingerie" onclick="ProductManager.setFilter('lingerie')" data-i18n="lingerie">Lingerie</button>
             <button class="filter-pill" data-filter="sets" onclick="ProductManager.setFilter('sets')" data-i18n="sets">Sets</button>
+            <button class="filter-pill" data-filter="hijab" onclick="ProductManager.setFilter('hijab')" data-i18n="hijab">Hijab</button>
           </div>
 
           <div id="productsContainer">
@@ -1019,6 +1022,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         error: "Error", productName: "Product Name *", price: "Price (EGP) *", oldPrice: "Old Price (EGP)",
         optional: "(optional)", category: "Category *", selectCategory: "Select Category",
         dresses: "Dresses", tops: "Tops", pants: "Pants", accessories: "Accessories", lingerie: "Lingerie", sets: "Sets",
+        hijab: "Hijab",
         subcategory: "Subcategory", selectSubcategory: "Select Subcategory",
         subcatBags: "Bags", subcatCosmetics: "Cosmetics", subcatPersonalCare: "Personal Care",
         subcatShoes: "Shoes", subcatJewelry: "Jewelry",
@@ -1063,6 +1067,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         error: "خطأ", productName: "اسم المنتج *", price: "السعر (ج.م) *", oldPrice: "السعر القديم (ج.م)",
         optional: "(اختياري)", category: "الفئة *", selectCategory: "اختر الفئة",
         dresses: "فساتين", tops: "بلوزات", pants: "بناطيل", accessories: "إكسسوارات", lingerie: "ملابس داخلية", sets: "طقم",
+        hijab: "محجبات",
         subcategory: "القسم الفرعي", selectSubcategory: "اختار القسم الفرعي",
         subcatBags: "شنط", subcatCosmetics: "مستحضرات تجميل", subcatPersonalCare: "عناية شخصية",
         subcatShoes: "كوتشيات", subcatJewelry: "مجوهرات",
@@ -2247,7 +2252,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           'pants': t.pants || 'Pants',
           'accessories': t.accessories || 'Accessories',
           'lingerie': t.lingerie || 'Lingerie',
-          'sets': t.sets || 'Sets'
+          'sets': t.sets || 'Sets',
+          'hijab': t.hijab || 'Hijab'
         };
 
         Object.entries(categories).forEach(([cat, data]) => {
