@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" id="htmlRoot">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="pageTitleHijab">LOVARA – Hijab</title>
+  <meta name="description" content="LOVARA - Elegant hijab collection. Modest fashion for the modern woman.">
+  <link rel="stylesheet" href="categories-shared.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth-check.js"></script>
+<base target="_blank">
+</head>
+<body data-category="hijab">
+
+  <!-- ===================== NAVBAR ===================== -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+      <a href="index.html" class="logo">LOVARA</a>
+      <nav class="nav-links" id="navLinks">
+        <a href="index.html" class="nav-link" data-i18n="navHome">Home</a>
+        <a href="index.html#shop" class="nav-link" data-i18n="navShop">Shop</a>
+        <a href="index.html#categories" class="nav-link" data-i18n="navCategories">Categories</a>
+        <a href="index.html#about" class="nav-link" data-i18n="navAbout">About</a>
+        <a href="index.html#contact" class="nav-link" data-i18n="navContact">Contact</a>
+      </nav>
+      <div class="nav-actions" id="navActions">
+        <div class="lang-switcher" id="langSwitcher">
+          <button class="lang-btn" id="langBtn" aria-label="Change Language">
+            <i class="fas fa-globe"></i>
+            <span id="langLabel">EN</span>
+          </button>
+          <div class="lang-dropdown" id="langDropdown">
+            <button class="lang-option" data-lang="en">
+              <span class="lang-flag">🇺🇸</span>
+              <span class="lang-name">English</span>
+            </button>
+            <button class="lang-option" data-lang="ar">
+              <span class="lang-flag">🇸🇦</span>
+              <span class="lang-name">العربية</span>
+            </button>
+          </div>
+        </div>
+        <div class="auth-buttons" id="authButtons">
+          <button class="btn btn-sm btn-outline" id="openLogin" data-i18n="navLogin">Login</button>
+          <button class="btn btn-sm btn-primary" id="openSignup" data-i18n="navSignup">Sign Up</button>
+        </div>
+        <button class="btn btn-sm btn-outline" id="logoutBtn" style="display:none;" data-i18n="logout">Logout</button>
+        <div class="user-info" id="userDisplay" style="display:none;">
+          <i class="fas fa-user-circle"></i>
+          <div class="user-details">
+            <span id="userName" class="user-name">User</span>
+            <span id="userEmail" class="user-email"></span>
+          </div>
+        </div>
+        <button class="wishlist-btn" onclick="CategoryApp.openWishlistModal()" aria-label="Wishlist">
+          <i class="fas fa-heart"></i>
+          <span class="wishlist-count" id="wishlistCount">0</span>
+          <span class="auth-required-dot" id="wishlistAuthDot"></span>
+        </button>
+        <button class="cart-btn" onclick="CategoryApp.openCartModal()" aria-label="Cart">
+          <i class="fas fa-bag-shopping"></i>
+          <span class="cart-count" id="cartCount">0</span>
+          <span class="auth-required-dot" id="cartAuthDot"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <!-- ===================== CART MODAL ===================== -->
+  <div class="cart-overlay" id="cartOverlay"></div>
+  <div class="cart-modal" id="cartModal">
+    <div class="cart-modal-header">
+      <h3 data-i18n="cartTitle">Your Cart</h3>
+      <button class="cart-modal-close" onclick="CategoryApp.closeCartModal()" aria-label="Close cart"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="cart-modal-body">
+      <div class="cart-empty" id="cartEmpty">
+        <i class="fas fa-shopping-bag"></i>
+        <p data-i18n="cartEmpty">Your cart is empty</p>
+        <button class="btn-continue" onclick="CategoryApp.closeCartModal()" data-i18n="cartContinue">Continue Shopping</button>
+      </div>
+      <div class="cart-items" id="cartItems"></div>
+    </div>
+    <div class="cart-modal-footer">
+      <div class="cart-total-row">
+        <span data-i18n="cartTotal">Total:</span>
+        <span class="cart-total-price">EGP <span id="cartTotal">0.00</span></span>
+      </div>
+      <div class="cart-actions">
+        <button class="btn-checkout" onclick="CategoryApp.checkout()" data-i18n="cartCheckout">Checkout</button>
+        <button class="btn-clear" onclick="CategoryApp.clearCart()" data-i18n="cartClear">Clear Cart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== WISHLIST MODAL ===================== -->
+  <div class="wishlist-overlay" id="wishlistOverlay" onclick="CategoryApp.closeWishlistModal()"></div>
+  <div class="wishlist-modal" id="wishlistModal">
+    <div class="wishlist-modal-header">
+      <h3 data-i18n="wishlistTitle">Your Wishlist</h3>
+      <button class="wishlist-modal-close" onclick="CategoryApp.closeWishlistModal()" aria-label="Close wishlist"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="wishlist-modal-body">
+      <div class="wishlist-empty" id="wishlistEmpty">
+        <i class="fas fa-heart"></i>
+        <p data-i18n="wishlistEmpty">Your wishlist is empty</p>
+        <button class="btn-continue" onclick="CategoryApp.closeWishlistModal()" data-i18n="wishlistContinue">Continue Shopping</button>
+      </div>
+      <div class="wishlist-items" id="wishlistItems"></div>
+    </div>
+  </div>
+
+  <!-- ===================== PAGE HEADER ===================== -->
+  <section class="page-header">
+    <div class="container">
+      <h1><em data-i18n="catHijab">Hijab</em></h1>
+      <div class="breadcrumb">
+        <a href="index.html" data-i18n="navHome">Home</a>
+        <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+        <span data-i18n="catHijab">Hijab</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CATEGORY NAV ===================== -->
+  <nav class="category-nav">
+    <div class="container">
+      <a href="dresses.html" class="cat-nav-link" data-i18n="catDresses">Dresses</a>
+      <a href="tops.html" class="cat-nav-link" data-i18n="catTops">Tops</a>
+      <a href="pants.html" class="cat-nav-link" data-i18n="catPants">Pants</a>
+      <a href="accessories.html" class="cat-nav-link" data-i18n="catAccessories">Accessories</a>
+      <a href="lingerie.html" class="cat-nav-link" data-i18n="catLingerie">Lingerie</a>
+      <a href="sets.html" class="cat-nav-link" data-i18n="catSets">Sets</a>
+      <a href="hijab.html" class="cat-nav-link active" data-i18n="catHijab">Hijab</a>
+    </div>
+  </nav>
+
+  <!-- ===================== PRODUCTS ===================== -->
+  <section class="products-section">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-eyebrow" data-i18n="shopEyebrow">Our Collection</p>
+        <h2 class="section-title" data-i18n="catHijab">Hijab</h2>
+      </div>
+      <div class="products-grid" id="productsGrid">
+        <div class="products-loading" id="productsLoading">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p data-i18n="loadingProducts">Loading products...</p>
+        </div>
+        <div class="empty-state" id="emptyState" style="display: none;">
+          <div class="empty-icon"><i class="fas fa-bag-shopping"></i></div>
+          <h3 data-i18n="emptyTitle">Products Coming Soon</h3>
+          <p data-i18n="emptyDesc">We are adding beautiful new items to this category.<br />Check back shortly!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SUPPORT SECTION ===================== -->
+  <section class="support-section">
+    <div class="container">
+      <div class="support-grid">
+        <div class="support-info">
+          <h2 data-i18n="supportTitle">Need Help?</h2>
+          <p data-i18n="supportDesc">Have an issue with a product? Contact us directly and we will help you resolve it.</p>
+          <div class="support-cards">
+            <div class="support-card">
+              <i class="fas fa-phone"></i>
+              <div>
+                <h4 data-i18n="phoneSupport">Phone Support</h4>
+                <p data-i18n="phoneSupportDesc">Call us at +20128845212</p>
+              </div>
+            </div>
+            <div class="support-card">
+              <i class="fab fa-whatsapp"></i>
+              <div>
+                <h4 data-i18n="whatsappSupport">WhatsApp Support</h4>
+                <p><a href="https://wa.me/20128845212" target="_blank" data-i18n="whatsappSupportDesc">Chat with us on WhatsApp</a></p>
+              </div>
+            </div>
+            <div class="support-card">
+              <i class="fas fa-envelope"></i>
+              <div>
+                <h4 data-i18n="emailSupport">Email Support</h4>
+                <p>lovarafashon@gmail.com</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="contact-form-wrapper">
+          <h3 data-i18n="quickForm">Quick Contact Form</h3>
+          <form id="supportForm">
+            <div class="form-group">
+              <label data-i18n="formName">Your Name</label>
+              <input type="text" name="name" placeholder="Your name" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="formEmail">Email Address</label>
+              <input type="email" name="email" placeholder="your@email.com" required />
+            </div>
+            <div class="form-group">
+              <label data-i18n="formSubject">Subject</label>
+              <select name="subject">
+                <option value="" data-i18n="subjectSelect">Select a topic</option>
+                <option data-i18n="subjectOrder">Order Issue</option>
+                <option data-i18n="subjectProduct">Product Problem</option>
+                <option data-i18n="subjectSizing">Sizing Question</option>
+                <option data-i18n="subjectOther">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label data-i18n="formMessage">Describe your issue</label>
+              <textarea name="message" rows="4" placeholder="Your message..." required></textarea>
+            </div>
+            <button type="submit" class="btn-submit" data-i18n="formSubmit">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <a href="index.html" class="logo footer-logo">LOVARA</a>
+            <p data-i18n="footerBrand">Luxury women's fashion, curated with love. Wear your story.</p>
+            <div class="footer-socials">
+              <a href="https://www.instagram.com/lovara.store" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+              <a href="https://t.me/LOVARAFASHON" aria-label="Telegram"><i class="fab fa-telegram"></i></a>
+              <a href="https://www.tiktok.com/@lovara.fashion" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+              <a href="https://www.facebook.com/share/1GHVd4ZF4v/" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+            </div>
+          </div>
+          <div class="footer-col">
+            <h4 data-i18n="footerShop">Shop</h4>
+            <ul>
+              <li><a href="index.html#shop" data-i18n="footerNewArrivals">New Arrivals</a></li>
+              <li><a href="dresses.html" data-i18n="footerDresses">Dresses</a></li>
+              <li><a href="tops.html" data-i18n="footerTops">Tops</a></li>
+              <li><a href="pants.html" data-i18n="footerPants">Pants</a></li>
+              <li><a href="accessories.html" data-i18n="footerAccessories">Accessories</a></li>
+              <li><a href="lingerie.html" data-i18n="footerLingerie">Lingerie</a></li>
+              <li><a href="sets.html" data-i18n="footerSets">Sets</a></li>
+              <li><a href="hijab.html" data-i18n="footerHijab">Hijab</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4 data-i18n="footerHelp">Help</h4>
+            <ul>
+              <li><a href="#" data-i18n="footerSizing">Sizing Guide</a></li>
+              <li><a href="#" data-i18n="footerShipping">Shipping Info</a></li>
+              <li><a href="#" data-i18n="footerReturns">Returns</a></li>
+              <li><a href="#" data-i18n="footerTrack">Track Order</a></li>
+              <li><a href="index.html#contact" data-i18n="footerContact">Contact</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4 data-i18n="footerNewsletter">Newsletter</h4>
+            <p data-i18n="footerNewsletterDesc">Get exclusive deals and style inspiration.</p>
+            <form class="newsletter-form" id="newsletterForm">
+              <input type="email" name="email" placeholder="Your email address" required autocomplete="email" />
+              <button type="submit" aria-label="Subscribe"><i class="fas fa-arrow-right"></i></button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <p data-i18n="footerCopyright">© 2027 LOVARA. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="#" data-i18n="footerPrivacy">Privacy Policy</a>
+          <a href="#" data-i18n="footerTerms">Terms of Service</a>
+          <a href="#" data-i18n="footerCookies">Cookie Policy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===================== MODALS ===================== -->
+  <!-- Login -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Login">
+      <button class="modal-close" id="closeLogin" aria-label="Close"><i class="fas fa-xmark"></i></button>
+      <div class="modal-header">
+        <div class="modal-logo">LOVARA</div>
+        <h2 data-i18n="loginTitle">Welcome Back</h2>
+        <p data-i18n="loginSub">Sign in to your account</p>
+      </div>
+      <form class="modal-form" id="loginForm">
+        <div class="form-group">
+          <label data-i18n="labelEmail">Email</label>
+          <input type="email" id="loginEmail" placeholder="emma@example.com" required autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label data-i18n="labelPassword">Password</label>
+          <div class="password-wrap">
+            <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" />
+            <button type="button" class="toggle-pw" onclick="togglePassword('loginPassword')"><i class="fas fa-eye"></i></button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" data-i18n="btnSignIn">Sign In</button>
+      </form>
+      <p class="modal-switch">
+        <span data-i18n="noAccount">Don't have an account?</span>
+        <button class="switch-btn" id="switchToSignup" data-i18n="btnSignUpLink">Sign Up</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- Sign Up -->
+  <div class="modal-overlay" id="signupModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Sign Up">
+      <button class="modal-close" id="closeSignup" aria-label="Close"><i class="fas fa-xmark"></i></button>
+      <div class="modal-header">
+        <div class="modal-logo">LOVARA</div>
+        <h2 data-i18n="signupTitle">Join LOVARA</h2>
+        <p data-i18n="signupSub">Create your account</p>
+      </div>
+      <form class="modal-form" id="signupForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label data-i18n="labelFirstName">First Name</label>
+            <input type="text" id="signupFirstName" placeholder="Emma" required />
+          </div>
+          <div class="form-group">
+            <label data-i18n="labelLastName">Last Name</label>
+            <input type="text" id="signupLastName" placeholder="Rose" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="labelEmail">Email</label>
+          <input type="email" id="signupEmail" placeholder="emma@example.com" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label data-i18n="labelPassword">Password</label>
+          <div class="password-wrap">
+            <input type="password" id="signupPassword" placeholder="Minimum 8 characters" required autocomplete="new-password" />
+            <button type="button" class="toggle-pw" onclick="togglePassword('signupPassword')"><i class="fas fa-eye"></i></button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" data-i18n="btnCreateAccount">Create Account</button>
+      </form>
+      <p class="modal-switch">
+        <span data-i18n="haveAccount">Already have an account?</span>
+        <button class="switch-btn" id="switchToLogin" data-i18n="btnSignInLink">Sign In</button>
+      </p>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastMsg" data-i18n="toastDefault">Action completed!</span>
+  </div>
+
+  <!-- Back to top -->
+  <button class="back-to-top" id="backToTop" aria-label="Back to top"><i class="fas fa-chevron-up"></i></button>
+
+  <!-- ===================== SCRIPTS ===================== -->
+  <script src="categories-shared.js"></script>
+
+</body>
+</html>
