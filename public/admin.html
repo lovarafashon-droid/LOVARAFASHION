@@ -706,6 +706,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 <base target="_blank">
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -942,6 +944,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
                 <span class="badge-option" data-badge="Sale" data-i18n="saleBadge">Sale</span>
                 <span class="badge-option" data-badge="Bestseller" data-i18n="bestsellerBadge">Bestseller</span>
                 <span class="badge-option" data-badge="Limited" data-i18n="limitedBadge">Limited</span>
+                <span class="badge-option" data-badge="Coming Soon" data-i18n="comingSoonBadge">Coming Soon</span>
               </div>
               <input type="hidden" id="pBadge" value="" />
 
@@ -1029,7 +1032,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         productImage: "Product Image",
         productImages: "Product Images", imageHint: "(JPG/PNG, max 5MB)", clickUpload: "Click to upload image",
         dragDrop: "or drag & drop here", badge: "Badge", none: "None", newBadge: "New", saleBadge: "Sale",
-        bestsellerBadge: "Bestseller", limitedBadge: "Limited", description: "Description", addProduct: "Add Product",
+        bestsellerBadge: "Bestseller", limitedBadge: "Limited",
+        comingSoonBadge: "Coming Soon", description: "Description", addProduct: "Add Product",
         products: "Products", all: "All", loading: "Loading products...", noProducts: "No products found.",
         deleteConfirm: "Delete this product?", firebaseNotLoaded: "Firebase not loaded. Check your config.",
         enterEmailPass: "Please enter email and password", selectImage: "Please select an image file (JPG, PNG, WebP)",
@@ -1040,7 +1044,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         financialDashboard: "Financial Dashboard", profitOverview: "Profit Overview by Category",
         allTime: "All Time", thisMonth: "This Month", lastMonth: "Last Month",
         totalProfit: "Total Net Profit", profitMargin: "Profit Margin",
-        cost: "Cost (EGP)", costHint: "(purchase price)", stock: "Stock Quantity",
+        cost: "Cost (EGP)", costHint: "(purchase price)", costLabelShort: "Cost", profitLabelShort: "Profit", noCostSet: "No cost set", stock: "Stock Quantity",
         categoryProfit: "Category Profit", revenue: "Revenue", totalCost: "Total Cost",
         itemsSold: "Items Sold", avgProfit: "Avg Profit/Item",
         shoeSize: "Shoe Size", shoeSizeHint: "(e.g. 38, 39, 40, 41)",
@@ -1072,7 +1076,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         productImage: "صورة المنتج",
         productImages: "صور المنتج", imageHint: "(JPG/PNG، بحد أقصى 5 ميجا)", clickUpload: "اضغط لرفع الصورة",
         dragDrop: "أو اسحب وأفلت هنا", badge: "الشارة", none: "بدون", newBadge: "جديد", saleBadge: "تخفيض",
-        bestsellerBadge: "الأكثر مبيعاً", limitedBadge: "محدود", description: "الوصف", addProduct: "إضافة المنتج",
+        bestsellerBadge: "الأكثر مبيعاً", limitedBadge: "محدود",
+        comingSoonBadge: "سوف يتوفر قريباً", description: "الوصف", addProduct: "إضافة المنتج",
         products: "المنتجات", all: "الكل", loading: "جاري تحميل المنتجات...", noProducts: "لا توجد منتجات.",
         deleteConfirm: "حذف هذا المنتج؟", firebaseNotLoaded: "Firebase لم يتم تحميله. تحقق من الإعدادات.",
         enterEmailPass: "الرجاء إدخال البريد وكلمة المرور", selectImage: "الرجاء اختيار ملف صورة (JPG, PNG, WebP)",
@@ -1083,7 +1088,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         financialDashboard: "لوحة المالية", profitOverview: "نظرة عامة على الأرباح حسب القسم",
         allTime: "كل الوقت", thisMonth: "هذا الشهر", lastMonth: "الشهر الماضي",
         totalProfit: "إجمالي الربح الصافي", profitMargin: "هامش الربح",
-        cost: "التكلفة (ج.م)", costHint: "(سعر الشراء)", stock: "الكمية في المخزن",
+        cost: "التكلفة (ج.م)", costHint: "(سعر الشراء)", costLabelShort: "التكلفة", profitLabelShort: "الربح", noCostSet: "لم يتم تحديد التكلفة", stock: "الكمية في المخزن",
         categoryProfit: "ربح القسم", revenue: "الإيرادات", totalCost: "إجمالي التكلفة",
         itemsSold: "القطع المباعة", avgProfit: "متوسط الربح/قطعة",
         shoeSize: "مقاس الكوتشي", shoeSizeHint: "(مثال: 38, 39, 40, 41)",
@@ -1652,6 +1657,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           images: images.length > 0 ? images : ['https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'],
           imageUrl: images[0] || 'https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA',
           badge: document.getElementById('pBadge').value,
+          comingSoon: document.getElementById('pBadge').value === 'Coming Soon',
           description: document.getElementById('pDesc').value.trim(),
                     showOnHome: document.getElementById('showOnHome').checked,
           showOnCategory: document.getElementById('showOnCategory').checked,
@@ -1746,6 +1752,21 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           : this.products.filter(p => p.category === this.currentFilter);
         const t = translations[AppSettings.currentLang];
 
+        // Translation maps for stored English values
+        const catMap = {
+          'dresses': t.dresses, 'tops': t.tops, 'pants': t.pants,
+          'accessories': t.accessories, 'lingerie': t.lingerie, 'sets': t.sets
+        };
+        const badgeMap = {
+          'New': t.newBadge, 'Sale': t.saleBadge, 'Bestseller': t.bestsellerBadge,
+          'Limited': t.limitedBadge, 'Coming Soon': t.comingSoonBadge
+        };
+        const subcatMap = {
+          'bras': t.subcatBras, 'panties': t.subcatPanties, 'nightgowns': t.subcatNightgowns,
+          'bags': t.subcatBags, 'cosmetics': t.subcatCosmetics, 'personal-care': t.subcatPersonalCare,
+          'jewelry': t.subcatJewelry, 'shoes': t.subcatShoes
+        };
+
         document.getElementById('productCount').textContent = '(' + filtered.length + ')';
 
         if (filtered.length === 0) {
@@ -1756,15 +1777,21 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         container.innerHTML = filtered.map(p => {
           const sizesHtml = p.sizes && p.sizes.length > 0 ? p.sizes.map(s => `<span class="meta-tag">${s}</span>`).join('') : '';
           const colorsHtml = p.colors && p.colors.length > 0 ? p.colors.map(c => `<span class="meta-tag">${c}</span>`).join('') : '';
-          const subcatHtml = p.subcategory ? `<span class="meta-tag" style="background:var(--primary);color:#fff;">${p.subcategory}</span>` : '';
+          const subcatLabel = p.subcategory ? (subcatMap[p.subcategory] || p.subcategory) : '';
+          const subcatHtml = subcatLabel ? `<span class="meta-tag" style="background:var(--primary);color:#fff;">${subcatLabel}</span>` : '';
+          const badgeLabel = p.badge ? (badgeMap[p.badge] || p.badge) : '';
+          const comingSoonHtml = p.comingSoon || p.badge === 'Coming Soon' ? `<span class="meta-tag" style="background:#ff9800;color:#fff;border-color:#ff9800;"><i class="fas fa-clock" style="margin-right:4px;font-size:9px;"></i>${t.comingSoonBadge || 'Coming Soon'}</span>` : '';
           const supplierHtml = p.supplier ? `<span class="meta-tag" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9;"><i class="fas fa-industry" style="margin-right:4px;font-size:9px;"></i>${p.supplier}</span>` : '';
           const viewText = t.all === 'الكل' ? 'عرض' : 'View';
           const cost = parseFloat(p.cost) || 0;
           const price = parseFloat(p.price) || 0;
           const profit = cost > 0 ? price - cost : 0;
+          const profitLabel = t.profitLabelShort || 'Profit';
+          const costLabel = t.costLabelShort || 'Cost';
           const profitHtml = cost > 0 
-            ? `<span class="profit-tag ${profit > 0 ? 'positive' : 'zero'}"><i class="fas fa-chart-line"></i> Profit: EGP ${profit.toFixed(2)}</span>`
-            : `<span class="profit-tag zero"><i class="fas fa-exclamation-circle"></i> No cost set</span>`;
+            ? `<span class="profit-tag ${profit > 0 ? 'positive' : 'zero'}"><i class="fas fa-chart-line"></i> ${profitLabel}: EGP ${profit.toFixed(2)}</span>`
+            : `<span class="profit-tag zero"><i class="fas fa-exclamation-circle"></i> ${t.noCostSet || 'No cost set'}</span>`;
+          const catLabel = p.category ? (catMap[p.category] || p.category) : '';
 
           return `
           <div class="product-item">
@@ -1772,10 +1799,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
                  alt="${p.name}" onerror="this.src='https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'" />
             <div class="product-item-info">
               <h4>${p.name}</h4>
-              <p>${p.category}${p.badge ? ' &bull; ' + p.badge : ''}${p.showOnHome ? ' &bull; 🏠' : ''}${p.showOnCategory ? ' &bull; 📁' : ''}</p>
-              <div class="product-meta">${subcatHtml}${sizesHtml}${colorsHtml}${supplierHtml}</div>
+              <p>${catLabel}${badgeLabel ? ' &bull; ' + badgeLabel : ''}${p.showOnHome ? ' &bull; 🏠' : ''}${p.showOnCategory ? ' &bull; 📁' : ''}</p>
+              <div class="product-meta">${subcatHtml}${sizesHtml}${colorsHtml}${supplierHtml}${comingSoonHtml}</div>
               <div class="product-profit-info">
-                <span class="cost-tag"><i class="fas fa-industry"></i> Cost: EGP ${cost.toFixed(2)}</span>
+                <span class="cost-tag"><i class="fas fa-industry"></i> ${costLabel}: EGP ${cost.toFixed(2)}</span>
                 ${profitHtml}
               </div>
             </div>
