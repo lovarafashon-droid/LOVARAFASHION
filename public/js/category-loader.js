@@ -125,6 +125,7 @@ function createCategoryProductCard(id, product) {
   div.setAttribute('data-product-id', id);
 
   const safeName = (product.name || 'Unnamed').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const fallbackImage = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect width=%22300%22 height=%22400%22 fill=%22%23f8e8e8%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2214%22 fill=%22%23c97c82%22%3ENo Image%3C/text%3E%3C/svg%3E';
 
   // Sizes display
   const sizesHtml = product.sizes && product.sizes.length > 0 
@@ -138,9 +139,9 @@ function createCategoryProductCard(id, product) {
 
   div.innerHTML = `
     <div class="product-img-wrap">
-      <img src="${product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400'%3E%3Crect width='300' height='400' fill='%23f8e8e8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23c97c82'%3ENo Image%3C/text%3E%3C/svg%3E'}" 
+      <img src="${product.imageUrl || fallbackImage}" 
            alt="${safeName}" 
-           onerror="this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400'%3E%3Crect width='300' height='400' fill='%23f8e8e8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' fill='%23c97c82'%3ENo Image%3C/text%3E%3C/svg%3E'" />
+           onerror="this.src='${fallbackImage}'" />
       ${product.badge ? `<span class="product-badge badge-${product.badge}">${product.badge}</span>` : ''}
 
       <div class="product-actions-overlay">
