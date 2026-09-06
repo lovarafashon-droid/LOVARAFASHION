@@ -10,4 +10,5 @@
   <url><loc>https://lovarafashion.vercel.app/hijab.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://lovarafashion.vercel.app/returns.html</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
   <url><loc>https://lovarafashion.vercel.app/policies.html</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://lovarafashion.vercel.app/winter.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 </urlset>

@@ -22,11 +22,11 @@ const CategoryApp = {
     en: {
       pageTitleDresses: "LOVARA – Dresses", pageTitleTops: "LOVARA – Tops", pageTitlePants: "LOVARA – Pants",
       pageTitleAccessories: "LOVARA – Accessories", pageTitleSets: "LOVARA – Sets", pageTitleLingerie: "LOVARA – Lingerie",
-      pageTitleHijab: "LOVARA – Hijab",
+      pageTitleHijab: "LOVARA – Hijab", pageTitleWinter: "LOVARA – Winter",
       navHome: "Home", navShop: "Shop", navCategories: "Categories", navAbout: "About", navContact: "Contact",
       navLogin: "Login", navSignup: "Sign Up",
       catDresses: "Dresses", catTops: "Tops", catPants: "Pants", catAccessories: "Accessories", catSets: "Sets", catLingerie: "Lingerie",
-      catHijab: "Hijab",
+      catHijab: "Hijab", catWinter: "Winter",
       shopEyebrow: "Our Collection", loadingProducts: "Loading products...",
       emptyTitle: "Products Coming Soon", emptyDesc: "We are adding beautiful new items to this category.<br />Check back shortly!",
       supportTitle: "Need Help?", supportDesc: "Have an issue with a product? Contact us directly and we will help you resolve it.",
@@ -41,7 +41,7 @@ const CategoryApp = {
       footerNewsletterDesc: "Get exclusive deals and style inspiration.",
       footerNewArrivals: "New Arrivals", footerDresses: "Dresses", footerTops: "Tops",
       footerPants: "Pants", footerAccessories: "Accessories", footerLingerie: "Lingerie", footerSets: "Sets",
-      footerHijab: "Hijab",
+      footerHijab: "Hijab", footerWinter: "Winter",
       footerSizing: "Sizing Guide", footerShipping: "Shipping Info", footerReturns: "Returns",
       footerTrack: "Track Order", footerContact: "Contact",
       footerCopyright: "\u00a9 2027 LOVARA. All rights reserved. | Women's Luxury Fashion",
@@ -73,11 +73,11 @@ const CategoryApp = {
     ar: {
       pageTitleDresses: "LOVARA – فساتين", pageTitleTops: "LOVARA – بلوزات", pageTitlePants: "LOVARA – بناطيل",
       pageTitleAccessories: "LOVARA – إكسسوارات", pageTitleSets: "LOVARA – اطقم", pageTitleLingerie: "LOVARA – ملابس داخلية",
-      pageTitleHijab: "LOVARA – محجبات",
+      pageTitleHijab: "LOVARA – محجبات", pageTitleWinter: "LOVARA – الشتوي",
       navHome: "الرئيسية", navShop: "المتجر", navCategories: "التصنيفات", navAbout: "من نحن", navContact: "تواصل معنا",
       navLogin: "تسجيل الدخول", navSignup: "إنشاء حساب",
       catDresses: "فساتين", catTops: "بلوزات", catPants: "بناطيل", catAccessories: "إكسسوارات", catSets: "اطقم", catLingerie: "ملابس داخلية",
-      catHijab: "محجبات",
+      catHijab: "محجبات", catWinter: "الشتوي",
       shopEyebrow: "مجموعتنا", loadingProducts: "جاري تحميل المنتجات...",
       emptyTitle: "المنتجات قريباً", emptyDesc: "نضيف قطعاً جديدة رائعة إلى هذا التصنيف.<br />تفقدي قريباً!",
       supportTitle: "تحتاجين مساعدة؟", supportDesc: "عندكِ مشكلة في منتج؟ تواصلي معانا مباشرة وهنساعدكِ تحلها.",
@@ -92,7 +92,7 @@ const CategoryApp = {
       footerNewsletterDesc: "احصلي على عروض حصرية وإلهام للأناقة.",
       footerNewArrivals: "وصل حديثاً", footerDresses: "فساتين", footerTops: "بلوزات",
       footerPants: "بناطيل", footerAccessories: "إكسسوارات", footerLingerie: "ملابس داخلية", footerSets: "اطقم",
-      footerHijab: "محجبات",
+      footerHijab: "محجبات", footerWinter: "الشتوي",
       footerSizing: "دليل المقاسات", footerShipping: "معلومات الشحن", footerReturns: "الإرجاع",
       footerTrack: "تتبع الطلب", footerContact: "تواصل معنا",
       footerCopyright: "\u00a9 2027 لوڤارا. جميع الحقوق محفوظة. | أزياء نسائية فاخرة",
@@ -514,7 +514,7 @@ const CategoryApp = {
       if (t[key]) el.placeholder = t[key];
     });
     const category = document.body.getAttribute('data-category');
-    const titleMap = { dresses: 'pageTitleDresses', tops: 'pageTitleTops', pants: 'pageTitlePants', accessories: 'pageTitleAccessories', sets: 'pageTitleSets', lingerie: 'pageTitleLingerie', hijab: 'pageTitleHijab' };
+    const titleMap = { dresses: 'pageTitleDresses', tops: 'pageTitleTops', pants: 'pageTitlePants', accessories: 'pageTitleAccessories', sets: 'pageTitleSets', lingerie: 'pageTitleLingerie', hijab: 'pageTitleHijab', winter: 'pageTitleWinter' };
     const titleKey = titleMap[category];
     if (titleKey && t[titleKey]) document.title = t[titleKey];
   },
