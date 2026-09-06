@@ -37,6 +37,32 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // RETURN REQUESTS
+    // Customers may submit a request with only the fields needed for review.
+    // Only admins can read or change requests after submission.
+    match /returns/{returnId} {
+      allow create: if request.resource.data.keys().hasAll([
+        'firstName', 'lastName', 'phone', 'orderNumber', 'type',
+        'productName', 'reason', 'status', 'date'
+      ])
+      && request.resource.data.status == 'pending'
+      && request.resource.data.firstName is string
+      && request.resource.data.lastName is string
+      && request.resource.data.phone is string
+      && request.resource.data.orderNumber is string
+      && request.resource.data.productName is string
+      && request.resource.data.type in ['return', 'exchange']
+      && request.resource.data.firstName.size() <= 80
+      && request.resource.data.lastName.size() <= 80
+      && request.resource.data.phone.size() <= 40
+      && request.resource.data.orderNumber.size() <= 80
+      && request.resource.data.productName.size() <= 300;
+      allow read: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.status in ['pending', 'approved', 'rejected'];
+      allow delete: if isAdmin();
+    }
+
     // ============================================
     // DEFAULT: DENY EVERYTHING ELSE
     // ============================================
