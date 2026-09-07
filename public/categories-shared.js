@@ -891,8 +891,14 @@ const CategoryApp = {
     const modal = document.createElement('div');
     modal.id = 'buyNowModal';
     modal.className = 'buy-now-modal';
-    modal.innerHTML = `<div class="buy-now-overlay" onclick="CategoryApp.closeBuyNowModal()"></div><div class="buy-now-content"><button class="buy-now-close" onclick="CategoryApp.closeBuyNowModal()"><i class="fas fa-times"></i></button><div class="buy-now-product"><img src="${product.imageUrl || 'https://via.placeholder.com/80x100?text=LOVARA'}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/80x100?text=LOVARA'"><div class="buy-now-product-info"><h3>${product.name}</h3><p class="buy-now-price">EGP ${product.price ? (parseFloat(product.price) || 0).toFixed(2) : '0.00'}</p></div></div>${sizesHtml ? `<div class="buy-now-section"><label class="buy-now-label">${this.t('selectSize')}</label><div class="buy-now-options">${sizesHtml}</div></div>` : ''}${colorsHtml ? `<div class="buy-now-section"><label class="buy-now-label">${this.t('selectColor')}</label><div class="buy-now-options">${colorsHtml}</div></div>` : ''}<button class="buy-now-btn" onclick="CategoryApp.confirmBuyNow('${product.id}', ${isDirectBuy})"><i class="fas fa-${isDirectBuy ? 'bolt' : 'bag-shopping'}"></i>${isDirectBuy ? this.t('buyNow') : this.t('addToCart')}</button></div>`;
+    modal.innerHTML = `<div class="buy-now-overlay" onclick="CategoryApp.closeBuyNowModal()"></div><div class="buy-now-content"><button class="buy-now-close" onclick="CategoryApp.closeBuyNowModal()"><i class="fas fa-times"></i></button><div class="buy-now-product"><img src="${product.imageUrl || 'https://via.placeholder.com/80x100?text=LOVARA'}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/80x100?text=LOVARA'"><div class="buy-now-product-info"><h3>${product.name}</h3><p class="buy-now-price">EGP ${product.price ? (parseFloat(product.price) || 0).toFixed(2) : '0.00'}</p></div></div>${sizesHtml ? `<div class="buy-now-section"><label class="buy-now-label">${this.t('selectSize')}</label><div class="buy-now-options">${sizesHtml}</div></div>` : ''}${colorsHtml ? `<div class="buy-now-section"><label class="buy-now-label">${this.t('selectColor')}</label><div class="buy-now-options">${colorsHtml}</div></div>` : ''}<button class="buy-now-btn"><i class="fas fa-${isDirectBuy ? 'bolt' : 'bag-shopping'}"></i>${isDirectBuy ? this.t('buyNow') : this.t('addToCart')}</button></div>`;
     document.body.appendChild(modal);
+    modal.querySelectorAll('.buy-now-overlay, .buy-now-close').forEach(button => {
+      button.addEventListener('click', () => this.closeBuyNowModal());
+    });
+    modal.querySelector('.buy-now-btn')?.addEventListener('click', () => {
+      this.confirmBuyNow(product.id, isDirectBuy);
+    });
     requestAnimationFrame(() => modal.classList.add('show'));
   },
 
