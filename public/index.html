@@ -1498,7 +1498,7 @@
     // ---- Cart (delegates to CategoryApp) ----
     const CartApp = {
       get items() {
-        return (window.CategoryApp && CategoryApp.cart) ? CategoryApp.cart : JSON.parse(localStorage.getItem('lovara_cart') || '[]');
+        return JSON.parse(localStorage.getItem('lovara_cart') || '[]');
       },
       open() {
         const isLoggedIn = (window.CategoryApp && CategoryApp.currentUser) || localStorage.getItem('lovara_user');
@@ -1597,7 +1597,6 @@
           showToast('This product is coming soon!');
           return;
         }
-        if (window.CategoryApp) { CategoryApp.handleAddToCart(productId); return; }
         if ((product.sizes && product.sizes.length > 0) || (product.colors && product.colors.length > 0)) {
           this.openBuyNowModal(product, false);
         } else {
@@ -1611,11 +1610,9 @@
           showToast('This product is coming soon!');
           return;
         }
-        if (window.CategoryApp) { CategoryApp.handleBuyNow(productId); return; }
         this.openBuyNowModal(product, true);
       },
       openBuyNowModal(product, isDirectBuy) {
-        if (window.CategoryApp) { CategoryApp.openBuyNowModal(product, isDirectBuy); return; }
         const existing = document.getElementById('buyNowModal');
         if (existing) existing.remove();
         const sizesHtml = product.sizes ? product.sizes.map((s, i) => `<label class="buy-now-option"><input type="radio" name="buySize" value="${s}" ${i === 0 ? 'checked' : ''}><span>${s}</span></label>`).join('') : '';
@@ -1627,12 +1624,10 @@
         requestAnimationFrame(() => modal.classList.add('show'));
       },
       closeBuyNowModal() {
-        if (window.CategoryApp) { CategoryApp.closeBuyNowModal(); return; }
         const modal = document.getElementById('buyNowModal');
         if (modal) { modal.classList.remove('show'); setTimeout(() => modal.remove(), 300); }
       },
       confirmBuyNow(productId, isDirectBuy) {
-        if (window.CategoryApp) { CategoryApp.confirmBuyNow(productId, isDirectBuy); return; }
         const product = (window.carouselState && window.carouselState.products) ? window.carouselState.products.find(p => p.id === productId) : null;
         if (!product) return;
         const sizeEl = document.querySelector('input[name="buySize"]:checked');
@@ -1668,7 +1663,6 @@
         this.updateWishlistCount();
       },
       shareProduct(productId) {
-        if (window.CategoryApp) { CategoryApp.shareProduct(productId); return; }
         const product = (window.carouselState && window.carouselState.products) ? window.carouselState.products.find(p => p.id === productId) : null;
         if (!product) return;
         const shareData = { title: product.name, text: 'Check out ' + product.name + ' on LOVARA!', url: window.location.href };
