@@ -464,7 +464,7 @@
           this.renderReturns();
         }, err => {
           console.error('[LOVARA Orders] Returns error:', err);
-          document.getElementById('returnsList').innerHTML = '<div class="error-state"><i class="fas fa-exclamation-triangle"></i><h3>Failed to Load Returns</h3><p>' + err.message + '</p></div>';
+          document.getElementById('returnsList').innerHTML = '<div class="error-state"><i class="fas fa-exclamation-triangle"></i><h3>Failed to Load Returns</h3><p>Please refresh the page or try again later.</p></div>';
         });
       },
 
@@ -604,10 +604,13 @@
           weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
           hour: '2-digit', minute: '2-digit'
         });
-        const statusClass = `status-${order.status || 'pending'}`;
-        const statusText = (order.status || 'pending').toUpperCase();
-        const confirmStatus = order.confirmationStatus || 'pending';
+        const allowedStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+        const orderStatus = allowedStatuses.includes(order.status) ? order.status : 'pending';
+        const statusClass = `status-${orderStatus}`;
+        const statusText = orderStatus.toUpperCase();
+        const confirmStatus = ['pending', 'confirmed', 'rejected'].includes(order.confirmationStatus) ? order.confirmationStatus : 'pending';
         const rejectionReason = order.rejectionReason || '';
+        const esc = this.escapeHTML.bind(this);
 
         const items = order.items || [];
         let profit = parseFloat(order.profit) || 0;
@@ -645,37 +648,37 @@
             <div class="info-grid">
               <div class="info-item">
                 <div class="info-label">Full Name</div>
-                <div class="info-value highlight">${firstName} ${lastName}</div>
+                <div class="info-value highlight">${esc(firstName)} ${esc(lastName)}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Phone Number</div>
-                <div class="info-value phone">${phone}</div>
+                <div class="info-value phone">${esc(phone)}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Email</div>
-                <div class="info-value">${email}</div>
+                <div class="info-value">${esc(email)}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Address</div>
-                <div class="info-value">${address}${city ? ', ' + city : ''}</div>
+                <div class="info-value">${esc(address)}${city ? ', ' + esc(city) : ''}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Governorate / State</div>
-                <div class="info-value highlight">${state || '—'}</div>
+                <div class="info-value highlight">${esc(state || '—')}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Country</div>
-                <div class="info-value">${this.getCountryName(country)}</div>
+                <div class="info-value">${esc(this.getCountryName(country))}</div>
               </div>
               ${postalCode ? `
               <div class="info-item">
                 <div class="info-label">Postal Code</div>
-                <div class="info-value">${postalCode}</div>
+                <div class="info-value">${esc(postalCode)}</div>
               </div>` : ''}
               ${notes ? `
               <div class="info-item" style="grid-column: 1 / -1;">
                 <div class="info-label">Customer Notes</div>
-                <div class="info-value" style="font-style:italic;color:var(--text-light);">${notes}</div>
+                <div class="info-value" style="font-style:italic;color:var(--text-light);">${esc(notes)}</div>
               </div>` : ''}
             </div>
           </div>
@@ -689,17 +692,17 @@
           const supplierName = item.supplier || item.factory || item.madeBy || '';
           return `
             <div class="item-card">
-              <img src="${item.imageUrl || item.image || 'https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA'}" 
-                   class="item-img" alt="${item.name || 'Product'}" 
+              <img src="${this.safeImageUrl(item.imageUrl || item.image) || 'https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA'}"
+                   class="item-img" alt="${esc(item.name || 'Product')}"
                    onerror="this.onerror=null;this.src='https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA';" />
               <div class="item-info">
-                <div class="item-name">${item.name || 'Unknown Product'}</div>
+                <div class="item-name">${esc(item.name || 'Unknown Product')}</div>
                 <div class="item-tags">
-                  <span class="item-tag"><i class="fas fa-palette"></i> ${item.color || 'N/A'}</span>
-                  <span class="item-tag"><i class="fas fa-ruler"></i> ${item.size || 'N/A'}</span>
+                  <span class="item-tag"><i class="fas fa-palette"></i> ${esc(item.color || 'N/A')}</span>
+                  <span class="item-tag"><i class="fas fa-ruler"></i> ${esc(item.size || 'N/A')}</span>
                   <span class="item-tag"><i class="fas fa-times"></i> Qty: ${itemQty}</span>
                   <span class="item-tag"><i class="fas fa-tag"></i> Sell: EGP ${itemPrice.toFixed(2)}</span>
-                  ${supplierName ? `<span class="item-tag supplier-tag"><i class="fas fa-industry"></i> Factory: ${supplierName}</span>` : ''}
+                  ${supplierName ? `<span class="item-tag supplier-tag"><i class="fas fa-industry"></i> Factory: ${esc(supplierName)}</span>` : ''}
                   <span class="item-tag" style="background:#ffebee;color:#c0392b;"><i class="fas fa-industry"></i> Cost: 
                     <input type="number" min="0" step="0.01" value="${itemCost > 0 ? itemCost : ''}" placeholder="0"
                            onchange="OrdersApp.updateItemCost(${index}, ${itemIdx}, this.value)"
@@ -716,7 +719,7 @@
 
         const payment = order.payment || {};
         const paymentExtra = payment.method !== 'cod' 
-          ? `<div class="info-item"><div class="info-label">Transaction ID</div><div class="info-value">${payment.transactionId || '-'}</div></div>` 
+          ? `<div class="info-item"><div class="info-label">Transaction ID</div><div class="info-value">${esc(payment.transactionId || '-')}</div></div>`
           : '';
 
         const totals = order.totals || {};
@@ -725,14 +728,15 @@
         const total = totals.total || 'EGP 0.00';
 
         const phoneClean = phone.replace(/[^0-9+]/g, '');
-        const orderNum = order.orderNumber || order._docId || ('ORD-' + index);
-        const whatsappLink = `https://wa.me/${phoneClean}?text=Hello%20${encodeURIComponent(firstName)}%2C%20regarding%20your%20LOVARA%20order%20${orderNum}`;
+        const orderNum = String(order.orderNumber || order._docId || ('ORD-' + index));
+        const safeOrderNum = esc(orderNum);
+        const whatsappLink = `https://wa.me/${phoneClean}?text=Hello%20${encodeURIComponent(firstName)}%2C%20regarding%20your%20LOVARA%20order%20${encodeURIComponent(orderNum)}`;
 
         return `
           <div class="order-card">
             <div class="order-header">
               <div class="order-header-left">
-                <div class="order-id">#${orderNum}</div>
+                <div class="order-id">#${safeOrderNum}</div>
                 <div class="order-date"><i class="far fa-clock" style="margin-right:5px;"></i>${date}</div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;">
@@ -752,7 +756,7 @@
               ${locationStr ? `
               <div class="location-highlight">
                 <div class="location-label"><i class="fas fa-map-marker-alt"></i>Delivery Location</div>
-                <div class="location-value">${locationStr}</div>
+                <div class="location-value">${esc(locationStr)}</div>
               </div>` : ''}
 
               ${customerHtml}
