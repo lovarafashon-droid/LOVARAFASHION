@@ -168,6 +168,13 @@
     .dashboard-tabs { display:flex; gap:10px; margin:0 0 24px; border-bottom:1px solid var(--border); padding-bottom:10px; flex-wrap:wrap; }
     .dashboard-tab { border:1px solid var(--border); background:#fff; color:var(--text-light); border-radius:22px; padding:10px 18px; cursor:pointer; font-family:inherit; font-size:13px; }
     .dashboard-tab.active { background:var(--secondary); color:#fff; border-color:var(--secondary); }
+    .order-group { margin: 0 0 28px; }
+    .order-group-title { display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:13px 17px; border-radius:12px; font-size:16px; font-weight:700; }
+    .order-group-title i { font-size:18px; }
+    .order-group.completed .order-group-title { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+    .order-group.rejected .order-group-title { background:#ffebee; color:#c0392b; border:1px solid #ef9a9a; }
+    .order-group.active .order-group-title { background:#fff8e1; color:#8a6500; border:1px solid #ffe082; }
+    .order-group-empty { color:var(--text-light); font-size:13px; padding:10px 4px 18px; }
     .return-card { background:#fff; border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:18px; overflow:hidden; }
     .return-head { background:#faf8f5; padding:17px 22px; display:flex; justify-content:space-between; gap:15px; align-items:center; flex-wrap:wrap; border-bottom:1px solid var(--border); }
     .return-id { color:var(--primary-dark); font-weight:700; }
@@ -595,7 +602,23 @@
           `;
           return;
         }
-        container.innerHTML = this.orders.map((order, index) => this.renderOrder(order, index)).join('');
+        const completed = [];
+        const rejected = [];
+        const active = [];
+        this.orders.forEach((order, index) => {
+          if (order.confirmationStatus === 'confirmed') completed.push({ order, index });
+          else if (order.confirmationStatus === 'rejected' || order.status === 'cancelled') rejected.push({ order, index });
+          else active.push({ order, index });
+        });
+        const group = (name, icon, className, entries, emptyText) => `
+          <section class="order-group ${className}">
+            <h2 class="order-group-title"><i class="fas ${icon}"></i>${name} <span class="badge-count">${entries.length}</span></h2>
+            ${entries.length ? entries.map(entry => this.renderOrder(entry.order, entry.index)).join('') : `<div class="order-group-empty">${emptyText}</div>`}
+          </section>`;
+        container.innerHTML =
+          group('Completed / Confirmed Orders', 'fa-circle-check', 'completed', completed, 'No completed orders yet.') +
+          group('Rejected Orders', 'fa-circle-xmark', 'rejected', rejected, 'No rejected orders.') +
+          group('Active Orders', 'fa-clock', 'active', active, 'No active orders.');
       },
 
       renderOrder(order, index) {
@@ -727,7 +750,8 @@
         const shipping = totals.shipping || 'EGP 0.00';
         const total = totals.total || 'EGP 0.00';
 
-        const phoneClean = phone.replace(/[^0-9+]/g, '');
+        let phoneClean = phone.replace(/\D/g, '');
+        if (phoneClean.startsWith('0')) phoneClean = '20' + phoneClean.slice(1);
         const orderNum = String(order.orderNumber || order._docId || ('ORD-' + index));
         const safeOrderNum = esc(orderNum);
         const whatsappLink = `https://wa.me/${phoneClean}?text=Hello%20${encodeURIComponent(firstName)}%2C%20regarding%20your%20LOVARA%20order%20${encodeURIComponent(orderNum)}`;
@@ -812,7 +836,7 @@
               <button type="button" class="btn btn-print" onclick="OrdersApp.printInvoice(${index})">
                 <i class="fas fa-print"></i> Print Invoice
               </button>
-              <a href="${whatsappLink}" class="btn btn-whatsapp" target="_blank">
+              <a href="${whatsappLink}" class="btn btn-whatsapp" target="_blank" rel="noopener noreferrer">
                 <i class="fab fa-whatsapp"></i> WhatsApp
               </a>
             </div>

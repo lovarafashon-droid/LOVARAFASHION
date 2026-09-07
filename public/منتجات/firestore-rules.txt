@@ -42,6 +42,13 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // ORDERS COLLECTION
+    // Customers create orders; only admins can review, update, or delete them.
+    match /orders/{orderId} {
+      allow create: if request.resource.data.keys().hasAll(['customer', 'items', 'totals', 'date']);
+      allow read, update, delete: if isAdmin();
+    }
+
     // RETURN REQUESTS
     // Customers may submit a request with only the fields needed for review.
     // Only admins can read or change requests after submission.

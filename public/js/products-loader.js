@@ -21,6 +21,14 @@ function getCachedProducts() {
   return null;
 }
 
+function getAnyCachedProducts() {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) return JSON.parse(cached).data || null;
+  } catch (e) { console.warn('Stale cache read error:', e); }
+  return null;
+}
+
 function setCachedProducts(products) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -100,7 +108,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     return;
   }
 
-  showSkeletonLoading(grid, 4);
+  const cachedNow = getAnyCachedProducts();
+  if (cachedNow && cachedNow.length) {
+    if (loading) loading.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
+    initProductCarousel(grid, cachedNow);
+  } else {
+    showSkeletonLoading(grid, 4);
+  }
 
   const firebaseReady = await waitForFirebase(30, 300);
 
