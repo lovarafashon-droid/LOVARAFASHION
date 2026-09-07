@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" id="htmlRoot">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   
   
 
 <title id="pageTitle">LOVARA – Admin</title>
-  <link rel="stylesheet" href="categories-shared.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="categories-shared.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -777,11 +777,11 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
         <div class="form-group">
           <label data-i18n="email">Email</label>
-          <input type="email" id="loginEmail" placeholder="admin@lovara.com" autocomplete="username" />
+          <input type="email" id="loginEmail" placeholder="admin@lovara.com" autocomplete="username">
         </div>
         <div class="form-group">
           <label data-i18n="password">Password</label>
-          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" />
+          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
         </div>
 
         <button onclick="AdminApp.login()">
@@ -828,37 +828,37 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           </div>
 
           <form id="productForm" onsubmit="return ProductManager.addProduct(event)">
-            <input type="hidden" id="editProductId" value="" />
+            <input type="hidden" id="editProductId" value="">
           <div class="edit-mode-badge hidden" id="editModeBadge"><i class="fas fa-pen"></i> <span data-i18n="editMode">Edit Mode</span></div>
             <div class="form-row">
               <div class="form-group">
                 <label data-i18n="productName">Product Name *</label>
-                <input type="text" id="pName" placeholder="e.g. Elegant Evening Dress" required />
+                <input type="text" id="pName" placeholder="e.g. Elegant Evening Dress" required>
               </div>
               <div class="form-group">
                 <label data-i18n="price">Price (EGP) *</label>
-                <input type="number" id="pPrice" placeholder="e.g. 1999" step="0.01" min="0" required />
+                <input type="number" id="pPrice" placeholder="e.g. 1999" step="0.01" min="0" required>
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label><span data-i18n="oldPrice">Old Price (EGP)</span> <small style="color:var(--text-light)" data-i18n="optional">(optional)</small></label>
-                <input type="number" id="pOldPrice" placeholder="e.g. 2499" step="0.01" min="0" />
+                <input type="number" id="pOldPrice" placeholder="e.g. 2499" step="0.01" min="0">
               </div>
               <div class="form-group">
                 <label><span data-i18n="supplier">Supplier / Factory</span> <small style="color:var(--text-light)" data-i18n="optional">(optional)</small></label>
-                <input type="text" id="pSupplier" placeholder="e.g. Al-Amal Factory" />
+                <input type="text" id="pSupplier" placeholder="e.g. Al-Amal Factory">
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label><span data-i18n="cost">Cost (EGP)</span> <small style="color:var(--text-light)" data-i18n="costHint">(purchase price)</small></label>
-                <input type="number" id="pCost" placeholder="e.g. 1500" step="0.01" min="0" required />
+                <input type="number" id="pCost" placeholder="e.g. 1500" step="0.01" min="0" required>
               </div>
               <div class="form-group">
                 <label><span data-i18n="stock">Stock Quantity</span> <small style="color:var(--text-light)" data-i18n="optional">(optional)</small></label>
-                <input type="number" id="pStock" placeholder="e.g. 10" min="0" value="1" />
+                <input type="number" id="pStock" placeholder="e.g. 10" min="0" value="1">
               </div>
             </div>
 
@@ -889,14 +889,14 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             <div class="selector-group">
               <label><span data-i18n="availableSizes">Available Sizes</span> <small style="color:var(--text-light)" data-i18n="selectAll">(select all that apply)</small></label>
               <div class="selector-grid" id="sizeSelector">
-                <label class="selector-item"><input type="checkbox" name="size" value="XS" /><span class="item-label"><i class="fas fa-check check-icon"></i> XS</span></label>
-                <label class="selector-item"><input type="checkbox" name="size" value="S" /><span class="item-label"><i class="fas fa-check check-icon"></i> S</span></label>
-                <label class="selector-item"><input type="checkbox" name="size" value="M" /><span class="item-label"><i class="fas fa-check check-icon"></i> M</span></label>
-                <label class="selector-item"><input type="checkbox" name="size" value="L" /><span class="item-label"><i class="fas fa-check check-icon"></i> L</span></label>
-                <label class="selector-item"><input type="checkbox" name="size" value="XL" /><span class="item-label"><i class="fas fa-check check-icon"></i> XL</span></label>
-                <label class="selector-item"><input type="checkbox" name="size" value="XXL" /><span class="item-label"><i class="fas fa-check check-icon"></i> XXL</span></label>
-                <label class="selector-item"><input type="checkbox" name="size" value="3XL" /><span class="item-label"><i class="fas fa-check check-icon"></i> 3XL</span></label>
-                <label class="selector-item"><input type="checkbox" name="size" value="Free Size" /><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="freeSize">Free Size</span></span></label>
+                <label class="selector-item"><input type="checkbox" name="size" value="XS"><span class="item-label"><i class="fas fa-check check-icon"></i> XS</span></label>
+                <label class="selector-item"><input type="checkbox" name="size" value="S"><span class="item-label"><i class="fas fa-check check-icon"></i> S</span></label>
+                <label class="selector-item"><input type="checkbox" name="size" value="M"><span class="item-label"><i class="fas fa-check check-icon"></i> M</span></label>
+                <label class="selector-item"><input type="checkbox" name="size" value="L"><span class="item-label"><i class="fas fa-check check-icon"></i> L</span></label>
+                <label class="selector-item"><input type="checkbox" name="size" value="XL"><span class="item-label"><i class="fas fa-check check-icon"></i> XL</span></label>
+                <label class="selector-item"><input type="checkbox" name="size" value="XXL"><span class="item-label"><i class="fas fa-check check-icon"></i> XXL</span></label>
+                <label class="selector-item"><input type="checkbox" name="size" value="3XL"><span class="item-label"><i class="fas fa-check check-icon"></i> 3XL</span></label>
+                <label class="selector-item"><input type="checkbox" name="size" value="Free Size"><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="freeSize">Free Size</span></span></label>
               </div>
             </div>
 
@@ -904,11 +904,11 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             <div class="selector-group hidden" id="bagSizeSelector">
               <label><span data-i18n="bagSizes">Bag Sizes</span> <small style="color:var(--text-light)" data-i18n="selectAll">(select all that apply)</small></label>
               <div class="selector-grid" id="bagSizeGrid">
-                <label class="selector-item"><input type="checkbox" name="bagSize" value="Small" /><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="sizeSmall">Small</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="bagSize" value="Medium" /><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="sizeMedium">Medium</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="bagSize" value="Large" /><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="sizeLarge">Large</span></span></label>
-                <label class="selector-item"><input type="checkbox" name="bagSize" value="XL" /><span class="item-label"><i class="fas fa-check check-icon"></i> XL</span></label>
-                <label class="selector-item"><input type="checkbox" name="bagSize" value="One Size" /><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="oneSize">One Size</span></span></label>
+                <label class="selector-item"><input type="checkbox" name="bagSize" value="Small"><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="sizeSmall">Small</span></span></label>
+                <label class="selector-item"><input type="checkbox" name="bagSize" value="Medium"><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="sizeMedium">Medium</span></span></label>
+                <label class="selector-item"><input type="checkbox" name="bagSize" value="Large"><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="sizeLarge">Large</span></span></label>
+                <label class="selector-item"><input type="checkbox" name="bagSize" value="XL"><span class="item-label"><i class="fas fa-check check-icon"></i> XL</span></label>
+                <label class="selector-item"><input type="checkbox" name="bagSize" value="One Size"><span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="oneSize">One Size</span></span></label>
               </div>
             </div>
 
@@ -916,39 +916,39 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             <div class="form-group hidden" id="shoeSizeGroup">
               <label><span data-i18n="shoeSize">Shoe Size</span> <small style="color:var(--text-light)" data-i18n="shoeSizeHint">(e.g. 38, 39, 40, 41)</small></label>
               <div class="color-input-row">
-                <input type="text" id="pShoeSizeInput" data-i18n-placeholder="shoeSizePlaceholder" placeholder="e.g. 38, 39, 40" style="direction: ltr; flex:1;" />
+                <input type="text" id="pShoeSizeInput" data-i18n-placeholder="shoeSizePlaceholder" placeholder="e.g. 38, 39, 40" style="direction: ltr; flex:1;">
                 <button type="button" class="btn-done-colors" id="btnDoneShoeSize" onclick="ProductManager.addShoeSizeTags()">
                   <i class="fas fa-check"></i> <span data-i18n="done">تم</span>
                 </button>
               </div>
               <div class="color-tags-display" id="shoeSizeTagsDisplay"></div>
-              <input type="hidden" id="pShoeSize" value="" />
+              <input type="hidden" id="pShoeSize" value="">
             </div>
 
             <!-- VOLUME INPUT (for Personal Care & Cosmetics only) -->
             <div class="form-group hidden" id="volumeGroup">
               <label><span data-i18n="volume">Volume / Capacity</span> <small style="color:var(--text-light)" data-i18n="volumeHint">(e.g. 50ml, 100ml, 200ml)</small></label>
               <div class="color-input-row">
-                <input type="text" id="pVolumeInput" data-i18n-placeholder="volumePlaceholder" placeholder="e.g. 50ml, 100ml" style="direction: ltr; flex:1;" />
+                <input type="text" id="pVolumeInput" data-i18n-placeholder="volumePlaceholder" placeholder="e.g. 50ml, 100ml" style="direction: ltr; flex:1;">
                 <button type="button" class="btn-done-colors" id="btnDoneVolume" onclick="ProductManager.addVolumeTags()">
                   <i class="fas fa-check"></i> <span data-i18n="done">تم</span>
                 </button>
               </div>
               <div class="color-tags-display" id="volumeTagsDisplay"></div>
-              <input type="hidden" id="pVolume" value="" />
+              <input type="hidden" id="pVolume" value="">
             </div>
 
             <!-- COLORS INPUT WITH SWATCH TAGS -->
             <div class="form-group">
               <label><span data-i18n="availableColors">Available Colors</span> <small style="color:var(--text-light)">(اكتب الألوان مفصولة بفاصلة)</small></label>
               <div class="color-input-row">
-                <input type="text" id="pColorsInput" data-i18n-placeholder="colorsPlaceholder" placeholder="e.g. Black, White, Red, Navy" style="direction: ltr; flex:1;" />
+                <input type="text" id="pColorsInput" data-i18n-placeholder="colorsPlaceholder" placeholder="e.g. Black, White, Red, Navy" style="direction: ltr; flex:1;">
                 <button type="button" class="btn-done-colors" id="btnDoneColors" onclick="ProductManager.addColorTags()">
                   <i class="fas fa-check"></i> <span data-i18n="done">تم</span>
                 </button>
               </div>
               <div class="color-tags-display" id="colorTagsDisplay"></div>
-              <input type="hidden" id="pColors" value="" />
+              <input type="hidden" id="pColors" value="">
             </div>
 
             <div class="form-group">
@@ -956,23 +956,23 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               <div class="image-uploads-row">
                 <div class="image-upload-area" id="imageUploadArea1">
                   <div class="upload-placeholder" id="uploadPlaceholder1"><i class="fas fa-cloud-upload-alt"></i><span data-i18n="clickUpload">Click to upload</span><small>1</small></div>
-                  <div class="upload-preview" id="uploadPreview1"><img id="previewImage1" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Preview 1" /><button type="button" class="btn-remove-image" id="removeImageBtn1"><i class="fas fa-times"></i></button></div>
+                  <div class="upload-preview" id="uploadPreview1"><img id="previewImage1" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Preview 1"><button type="button" class="btn-remove-image" id="removeImageBtn1"><i class="fas fa-times"></i></button></div>
                 </div>
                 <div class="image-upload-area" id="imageUploadArea2">
                   <div class="upload-placeholder" id="uploadPlaceholder2"><i class="fas fa-cloud-upload-alt"></i><span data-i18n="clickUpload">Click to upload</span><small>2</small></div>
-                  <div class="upload-preview" id="uploadPreview2"><img id="previewImage2" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Preview 2" /><button type="button" class="btn-remove-image" id="removeImageBtn2"><i class="fas fa-times"></i></button></div>
+                  <div class="upload-preview" id="uploadPreview2"><img id="previewImage2" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Preview 2"><button type="button" class="btn-remove-image" id="removeImageBtn2"><i class="fas fa-times"></i></button></div>
                 </div>
                 <div class="image-upload-area" id="imageUploadArea3">
                   <div class="upload-placeholder" id="uploadPlaceholder3"><i class="fas fa-cloud-upload-alt"></i><span data-i18n="clickUpload">Click to upload</span><small>3</small></div>
-                  <div class="upload-preview" id="uploadPreview3"><img id="previewImage3" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Preview 3" /><button type="button" class="btn-remove-image" id="removeImageBtn3"><i class="fas fa-times"></i></button></div>
+                  <div class="upload-preview" id="uploadPreview3"><img id="previewImage3" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Preview 3"><button type="button" class="btn-remove-image" id="removeImageBtn3"><i class="fas fa-times"></i></button></div>
                 </div>
               </div>
-              <input type="file" id="pImageFile1" accept="image/*" style="display:none" />
-              <input type="file" id="pImageFile2" accept="image/*" style="display:none" />
-              <input type="file" id="pImageFile3" accept="image/*" style="display:none" />
-              <input type="hidden" id="pImage1" value="" />
-              <input type="hidden" id="pImage2" value="" />
-              <input type="hidden" id="pImage3" value="" />
+              <input type="file" id="pImageFile1" accept="image/*" style="display:none">
+              <input type="file" id="pImageFile2" accept="image/*" style="display:none">
+              <input type="file" id="pImageFile3" accept="image/*" style="display:none">
+              <input type="hidden" id="pImage1" value="">
+              <input type="hidden" id="pImage2" value="">
+              <input type="hidden" id="pImage3" value="">
             </div>
 
             <div class="form-group">
@@ -985,18 +985,18 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
                 <span class="badge-option" data-badge="Limited" data-i18n="limitedBadge">Limited</span>
                 <span class="badge-option" data-badge="Coming Soon" data-i18n="comingSoonBadge">Coming Soon</span>
               </div>
-              <input type="hidden" id="pBadge" value="" />
+              <input type="hidden" id="pBadge" value="">
 
             <!-- VISIBILITY SELECTOR -->
             <div class="selector-group">
               <label><span data-i18n="visibility">Visibility</span> <small style="color:var(--text-light)" data-i18n="visibilityHint">(where to show this product)</small></label>
               <div class="selector-grid" id="visibilitySelector">
                 <label class="selector-item">
-                  <input type="checkbox" name="visibility" value="home" id="showOnHome" checked />
+                  <input type="checkbox" name="visibility" value="home" id="showOnHome" checked>
                   <span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="showOnHome">Home Page</span></span>
                 </label>
                 <label class="selector-item">
-                  <input type="checkbox" name="visibility" value="category" id="showOnCategory" checked />
+                  <input type="checkbox" name="visibility" value="category" id="showOnCategory" checked>
                   <span class="item-label"><i class="fas fa-check check-icon"></i> <span data-i18n="showOnCategory">Category Page</span></span>
                 </label>
               </div>
@@ -1839,7 +1839,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           return `
           <div class="product-item">
             <img src="${(p.images && p.images[0]) || p.imageUrl || 'https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'}"
-                 alt="${p.name}" onerror="this.src='https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'" />
+                 alt="${p.name}" onerror="this.src='https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'">
             <div class="product-item-info">
               <h4>${p.name}</h4>
               <p>${catLabel}${badgeLabel ? ' &bull; ' + badgeLabel : ''}${p.showOnHome ? ' &bull; 🏠' : ''}${p.showOnCategory ? ' &bull; 📁' : ''}</p>
