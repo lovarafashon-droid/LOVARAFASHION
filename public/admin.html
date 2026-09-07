@@ -697,7 +697,51 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       border-color: var(--primary);
     }
 
-  
+    /* Final responsive polish: comfortable touch targets and no horizontal overflow */
+    .admin-page .container { width: min(100%, 1440px); }
+    .admin-form-wrapper, .products-list { min-width: 0; }
+    .form-group input, .form-group select, .form-group textarea, .login-box input { min-width: 0; }
+
+    @media (max-width: 1023px) {
+      .admin-grid { align-items: start; }
+      .admin-form-wrapper, .products-list { overflow: hidden; }
+      .image-uploads-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .image-uploads-row .image-upload-area { min-width: 0; }
+      .upload-placeholder span { white-space: normal; line-height: 1.3; }
+    }
+
+    @media (max-width: 767px) {
+      .admin-page { padding-top: 16px; }
+      #adminPanel.admin-page { padding-top: 74px; }
+      .admin-header h1 { line-height: 1.15; }
+      .admin-header p { line-height: 1.5; margin: 0 auto; max-width: 32rem; }
+      .form-row { grid-template-columns: 1fr !important; gap: 0; }
+      .color-input-row { flex-direction: column; gap: 8px; }
+      .color-input-row input { width: 100%; }
+      .btn-done-colors { min-height: 44px; justify-content: center; }
+      .selector-grid, .badge-selector { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .selector-item .item-label, .badge-option { width: 100%; justify-content: center; text-align: center; min-height: 40px; }
+      .image-uploads-row { gap: 8px; }
+      .image-uploads-row .image-upload-area { min-height: 104px; padding: 8px; }
+      .upload-placeholder i { font-size: 23px; }
+      .upload-preview img { max-height: 88px; }
+      .product-item { grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; }
+      .product-item-price { grid-column: 2; }
+      .product-item-actions { grid-column: 3; grid-row: 1 / span 2; }
+      .category-filter { display: flex; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+      .filter-pill { flex: 0 0 auto; min-height: 38px; }
+      .btn-add, .btn-cancel { min-height: 48px; }
+    }
+
+    @media (max-width: 420px) {
+      .admin-form-wrapper, .products-list { padding: 13px !important; }
+      .image-uploads-row { gap: 5px; }
+      .image-uploads-row .image-upload-area { min-height: 92px; }
+      .upload-placeholder span { font-size: 9px; }
+      .product-item { grid-template-columns: 42px minmax(0, 1fr) auto; padding: 8px !important; }
+      .product-item img { width: 42px !important; height: 42px !important; }
+    }
+
 @media (max-width: 1023px) { .container{padding-left:16px;padding-right:16px}.admin-grid{gap:18px}.admin-form-wrapper,.products-list{padding:22px}.admin-header h1{font-size:36px}.form-row{gap:10px}.product-item{align-items:flex-start} }
 @media (max-width: 640px) { .container{padding-left:10px;padding-right:10px}.admin-page{padding-top:62px}.top-bar{justify-content:center!important;flex-wrap:wrap;padding:7px 8px!important}.top-bar-btn{flex:1;justify-content:center;min-width:0;padding:8px 7px!important;font-size:11px!important}.admin-header{margin-bottom:20px}.admin-header h1{font-size:30px}.admin-header p{font-size:12px}.admin-grid{gap:12px!important}.admin-form-wrapper,.products-list{padding:15px;border-radius:12px}.admin-form-wrapper h2,.products-list h2{font-size:23px;margin-bottom:16px}.form-row{grid-template-columns:1fr!important;gap:0}.form-group{margin-bottom:14px}.form-group input,.form-group select,.form-group textarea{font-size:14px;padding:11px 12px}.image-upload-area{min-height:120px;padding:18px}.product-item{display:grid;grid-template-columns:48px minmax(0,1fr);gap:8px;padding:9px}.product-item img{width:48px;height:48px}.product-item-info h4{font-size:13px;white-space:normal}.product-item-info p{font-size:11px;white-space:normal;overflow-wrap:anywhere}.product-item-price{grid-column:2;font-size:13px}.product-item-actions{grid-column:1/-1;justify-content:flex-end;width:100%}.btn-edit,.btn-delete{width:36px;height:36px}.category-filter,.badge-selector{gap:6px}.filter-pill,.badge-option{padding:7px 10px;font-size:12px}.login-box{width:calc(100% - 20px);padding:24px 16px;margin:55px auto}.login-welcome .login-logo-text{font-size:35px}}
   </style>
@@ -987,6 +1031,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             <button class="filter-pill" data-filter="lingerie" onclick="ProductManager.setFilter('lingerie')" data-i18n="lingerie">Lingerie</button>
             <button class="filter-pill" data-filter="sets" onclick="ProductManager.setFilter('sets')" data-i18n="sets">Sets</button>
             <button class="filter-pill" data-filter="hijab" onclick="ProductManager.setFilter('hijab')" data-i18n="hijab">Hijab</button>
+            <button class="filter-pill" data-filter="winter" onclick="ProductManager.setFilter('winter')" data-i18n="winter">Winter</button>
           </div>
 
           <div id="productsContainer">
