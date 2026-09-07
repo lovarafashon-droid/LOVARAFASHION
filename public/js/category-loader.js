@@ -195,13 +195,14 @@ function addToCart(productId) {
       id: productId,
       name: name,
       price: price,
-      image: productImage || imageUrl,
+      image: imageUrl,
       category: category,
       quantity: 1
     });
   }
 
   localStorage.setItem('lovara_cart', JSON.stringify(cart));
+  window.LovaraData?.saveCart();
   updateCartCount();
   showProductToast('Added to cart!');
 }
@@ -221,18 +222,19 @@ function updateCartCount() {
 // WISHLIST FUNCTION
 // ============================================
 function toggleWishlist(productId) {
-  let wishlist = JSON.parse(localStorage.getItem('lovara_wishlist')) || [];
-  const index = wishlist.indexOf(productId);
+  let wishlist = window.LovaraData ? LovaraData.getWishlist() : (JSON.parse(localStorage.getItem('lovara_wishlist')) || []);
+  const index = wishlist.findIndex(item => (typeof item === 'string' ? item : item.id) === productId);
 
   if (index > -1) {
     wishlist.splice(index, 1);
     showProductToast('Removed from wishlist');
   } else {
-    wishlist.push(productId);
+    wishlist.push({ id: productId });
     showProductToast('Added to wishlist!');
   }
 
   localStorage.setItem('lovara_wishlist', JSON.stringify(wishlist));
+  window.LovaraData?.saveWishlist();
 }
 
 // ============================================

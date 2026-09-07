@@ -54,7 +54,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js" integrity="sha384-oze9siCpFoiDBZ37lLp99ZmOMO+je1s/xtvwtbNv3NXQXLpbpfPSzZSpbT3xV9da" crossorigin="anonymous"></script>
 
   <!-- Firebase Config -->
-  <script src="js/firebase-config.js"></script>
+  <script src="js/firebase-config.js"></script><script src="js/user-data-sync.js"></script>
 
 <style>
   .auth-required-dot {
@@ -1273,6 +1273,7 @@
             this.currentUser = { uid: user.uid, email: user.email, displayName: user.displayName || user.email.split('@')[0] };
             localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
             this.updateUI(this.currentUser);
+            window.LovaraData?.load();
             // Check admin (skip if user just came back from admin page)
             if (sessionStorage.getItem('skipAdminRedirect') === 'true') {
               sessionStorage.removeItem('skipAdminRedirect');
@@ -1516,7 +1517,6 @@
           else if (window.CategoryApp) { CategoryApp.openLoginModal(); console.log('[LOVARA] CategoryApp.openLoginModal called'); }
           return;
         }
-        if (window.CategoryApp) { CategoryApp.openCartModal(); return; }
         const modal = document.getElementById('cartModal');
         const overlay = document.getElementById('cartOverlay');
         if (modal) { modal.classList.add('show'); modal.classList.add('active'); }
@@ -1525,7 +1525,6 @@
         this.render();
       },
       close() {
-        if (window.CategoryApp) { CategoryApp.closeCartModal(); return; }
         const modal = document.getElementById('cartModal');
         const overlay = document.getElementById('cartOverlay');
         if (modal) { modal.classList.remove('show'); modal.classList.remove('active'); }
@@ -1534,7 +1533,6 @@
       },
       toggle() { this.open(); },
       render() {
-        if (window.CategoryApp) { CategoryApp.renderCart(); return; }
         // Fallback inline render
         const container = document.getElementById('cartItems');
         const empty = document.getElementById('cartEmpty');
@@ -1563,7 +1561,6 @@
         }).join('');
       },
       add(item) {
-        if (window.CategoryApp) { CategoryApp.addToCart(item, item.size, item.color); return; }
         const existing = this.items.find(i => i.id === item.id && i.size === (item.size||null) && i.color === (item.color||null));
         if (existing) { existing.qty = (existing.qty || 1) + (item.qty || 1); }
         else { this.items.push({...item, qty: item.qty || 1}); }
@@ -1571,7 +1568,6 @@
         showToast(item.name + ' added to cart!');
       },
       updateQty(idx, delta) {
-        if (window.CategoryApp) { CategoryApp.updateQty(idx, delta); this.render(); return; }
         const items = this.items;
         if (!items[idx]) return;
         items[idx].qty = (items[idx].qty || 1) + delta;
@@ -1579,17 +1575,15 @@
         this.save(); this.render();
       },
       remove(idx) {
-        if (window.CategoryApp) { CategoryApp.removeFromCart(idx); this.render(); return; }
         this.items.splice(idx, 1); this.save(); this.render();
       },
       clear() {
-        if (window.CategoryApp) { CategoryApp.clearCart(); this.render(); return; }
         while (this.items.length > 0) this.items.pop();
         this.save(); this.render();
       },
       save() {
-        if (window.CategoryApp) return; // CategoryApp handles saving
         localStorage.setItem('lovara_cart', JSON.stringify(this.items));
+        window.LovaraData?.saveCart();
       },
       checkout() {
         const items = this.items;
@@ -1687,6 +1681,7 @@
         if (index > -1) { wishlist.splice(index, 1); showToast('Removed from wishlist'); }
         else { wishlist.push({ id: product.id, name: product.name || 'Unknown', price: parseFloat(product.price) || 0, imageUrl: product.imageUrl || product.image || '', image: product.image || product.imageUrl || '' }); showToast('Added to wishlist ♥'); }
         localStorage.setItem('lovara_wishlist', JSON.stringify(wishlist));
+        window.LovaraData?.saveWishlist();
         const wlCount = document.getElementById('wishlistCount');
         if (wlCount) { wlCount.textContent = wishlist.length; wlCount.style.display = wishlist.length > 0 ? 'flex' : 'none'; }
       },
@@ -1759,6 +1754,10 @@
     window.CartApp = CartApp;
     CartApp.render();
     CartApp.updateWishlistCount();
+    document.addEventListener('lovara-account-data-ready', () => {
+      CartApp.render();
+      CartApp.updateWishlistCount();
+    });
 
     // ---- Global Modal Overlay Click ----
     // Close any modal when clicking its overlay (outside the modal content)

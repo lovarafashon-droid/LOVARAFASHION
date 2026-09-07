@@ -195,6 +195,15 @@ const CategoryApp = {
     this.wishlist = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]');
     this.updateCartCount();
     this.updateWishlistCount();
+    document.addEventListener('lovara-account-data-ready', () => {
+      if (window.LovaraData) {
+        this.cart = LovaraData.getCart();
+        this.wishlist = LovaraData.getWishlist();
+        this.updateCartCount();
+        this.updateWishlistCount();
+        this.renderCart();
+      }
+    });
     this.updateAuthRequiredDots();
     console.log('[LOVARA] CategoryApp.init() completed');
   },
@@ -584,7 +593,10 @@ const CategoryApp = {
   },
 
   clearCart() { this.cart = []; this.saveCart(); this.updateCartCount(); this.renderCart(); },
-  saveCart() { localStorage.setItem('lovara_cart', JSON.stringify(this.cart)); },
+  saveCart() {
+    localStorage.setItem('lovara_cart', JSON.stringify(this.cart));
+    window.LovaraData?.saveCart();
+  },
 
   updateCartCount() {
     const count = this.cart.reduce((sum, item) => sum + ((item.quantity || item.qty) || 1), 0);
@@ -671,7 +683,10 @@ const CategoryApp = {
   removeFromWishlist(index) { this.wishlist.splice(index, 1); this.saveWishlist(); this.updateWishlistCount(); this.renderWishlist(); },
   moveToCart(index) { const item = this.wishlist[index]; this.addToCart(item, item.size, item.color); this.removeFromWishlist(index); },
   buyNowFromWishlist(index) { const item = this.wishlist[index]; this.addToCart(item, item.size, item.color); window.location.href = 'checkout.html'; },
-  saveWishlist() { localStorage.setItem('lovara_wishlist', JSON.stringify(this.wishlist)); },
+  saveWishlist() {
+    localStorage.setItem('lovara_wishlist', JSON.stringify(this.wishlist));
+    window.LovaraData?.saveWishlist();
+  },
 
   updateWishlistCount() {
     const count = this.wishlist.length;
