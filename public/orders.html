@@ -204,6 +204,12 @@
       font-weight: 600 !important;
     }
     .supplier-tag i { color: #1565c0 !important; }
+  
+    @media (max-width: 900px) {
+      .container{padding-left:14px;padding-right:14px}.nav-container{padding:12px 14px}.nav-actions{gap:6px}.nav-btn{padding:8px 11px;font-size:12px}.order-header{padding:14px 16px}.order-body{padding:16px}.return-body{padding:16px}.return-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.return-photo{width:86px;height:86px}.return-card .order-actions{padding:12px 0!important}.return-card .btn{flex:1;justify-content:center;min-width:120px}
+    }
+    @media (max-width: 560px) {
+      .container{padding-left:10px;padding-right:10px}.navbar .nav-container{flex-wrap:wrap;justify-content:center;gap:8px}.navbar .logo{font-size:22px}.nav-actions{width:100%;justify-content:center}.orders-page{padding-top:118px}.page-header{margin-bottom:18px}.page-header h1{font-size:26px}.dashboard-tabs{gap:6px;margin-bottom:16px}.dashboard-tab{flex:1;padding:9px 7px;font-size:12px;white-space:nowrap}.order-header{align-items:flex-start}.order-header-left{gap:8px}.order-id{font-size:17px}.order-date{font-size:11px}.order-body{padding:12px}.customer-box{padding:13px;margin-bottom:16px}.info-grid{grid-template-columns:1fr 1fr;gap:10px}.info-value{font-size:13px;overflow-wrap:anywhere}.item-card{gap:9px}.item-img{width:52px;height:52px}.item-name{font-size:13px;white-space:normal}.item-tags{gap:5px}.item-total{font-size:13px}.return-grid{grid-template-columns:1fr}.return-head{padding:13px 14px}.return-body{padding:13px}.return-card .order-actions{flex-direction:column}.return-card .btn{width:100%}.confirmation-box{margin:10px 12px 0}.modal-box{width:calc(100% - 20px);padding:18px}}
   </style>
 
   <script>
@@ -408,7 +414,7 @@
       },
 
       safeImageUrl(value) {
-        try { const url = new URL(value || ''); return ['https:', 'http:'].includes(url.protocol) ? this.escapeHTML(url.href) : ''; } catch (_) { return ''; }
+        try { const raw=String(value||''); if (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(raw) && raw.length <= 700000) return this.escapeHTML(raw); const url = new URL(raw); return url.protocol === 'https:' ? this.escapeHTML(url.href) : ''; } catch (_) { return ''; }
       },
 
       renderReturns() {
@@ -420,7 +426,7 @@
           const statusText = status === 'approved' ? 'Approved' : status === 'rejected' ? 'Rejected' : 'Pending';
           const type = r.type === 'exchange' ? 'Exchange' : 'Return';
           const esc = this.escapeHTML.bind(this);
-          const photo = this.safeImageUrl(r.imageUrl);
+          const photo = this.safeImageUrl(r.imageUrl || r.imageDataUrl);
           return `<article class="return-card"><div class="return-head"><div><span class="return-id">#${esc(r.orderNumber || r._docId)}</span><span class="order-date" style="margin-left:12px">${date}</span></div><span class="return-status">${statusText}</span></div><div class="return-body"><div class="return-grid"><div><div class="return-label">Customer</div><div class="return-value">${esc((r.firstName || '') + ' ' + (r.lastName || ''))}</div></div><div><div class="return-label">Phone</div><div class="return-value">${esc(r.phone || '—')}</div></div><div><div class="return-label">Product</div><div class="return-value">${esc(r.productName || '—')}</div></div><div><div class="return-label">Request</div><div class="return-value">${type} · ${esc(r.reason || '—')}</div></div>${photo ? `<div><div class="return-label">Photo</div><a href="${photo}" target="_blank" rel="noopener"><img class="return-photo" src="${photo}" alt="Return product"></a></div>` : ''}</div>${r.details ? `<div class="return-details"><strong>Details:</strong> ${esc(r.details)}</div>` : ''}<div class="order-actions" style="padding:15px 0 0;background:transparent;border:0;justify-content:flex-start"><button class="btn btn-confirm" onclick="OrdersApp.updateReturn(${i}, 'approved')"><i class="fas fa-check"></i> Approve</button><button class="btn btn-reject" onclick="OrdersApp.updateReturn(${i}, 'rejected')"><i class="fas fa-times"></i> Reject</button></div></div></article>`;
         }).join('');
       },
