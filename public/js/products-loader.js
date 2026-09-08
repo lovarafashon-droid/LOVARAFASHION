@@ -5,6 +5,12 @@
 const CACHE_KEY = 'lovara_products_cache';
 const CACHE_DURATION = 10 * 60 * 1000;
 
+function productColorValue(value) {
+  const key = String(value || '').trim().toLowerCase();
+  const colors = { black:'#1a1a1a', white:'#fff', red:'#e53935', yellow:'#f4c430', blue:'#3498db', green:'#27ae60', orange:'#f39c12', pink:'#ffc0cb', purple:'#8e44ad', brown:'#795548', beige:'#e8d5b5', gold:'#d4af37', silver:'#c0c0c0', 'أحمر':'#e53935', 'أبيض':'#fff', 'أصفر':'#f4c430', 'اصفر':'#f4c430' };
+  return colors[key] || (key.startsWith('#') || key.startsWith('rgb') || key.startsWith('hsl') ? value : '#c9a87c');
+}
+
 function getCachedProducts() {
   try {
     const cached = localStorage.getItem(CACHE_KEY);
@@ -371,7 +377,7 @@ function createProductCard(id, product) {
   // Colors
   let colorsHtml = '';
   if (product.colors && product.colors.length > 0) {
-    const colorsTags = product.colors.map(c => `<span class="product-color-tag" style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span>`).join('');
+    const colorsTags = product.colors.map(c => `<span class="product-color-tag" style="background:${productColorValue(c)};color:${productColorValue(c) === '#fff' ? '#333' : '#fff'};text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span>`).join('');
     colorsHtml = `<div class="product-colors"><span class="product-meta-label">Color:</span>${colorsTags}</div>`;
   }
 

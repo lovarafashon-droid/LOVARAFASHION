@@ -3,6 +3,20 @@
 // Auth, Cart, Wishlist, i18n, Products for ALL category pages
 // ============================================
 
+function lovaraColorValue(value) {
+  const key = String(value || '').trim().toLowerCase();
+  const colors = {
+    black:'#1a1a1a', white:'#fff', red:'#e53935', yellow:'#f4c430',
+    blue:'#3498db', green:'#27ae60', orange:'#f39c12', pink:'#ffc0cb',
+    purple:'#8e44ad', brown:'#795548', beige:'#e8d5b5', gold:'#d4af37',
+    silver:'#c0c0c0', burgundy:'#800020', navy:'#1a237e', olive:'#6b8e23',
+    أحمر:'#e53935', ابيض:'#fff', أبيض:'#fff', أصفر:'#f4c430', اصفر:'#f4c430',
+    ازرق:'#3498db', أزرق:'#3498db', اخضر:'#27ae60', أخضر:'#27ae60',
+    برتقالي:'#f39c12', وردي:'#ffc0cb', بنفسجي:'#8e44ad', بني:'#795548'
+  };
+  return colors[key] || (key.startsWith('#') || key.startsWith('rgb') || key.startsWith('hsl') ? value : '#c9a87c');
+}
+
 const CategoryApp = {
   badgeTranslations: {
     en: { 'New': 'New', 'Sale': 'Sale', 'Bestseller': 'Bestseller', 'Limited': 'Limited', 'Coming Soon': 'Coming Soon' },
@@ -842,7 +856,7 @@ const CategoryApp = {
     const badgeHtml = product.badge ? `<div class="product-badge">${badgeText}</div>` : '';
     const oldPriceHtml = product.oldPrice ? `<span class="old-price">EGP ${product.oldPrice.toFixed(2)}</span>` : '';
     const sizesHtml = product.sizes ? product.sizes.map(s => `<span class="product-size-tag">${s}</span>`).join('') : '';
-    const colorsHtml = product.colors ? product.colors.map(c => `<span class="product-color-tag" style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span>`).join('') : '';
+    const colorsHtml = product.colors ? product.colors.map(c => `<span class="product-color-tag" style="background:${lovaraColorValue(c)};color:${lovaraColorValue(c) === '#fff' ? '#333' : '#fff'};text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span>`).join('') : '';
     const isWished = this.isInWishlist(product.id);
     card.innerHTML = `<div class="product-img-wrap" onclick="CategoryApp.openProductDetail('${product.id}')" style="cursor:pointer;"><img src="${product.imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA'}" alt="${product.name}" class="product-img" loading="lazy" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">${badgeHtml}<button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="event.stopPropagation(); CategoryApp.handleWishlistClick('${product.id}')"><i class="fas fa-heart"></i></button></div><div class="product-info"><h4 class="product-name">${product.name}</h4><p class="product-price">EGP ${product.price ? (parseFloat(product.price) || 0).toFixed(2) : '0.00'} ${oldPriceHtml}</p>${sizesHtml ? `<div class="product-sizes"><span class="product-meta-label">${this.t('size')}:</span>${sizesHtml}</div>` : ''}${colorsHtml ? `<div class="product-colors"><span class="product-meta-label">${this.t('color')}:</span>${colorsHtml}</div>` : ''}${product.badge === 'Coming Soon' || product.comingSoon === true ? `<div class="product-actions coming-soon-actions"><span class="coming-soon-label" style="flex:1;text-align:center;padding:10px 14px;background:#f5f5f5;border-radius:8px;color:#888;font-size:13px;font-weight:500;"><i class="fas fa-clock" style="margin-right:6px;"></i>${this.badgeTranslations[this.currentLang]?.['Coming Soon'] || 'Coming Soon'}</span><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share" style="width:40px;height:40px;border-radius:8px;border:1px solid #e8e4e0;background:#fff;color:#666;cursor:pointer;"><i class="fas fa-share-nodes"></i></button></div>` : `<div class="product-actions"><button class="add-to-cart" onclick="CategoryApp.handleAddToCart('${product.id}')"><i class="fas fa-bag-shopping"></i> ${this.t('addToCart')}</button><button class="btn-buy-now" onclick="CategoryApp.handleBuyNow('${product.id}')"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share"><i class="fas fa-share-nodes"></i></button></div>`}</div>`;
     return card;
@@ -887,7 +901,7 @@ const CategoryApp = {
     const existing = document.getElementById('buyNowModal');
     if (existing) existing.remove();
     const sizesHtml = product.sizes ? product.sizes.map((s, i) => `<label class="buy-now-option"><input type="radio" name="buySize" value="${s}" ${i === 0 ? 'checked' : ''}><span>${s}</span></label>`).join('') : '';
-    const colorsHtml = product.colors ? product.colors.map((c, i) => `<label class="buy-now-option"><input type="radio" name="buyColor" value="${c}" ${i === 0 ? 'checked' : ''}><span style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span></label>`).join('') : '';
+    const colorsHtml = product.colors ? product.colors.map((c, i) => `<label class="buy-now-option"><input type="radio" name="buyColor" value="${c}" ${i === 0 ? 'checked' : ''}><span class="buy-color-swatch" style="--swatch-color:${lovaraColorValue(c)};background:${lovaraColorValue(c)};color:${lovaraColorValue(c) === '#fff' ? '#333' : '#fff'}">${c}</span></label>`).join('') : '';
     const modal = document.createElement('div');
     modal.id = 'buyNowModal';
     modal.className = 'buy-now-modal';
