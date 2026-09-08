@@ -946,12 +946,6 @@ body.lang-ar {
   color: var(--white);
   box-shadow: 0 2px 8px rgba(201,168,124,0.3);
 }
-.buy-now-option input:checked + .buy-color-swatch {
-  background: var(--swatch-color) !important;
-  border-color: var(--primary-dark) !important;
-  color: inherit !important;
-  box-shadow: 0 0 0 2px rgba(201,168,124,.35);
-}
 
 .buy-now-btn {
   width: 100%;

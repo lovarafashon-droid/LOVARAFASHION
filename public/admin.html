@@ -1513,13 +1513,12 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         const colorMap = {
           'Black':'#1a1a1a','White':'#ffffff','Beige':'#e8d5b5','Nude':'#d4a574',
           'Red':'#c0392b','Burgundy':'#800020','Pink':'#ffc0cb','Rose':'#e6a8b3',
-          'Blue':'#3498db','Navy':'#1a237e','Green':'#27ae60','Olive':'#6b8e23','Yellow':'#f4c430',
-          'أحمر':'#e53935','أبيض':'#ffffff','ابيض':'#ffffff','أصفر':'#f4c430','اصفر':'#f4c430',
+          'Blue':'#3498db','Navy':'#1a237e','Green':'#27ae60','Olive':'#6b8e23',
           'Gold':'#d4af37','Silver':'#c0c0c0','Champagne':'#f7e7ce','Lavender':'#e6e6fa'
         };
         display.innerHTML = colors.map(c => {
-          const bg = colorMap[c] || colorMap[Object.keys(colorMap).find(name => name.toLowerCase() === c.toLowerCase())] || '#c9a87c';
-          const border = ['white','أبيض','ابيض'].includes(c.toLowerCase()) ? 'border:1.5px solid #ccc;' : '';
+          const bg = colorMap[c] || '#c9a87c';
+          const border = c.toLowerCase() === 'white' ? 'border:1.5px solid #ccc;' : '';
           return `<span class="color-tag-box"><span class="color-dot" style="background:${bg};${border}"></span>${c}<button type="button" class="btn-remove-tag" onclick="ProductManager.removeColorTag('${c}')" title="Remove"><i class="fas fa-times"></i></button></span>`;
         }).join('');
       },
