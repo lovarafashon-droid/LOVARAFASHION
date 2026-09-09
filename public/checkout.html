@@ -1120,7 +1120,11 @@
           btn.disabled = false;
           btn.innerHTML = '<i class="fas fa-check-circle"></i> <span data-i18n="placeOrder">' + (this.t('placeOrder') || 'Place Order') + '</span>';
           this.updateSteps(2);
-          this.showToast(this.t('orderFailed') || 'Could not save the order to the cloud. Please check your connection and try again.', 'error');
+          const errorCode = err && err.code ? ` (${err.code})` : '';
+          const errorMessage = err && err.code === 'permission-denied'
+            ? 'Order rejected by Firebase permissions. Please publish the Firestore rules.'
+            : `Could not save the order${errorCode}. Please check your connection and try again.`;
+          this.showToast(errorMessage, 'error');
         }
       },
 

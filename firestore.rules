@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function: check if current user is admin
+    function isAdmin() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Helper function: check if user owns the document
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // USERS COLLECTION
+    // ============================================
+    match /users/{userId} {
+      // Users can read only their own profile; admins can read profiles for management.
+      allow get: if isAdmin() || isOwner(userId);
+      // Only admin can list all users
+      allow list: if isAdmin();
+      // A normal signup may not create an admin profile.
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.role == 'user';
+      // Users may edit their profile, but never their role. Only an existing admin
+      // can grant or revoke admin access.
+      allow update: if isAdmin()
+        || (isOwner(userId) && request.resource.data.role == resource.data.role);
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // PRODUCTS COLLECTION
+    // - Public read (anyone can view products)
+    // - Admin-only write (create, update, delete)
+    // ============================================
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ORDERS COLLECTION
+    // Customers create orders; only admins can review, update, or delete them.
+    match /orders/{orderId} {
+      allow create: if request.resource.data.keys().hasAll(['customer', 'items', 'totals', 'date']);
+      allow read, update, delete: if isAdmin();
+    }
+
+    // RETURN REQUESTS
+    // Customers may submit a request with only the fields needed for review.
+    // Only admins can read or change requests after submission.
+    match /returns/{returnId} {
+      allow create: if request.resource.data.keys().hasAll([
+        'firstName', 'lastName', 'phone', 'orderNumber', 'type',
+        'productName', 'reason', 'status', 'date'
+      ])
+      && request.resource.data.status == 'pending'
+      && request.resource.data.firstName is string
+      && request.resource.data.lastName is string
+      && request.resource.data.phone is string
+      && request.resource.data.orderNumber is string
+      && request.resource.data.productName is string
+      && request.resource.data.type in ['return', 'exchange']
+      && request.resource.data.firstName.size() <= 80
+      && request.resource.data.lastName.size() <= 80
+      && request.resource.data.phone.size() <= 40
+      && request.resource.data.orderNumber.size() <= 80
+      && request.resource.data.productName.size() <= 300;
+      allow read: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.status in ['pending', 'approved', 'rejected'];
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // DEFAULT: DENY EVERYTHING ELSE
+    // ============================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
