@@ -2,6 +2,8 @@ User-agent: *
 Allow: /
 Disallow: /admin.html
 Disallow: /orders.html
+Disallow: /admin
+Disallow: /orders
 Disallow: /checkout.html
 Disallow: /profile.html
 Disallow: /api/
