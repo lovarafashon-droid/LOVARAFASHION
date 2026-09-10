@@ -227,6 +227,9 @@ const badgeTranslations = {
 function initProductCarousel(grid, products) {
   carouselState.products = products;
   carouselState.filteredProducts = products;
+  carouselState.itemsPerPage = window.matchMedia('(max-width: 768px)').matches
+    ? Math.max(products.length, 1)
+    : 4;
 
   grid.innerHTML = '';
   grid.classList.add('carousel-grid');
