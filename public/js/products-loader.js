@@ -40,7 +40,7 @@ function setCachedProducts(products) {
   }
 }
 
-async function waitForFirebase(timeoutMs = 5000) {
+async function waitForFirebase(timeoutMs = 2000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     showSkeletonLoading(grid, 4);
   }
 
-  const firebaseReady = await waitForFirebase(5000);
+  const firebaseReady = await waitForFirebase(2000);
 
   if (!firebaseReady) {
     const cached = getCachedProducts();
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   try {
     const snapshot = await Promise.race([
       db.collection('products').get(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Products request timed out')), 8000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Products request timed out')), 2000))
     ]);
 
     if (snapshot.empty) {
@@ -358,6 +358,12 @@ function createProductCard(id, product) {
   div.className = 'product-card';
   div.setAttribute('data-category', product.category || 'all');
   div.setAttribute('data-product-id', id);
+  div.addEventListener('click', (event) => {
+    if (event.target.closest('button, a, input, select, textarea')) return;
+    if (typeof CartApp !== 'undefined' && typeof CartApp.handleBuyNow === 'function') {
+      CartApp.handleBuyNow(id);
+    }
+  });
 
   const safeName = String(product.name || 'Unnamed').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const price = parseFloat(product.price) || 0;

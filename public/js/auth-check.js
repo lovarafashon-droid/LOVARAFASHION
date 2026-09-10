@@ -207,7 +207,7 @@
   };
 
   // --- Wait for Firebase - FIXED: longer timeout, better detection ---
-  function waitForFirebase(timeoutMs = 5000) {
+  function waitForFirebase(timeoutMs = 2000) {
     return new Promise((resolve) => {
       const startTime = Date.now();
       let checkCount = 0;
@@ -267,7 +267,7 @@
 
   async function initAuth() {
     console.log('[Auth] Waiting for Firebase...');
-    const ready = await waitForFirebase(5000);
+    const ready = await waitForFirebase(2000);
 
     if (!ready) {
       console.warn('[Auth] Firebase not ready. Will retry in 3 seconds...');
@@ -276,7 +276,7 @@
       // Retry once after 3 seconds
       setTimeout(async () => {
         console.log('[Auth] Retrying Firebase...');
-        const retry = await waitForFirebase(5000);
+        const retry = await waitForFirebase(2000);
         if (retry) {
           console.log('[Auth] Firebase ready on retry!');
           startAuth();

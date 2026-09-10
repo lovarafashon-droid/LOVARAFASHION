@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   while (typeof firebase === 'undefined' || !firebase.firestore) {
     await new Promise(r => setTimeout(r, 100));
     attempts++;
-    if (attempts > 100) break;
+    if (attempts > 20) break;
   }
 
   if (typeof firebase === 'undefined' || !firebase.firestore) {
@@ -123,6 +123,12 @@ function createCategoryProductCard(id, product) {
   div.className = 'product-card';
   div.setAttribute('data-category', product.category || 'all');
   div.setAttribute('data-product-id', id);
+  div.addEventListener('click', (event) => {
+    if (event.target.closest('button, a, input, select, textarea')) return;
+    if (typeof CartApp !== 'undefined' && typeof CartApp.handleBuyNow === 'function') {
+      CartApp.handleBuyNow(id);
+    }
+  });
 
   const safeName = String(product.name || 'Unnamed').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const fallbackImage = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect width=%22300%22 height=%22400%22 fill=%22%23f8e8e8%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2214%22 fill=%22%23c97c82%22%3ENo Image%3C/text%3E%3C/svg%3E';
