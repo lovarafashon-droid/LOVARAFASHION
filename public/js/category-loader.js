@@ -124,16 +124,16 @@ function createCategoryProductCard(id, product) {
   div.setAttribute('data-category', product.category || 'all');
   div.setAttribute('data-product-id', id);
 
-  const safeName = (product.name || 'Unnamed').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeName = String(product.name || 'Unnamed').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const fallbackImage = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect width=%22300%22 height=%22400%22 fill=%22%23f8e8e8%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2214%22 fill=%22%23c97c82%22%3ENo Image%3C/text%3E%3C/svg%3E';
 
   // Sizes display
-  const sizesHtml = product.sizes && product.sizes.length > 0 
+  const sizesHtml = Array.isArray(product.sizes) && product.sizes.length > 0 
     ? `<div class="product-sizes"><span class="size-label">Sizes:</span> ${product.sizes.join(', ')}</div>` 
     : '';
 
   // Colors display
-  const colorsHtml = product.colors && product.colors.length > 0
+  const colorsHtml = Array.isArray(product.colors) && product.colors.length > 0
     ? `<div class="product-colors"><span class="color-label">Colors:</span> ${product.colors.join(', ')}</div>`
     : '';
 

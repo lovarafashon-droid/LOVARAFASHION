@@ -40,13 +40,19 @@ function setCachedProducts(products) {
   }
 }
 
-async function waitForFirebase(maxRetries = 30, baseDelay = 300) {
-  for (let i = 0; i < maxRetries; i++) {
-    if (typeof firebase !== 'undefined' && firebase.firestore) {
-      return true;
+async function waitForFirebase(timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      if (typeof firebase !== 'undefined' &&
+          typeof firebase.firestore === 'function' &&
+          firebase.apps && firebase.apps.length > 0) {
+        return true;
+      }
+    } catch (e) {
+      // Firebase may still be initializing; keep the short retry window.
     }
-    const delay = baseDelay * Math.pow(1.5, i);
-    await new Promise(r => setTimeout(r, Math.min(delay, 3000)));
+    await new Promise(r => setTimeout(r, 200));
   }
   return false;
 }
@@ -117,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     showSkeletonLoading(grid, 4);
   }
 
-  const firebaseReady = await waitForFirebase(30, 300);
+  const firebaseReady = await waitForFirebase(5000);
 
   if (!firebaseReady) {
     const cached = getCachedProducts();
@@ -140,7 +146,10 @@ document.addEventListener('DOMContentLoaded', async function() {
   const db = firebase.firestore();
 
   try {
-    const snapshot = await db.collection('products').get();
+    const snapshot = await Promise.race([
+      db.collection('products').get(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Products request timed out')), 8000))
+    ]);
 
     if (snapshot.empty) {
       if (loading) loading.style.display = 'none';
@@ -350,7 +359,7 @@ function createProductCard(id, product) {
   div.setAttribute('data-category', product.category || 'all');
   div.setAttribute('data-product-id', id);
 
-  const safeName = (product.name || 'Unnamed').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeName = String(product.name || 'Unnamed').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const price = parseFloat(product.price) || 0;
   const oldPrice = parseFloat(product.oldPrice) || 0;
   const imageUrl = product.imageUrl || product.image || product.imageURL || product.photo || product.img || product.thumbnail || '';
@@ -363,15 +372,15 @@ function createProductCard(id, product) {
 
   // Sizes
   let sizesHtml = '';
-  if (product.sizes && product.sizes.length > 0) {
-    const sizesTags = product.sizes.map(s => `<span class="product-size-tag">${s}</span>`).join('');
+  if (Array.isArray(product.sizes) && product.sizes.length > 0) {
+    const sizesTags = product.sizes.map(s => `<span class="product-size-tag">${String(s)}</span>`).join('');
     sizesHtml = `<div class="product-sizes"><span class="product-meta-label">Size:</span>${sizesTags}</div>`;
   }
 
   // Colors
   let colorsHtml = '';
-  if (product.colors && product.colors.length > 0) {
-    const colorsTags = product.colors.map(c => `<span class="product-color-tag" style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span>`).join('');
+  if (Array.isArray(product.colors) && product.colors.length > 0) {
+    const colorsTags = product.colors.map(c => `<span class="product-color-tag" style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${String(c)}</span>`).join('');
     colorsHtml = `<div class="product-colors"><span class="product-meta-label">Color:</span>${colorsTags}</div>`;
   }
 
