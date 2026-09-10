@@ -123,7 +123,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     showSkeletonLoading(grid, 4);
   }
 
-  const firebaseReady = await waitForFirebase(2000);
+  const firebaseReady = typeof firebase !== 'undefined' &&
+    typeof firebase.firestore === 'function' &&
+    firebase.apps && firebase.apps.length > 0;
 
   if (!firebaseReady) {
     const cached = getCachedProducts();
@@ -146,10 +148,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   const db = firebase.firestore();
 
   try {
-    const snapshot = await Promise.race([
-      db.collection('products').get(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Products request timed out')), 2000))
-    ]);
+    const snapshot = await db.collection('products').get();
 
     if (snapshot.empty) {
       if (loading) loading.style.display = 'none';
@@ -216,6 +215,7 @@ let carouselState = {
   filteredProducts: [],
   currentFilter: 'all'
 };
+window.carouselState = carouselState;
 
 const badgeTranslations = {
   en: { 'New': 'New', 'Sale': 'Sale', 'Bestseller': 'Bestseller', 'Limited': 'Limited', 'Coming Soon': 'Coming Soon' },
