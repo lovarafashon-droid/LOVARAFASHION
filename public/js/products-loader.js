@@ -91,6 +91,35 @@ function showSkeletonLoading(grid, count = 4) {
   }
 }
 
+function firestoreRestValue(value) {
+  if (!value) return null;
+  if ('stringValue' in value) return value.stringValue;
+  if ('integerValue' in value) return Number(value.integerValue);
+  if ('doubleValue' in value) return Number(value.doubleValue);
+  if ('booleanValue' in value) return value.booleanValue;
+  if ('timestampValue' in value) return value.timestampValue;
+  if ('nullValue' in value) return null;
+  if ('arrayValue' in value) return (value.arrayValue.values || []).map(firestoreRestValue);
+  if ('mapValue' in value) return Object.fromEntries(
+    Object.entries(value.mapValue.fields || {}).map(([key, item]) => [key, firestoreRestValue(item)])
+  );
+  return null;
+}
+
+async function fetchProductsViaRest() {
+  const projectId = firebase?.app?.().options?.projectId;
+  if (!projectId) return [];
+  const response = await fetch(
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/products?pageSize=100`
+  );
+  if (!response.ok) throw new Error(`Products REST request failed (${response.status})`);
+  const payload = await response.json();
+  return (payload.documents || []).map(document => ({
+    id: document.name.split('/').pop(),
+    ...Object.fromEntries(Object.entries(document.fields || {}).map(([key, value]) => [key, firestoreRestValue(value)]))
+  })).filter(product => product.showOnHome !== false);
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
   const grid = document.getElementById('productsGrid');
   const emptyState = document.getElementById('emptyState');
@@ -123,11 +152,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     showSkeletonLoading(grid, 4);
   }
 
-  const firebaseReady = typeof firebase !== 'undefined' &&
-    typeof firebase.firestore === 'function' &&
-    firebase.apps && firebase.apps.length > 0;
+  // Firebase may finish loading just after DOMContentLoaded. Wait briefly so
+  // the homepage does not remain stuck on skeleton cards forever.
+  const firebaseReady = await waitForFirebase(5000);
 
   if (!firebaseReady) {
+    grid.innerHTML = '';
     const cached = getCachedProducts();
     if (cached && cached.length > 0) {
       grid.innerHTML = '';
@@ -138,8 +168,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     if (loading) loading.style.display = 'none';
     if (emptyState) {
-      emptyState.querySelector('h3').textContent = 'Connection Error';
-      emptyState.querySelector('p').innerHTML = 'Unable to connect to our servers.<br>Please check your internet connection and try again.';
+      const title = emptyState.querySelector('h3');
+      const description = emptyState.querySelector('p');
+      if (title) title.textContent = 'Connection Error';
+      if (description) description.innerHTML = 'Unable to connect to our servers.<br>Please check your internet connection and try again.';
       emptyState.style.display = 'flex';
     }
     return;
@@ -148,26 +180,31 @@ document.addEventListener('DOMContentLoaded', async function() {
   const db = firebase.firestore();
 
   try {
-    const snapshot = await db.collection('products').get();
+    const snapshot = await Promise.race([
+      db.collection('products').get(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Products request timed out')), 8000))
+    ]);
 
-    if (snapshot.empty) {
+    let products = [];
+    if (!snapshot.empty) {
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.showOnHome !== false) products.push({ id: doc.id, ...data });
+      });
+    }
+
+    // Some browsers can return an empty SDK snapshot from a stale local
+    // Firestore cache even though the public collection has products.
+    if (products.length === 0) {
+      try { products = await fetchProductsViaRest(); }
+      catch (restError) { console.warn('REST products fallback failed:', restError); }
+    }
+
+    if (products.length === 0) {
+      grid.innerHTML = '';
       if (loading) loading.style.display = 'none';
       if (emptyState) emptyState.style.display = 'flex';
       return;
-    }
-
-    const products = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.showOnHome !== false) {
-        products.push({ id: doc.id, ...data });
-      }
-    });
-
-    if (products.length === 0) {
-      snapshot.forEach(doc => {
-        products.push({ id: doc.id, ...doc.data() });
-      });
     }
 
     products.sort((a, b) => {
@@ -182,6 +219,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (emptyState) emptyState.style.display = 'none';
 
     if (products.length === 0) {
+      grid.innerHTML = '';
       if (emptyState) emptyState.style.display = 'flex';
       return;
     }
@@ -197,9 +235,12 @@ document.addEventListener('DOMContentLoaded', async function() {
       return;
     }
     if (loading) loading.style.display = 'none';
+    grid.innerHTML = '';
     if (emptyState) {
-      emptyState.querySelector('h3').textContent = 'Error Loading Products';
-      emptyState.querySelector('p').textContent = 'Please refresh the page. Error: ' + error.message;
+      const title = emptyState.querySelector('h3');
+      const description = emptyState.querySelector('p');
+      if (title) title.textContent = 'Error Loading Products';
+      if (description) description.textContent = 'Please refresh the page. Error: ' + error.message;
       emptyState.style.display = 'flex';
     }
   }

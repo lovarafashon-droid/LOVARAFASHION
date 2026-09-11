@@ -9,14 +9,17 @@ const firebaseConfig = {
   measurementId: "G-8R4YLNQ9V7"
 };
 
-// Initialize Firebase
+// Initialize Firebase when the SDK is available. A blocked or slow CDN must
+// not crash the entire homepage before its fallback can run.
 if (typeof firebase !== 'undefined' && !firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
-// Export references for global use
-const db = firebase.firestore();
-const auth = firebase.auth();
+// Export references for global use; keep them nullable if the SDK is missing.
+const db = typeof firebase !== 'undefined' && typeof firebase.firestore === 'function'
+  ? firebase.firestore() : null;
+const auth = typeof firebase !== 'undefined' && typeof firebase.auth === 'function'
+  ? firebase.auth() : null;
 
 // Storage is optional - only initialize if SDK is loaded
 let storage = null;
