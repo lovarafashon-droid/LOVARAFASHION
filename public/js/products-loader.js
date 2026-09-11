@@ -120,7 +120,11 @@ async function fetchProductsViaRest() {
   })).filter(product => product.showOnHome !== false);
 }
 
-document.addEventListener('DOMContentLoaded', async function() {
+let homepageProductsLoading = false;
+
+async function loadHomepageProducts() {
+  if (homepageProductsLoading) return;
+  homepageProductsLoading = true;
   const grid = document.getElementById('productsGrid');
   const emptyState = document.getElementById('emptyState');
   const loading = document.getElementById('productsLoading');
@@ -244,7 +248,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       emptyState.style.display = 'flex';
     }
   }
-});
+}
 
 // ============================================
 // CAROUSEL LOGIC
@@ -257,6 +261,12 @@ let carouselState = {
   currentFilter: 'all'
 };
 window.carouselState = carouselState;
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadHomepageProducts, { once: true });
+} else {
+  loadHomepageProducts();
+}
 
 const badgeTranslations = {
   en: { 'New': 'New', 'Sale': 'Sale', 'Bestseller': 'Bestseller', 'Limited': 'Limited', 'Coming Soon': 'Coming Soon' },
