@@ -554,10 +554,10 @@ const CategoryApp = {
     });
   },
 
-  addToCart(product, size, color) {
+  addToCart(product, size, color, quantity = 1) {
     const existing = this.cart.find(item => item.id === product.id && item.size === size && item.color === color);
     if (existing) {
-      existing.quantity = ((existing.quantity || existing.qty) || 1) + 1;
+      existing.quantity = ((existing.quantity || existing.qty) || 1) + quantity;
       existing.qty = existing.quantity;
     } else {
       this.cart.push({
@@ -572,8 +572,8 @@ const CategoryApp = {
         colors: product.colors || [],
         size: size,
         color: color,
-        quantity: 1,
-        qty: 1
+        quantity: quantity,
+        qty: quantity
       });
     }
     this.saveCart();
@@ -966,7 +966,7 @@ const CategoryApp = {
     modal.className = 'category-product-modal';
     const sizes = Array.isArray(product.sizes) ? product.sizes : [];
     const colors = Array.isArray(product.colors) ? product.colors : [];
-    modal.innerHTML = `<div class="category-product-overlay"></div><div class="category-product-dialog" role="dialog" aria-modal="true"><button type="button" class="category-product-close" aria-label="Close"><i class="fas fa-times"></i></button><div class="category-product-gallery"><img class="category-preview-image" alt=""><button type="button" class="category-preview-prev"><i class="fas fa-chevron-left"></i></button><button type="button" class="category-preview-next"><i class="fas fa-chevron-right"></i></button><span class="category-preview-counter"></span></div><div class="category-product-details"><span class="category-preview-badge"></span><h2></h2><div class="category-preview-prices"><span class="category-preview-price"></span><del class="category-preview-old"></del></div><div class="category-preview-description"></div>${sizes.length ? `<div class="category-preview-section"><h4>${this.t('selectSize')}</h4><div class="category-preview-options category-preview-sizes">${sizes.map((size, index) => `<button type="button" class="category-preview-option${index === 0 ? ' selected' : ''}" data-size="${size}">${size}</button>`).join('')}</div></div>` : ''}${colors.length ? `<div class="category-preview-section"><h4>${this.t('selectColor')}</h4><div class="category-preview-options category-preview-colors">${colors.map((color, index) => `<button type="button" class="category-preview-option${index === 0 ? ' selected' : ''}" data-color="${color}"><span style="background:${color}"></span>${color}</button>`).join('')}</div></div>` : ''}<div class="category-preview-actions"><div class="category-preview-qty"><button type="button" data-qty="-1">−</button><span>1</span><button type="button" data-qty="1">+</button></div><button type="button" class="category-preview-add"><i class="fas fa-bag-shopping"></i>${this.t('addToCart')}</button><button type="button" class="category-preview-wish"><i class="far fa-heart"></i></button></div></div></div>`;
+    modal.innerHTML = `<div class="category-product-overlay"></div><div class="category-product-dialog" role="dialog" aria-modal="true"><button type="button" class="category-product-close" aria-label="Close"><i class="fas fa-times"></i></button><div class="category-product-gallery"><img class="category-preview-image" alt=""><button type="button" class="category-preview-prev"><i class="fas fa-chevron-left"></i></button><button type="button" class="category-preview-next"><i class="fas fa-chevron-right"></i></button><span class="category-preview-counter"></span></div><div class="category-product-details"><span class="category-preview-badge"></span><h2></h2><div class="category-preview-prices"><span class="category-preview-price"></span><del class="category-preview-old"></del></div><div class="category-preview-description"></div>${sizes.length ? `<div class="category-preview-section"><h4>${this.t('selectSize')}</h4><div class="category-preview-options category-preview-sizes">${sizes.map((size, index) => `<button type="button" class="category-preview-option${index === 0 ? ' selected' : ''}" data-size="${size}">${size}</button>`).join('')}</div></div>` : ''}${colors.length ? `<div class="category-preview-section"><h4>${this.t('selectColor')}</h4><div class="category-preview-options category-preview-colors">${colors.map((color, index) => `<button type="button" class="category-preview-option${index === 0 ? ' selected' : ''}" data-color="${color}"><span style="background:${color}"></span>${color}</button>`).join('')}</div></div>` : ''}<div class="category-preview-actions"><div class="category-preview-qty"><button type="button" data-qty="-1">−</button><span>1</span><button type="button" data-qty="1">+</button></div><button type="button" class="category-preview-add"><i class="fas fa-bag-shopping"></i>${this.t('addToCart')}</button><button type="button" class="category-preview-buy"><i class="fas fa-bolt"></i>${this.t('buyNow')}</button><button type="button" class="category-preview-wish"><i class="far fa-heart"></i></button></div></div></div>`;
     document.body.appendChild(modal);
     const selectedSize = () => modal.querySelector('.category-preview-sizes .selected')?.dataset.size || null;
     const selectedColor = () => modal.querySelector('.category-preview-colors .selected')?.dataset.color || null;
@@ -992,7 +992,8 @@ const CategoryApp = {
     modal.querySelector('.category-preview-next').addEventListener('click', () => { this.previewImageIndex = (this.previewImageIndex + 1) % this.previewImages.length; updateImage(); });
     modal.querySelectorAll('.category-preview-option').forEach(option => option.addEventListener('click', () => { option.parentNode.querySelectorAll('.category-preview-option').forEach(item => item.classList.remove('selected')); option.classList.add('selected'); }));
     modal.querySelectorAll('[data-qty]').forEach(button => button.addEventListener('click', () => { const qty = modal.querySelector('.category-preview-qty span'); qty.textContent = String(Math.max(1, parseInt(qty.textContent, 10) + parseInt(button.dataset.qty, 10))); }));
-    modal.querySelector('.category-preview-add').addEventListener('click', () => { this.addToCart(product, selectedSize(), selectedColor()); this.closeProductDetail(); });
+    modal.querySelector('.category-preview-add').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.addToCart(product, selectedSize(), selectedColor(), quantity); this.closeProductDetail(); });
+    modal.querySelector('.category-preview-buy').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.addToCart(product, selectedSize(), selectedColor(), quantity); this.closeProductDetail(); window.location.href = 'checkout.html'; });
     modal.querySelector('.category-preview-wish').addEventListener('click', event => { this.toggleWishlist(product); event.currentTarget.classList.toggle('active'); });
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => modal.classList.add('show'));
