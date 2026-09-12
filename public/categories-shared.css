@@ -598,20 +598,23 @@ body.lang-ar {
   height: 42px;
   border: 1px solid var(--border);
   border-radius: 50%;
-  background: var(--white);
-  color: var(--secondary);
+  background: #e7b2bd;
+  border-color: #d99aa8;
+  color: #fff;
   cursor: pointer;
   transition: var(--transition);
   pointer-events: auto;
 }
 
 .product-pagination button:hover:not(:disabled) {
-  background: var(--accent);
+  background: #c98293;
   color: var(--white);
 }
 
 .product-pagination button:disabled {
-  opacity: .35;
+  background: #f3dce1;
+  border-color: #eccbd2;
+  opacity: .7;
   cursor: not-allowed;
 }
 
