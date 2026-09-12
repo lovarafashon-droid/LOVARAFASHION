@@ -17,7 +17,7 @@ const CategoryApp = {
   products: [],
   activeSubcategory: 'all',
   currentProductPage: 0,
-  productsPerPage: 10,
+  productsPerPage: 4,
   firebaseReady: false,
   authInitialized: false,
 
