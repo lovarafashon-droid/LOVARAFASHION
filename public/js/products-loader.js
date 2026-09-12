@@ -99,6 +99,44 @@ async function fetchProductsViaRest() {
 }
 
 let homepageProductsLoading = false;
+let homepageProductsLoaded = false;
+const HOMEPAGE_PRODUCTS_CACHE_KEY = 'lovara_homepage_products_v2';
+
+function readHomepageProductsCache() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(HOMEPAGE_PRODUCTS_CACHE_KEY));
+    return Array.isArray(cached) ? cached : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeHomepageProductsCache(products) {
+  try {
+    // Keep only the fields needed to render cards and avoid storing large galleries.
+    const compact = products.map(({ id, name, price, oldPrice, category, badge, sizes,
+      colors, comingSoon, imageUrl, image, imageURL, photo, img, thumbnail, createdAt }) => ({
+      id, name, price, oldPrice, category, badge, sizes, colors, comingSoon,
+      imageUrl, image, imageURL, photo, img, thumbnail, createdAt
+    }));
+    localStorage.setItem(HOMEPAGE_PRODUCTS_CACHE_KEY, JSON.stringify(compact));
+  } catch (e) {
+    console.warn('Could not cache homepage products:', e.message);
+  }
+}
+
+function renderHomepageProducts(grid, emptyState, loading, products) {
+  products.sort((a, b) => {
+    const aTime = a.createdAt ? (a.createdAt.toMillis ? a.createdAt.toMillis() : a.createdAt) : 0;
+    const bTime = b.createdAt ? (b.createdAt.toMillis ? b.createdAt.toMillis() : b.createdAt) : 0;
+    return bTime - aTime;
+  });
+  if (loading) loading.style.display = 'none';
+  if (emptyState) emptyState.style.display = 'none';
+  initProductCarousel(grid, products);
+  homepageProductsLoaded = true;
+  writeHomepageProductsCache(products);
+}
 
 async function loadHomepageProducts() {
   if (homepageProductsLoading) return;
@@ -138,33 +176,34 @@ async function loadHomepageProducts() {
       });
     }
 
-    if (products.length === 0) {
-      grid.innerHTML = '';
-      if (loading) loading.style.display = 'none';
-      if (emptyState) emptyState.style.display = 'flex';
+    if (products.length > 0) {
+      renderHomepageProducts(grid, emptyState, loading, products);
       return;
     }
 
-    products.sort((a, b) => {
-      const aTime = a.createdAt ? (a.createdAt.toMillis ? a.createdAt.toMillis() : a.createdAt) : 0;
-      const bTime = b.createdAt ? (b.createdAt.toMillis ? b.createdAt.toMillis() : b.createdAt) : 0;
-      return bTime - aTime;
-    });
+    const cachedProducts = readHomepageProductsCache();
+    if (cachedProducts.length > 0) {
+      console.warn('Firebase returned no products; keeping cached catalog visible.');
+      renderHomepageProducts(grid, emptyState, loading, cachedProducts);
+      return;
+    }
 
+    // Never clear an already-rendered catalog because of a transient empty response.
+    if (homepageProductsLoaded) return;
+    grid.innerHTML = '';
     if (loading) loading.style.display = 'none';
-    if (emptyState) emptyState.style.display = 'none';
-
-    if (products.length === 0) {
-      grid.innerHTML = '';
-      if (emptyState) emptyState.style.display = 'flex';
-      return;
-    }
-
-    initProductCarousel(grid, products);
+    if (emptyState) emptyState.style.display = 'flex';
 
   } catch (error) {
     console.error('Error loading products:', error);
     if (loading) loading.style.display = 'none';
+    if (homepageProductsLoaded) return;
+    const cachedProducts = readHomepageProductsCache();
+    if (cachedProducts.length > 0) {
+      console.warn('Product request failed; keeping cached catalog visible.', error);
+      renderHomepageProducts(grid, emptyState, loading, cachedProducts);
+      return;
+    }
     grid.innerHTML = '';
     if (emptyState) {
       const title = emptyState.querySelector('h3');
