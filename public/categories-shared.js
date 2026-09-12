@@ -830,6 +830,25 @@ const CategoryApp = {
         }
       }
       if (!product) return;
+      const galleryButton = e.target.closest('.product-gallery-prev, .product-gallery-next');
+      if (galleryButton) {
+        e.preventDefault();
+        e.stopPropagation();
+        const imageWrap = galleryButton.closest('.product-img-wrap');
+        const image = imageWrap?.querySelector('.product-img');
+        if (!image || !imageWrap) return;
+        const images = JSON.parse(imageWrap.getAttribute('data-images') || '[]');
+        if (images.length < 2) return;
+        let index = parseInt(imageWrap.getAttribute('data-image-index') || '0', 10);
+        index = galleryButton.classList.contains('product-gallery-next')
+          ? (index + 1) % images.length
+          : (index - 1 + images.length) % images.length;
+        imageWrap.setAttribute('data-image-index', String(index));
+        image.src = images[index];
+        const counter = imageWrap.querySelector('.product-gallery-counter');
+        if (counter) counter.textContent = `${index + 1}/${images.length}`;
+        return;
+      }
       if (e.target.closest('.add-to-cart, .btn-add-cart')) { e.preventDefault(); e.stopPropagation(); if (product.badge === 'Coming Soon' || product.comingSoon === true) { this.showToast(this.currentLang === 'ar' ? 'هذا المنتج سيتوفر قريباً!' : 'This product is coming soon!'); return; } if ((product.sizes && product.sizes.length > 0) || (product.colors && product.colors.length > 0)) this.openBuyNowModal(product, false); else this.addToCart(product, null, null); return; }
       if (e.target.closest('.btn-buy-now')) { e.preventDefault(); e.stopPropagation(); if (product.badge === 'Coming Soon' || product.comingSoon === true) { this.showToast(this.currentLang === 'ar' ? 'هذا المنتج سيتوفر قريباً!' : 'This product is coming soon!'); return; } this.openBuyNowModal(product, true); return; }
       if (e.target.closest('.product-wishlist, .wishlist-btn')) { e.preventDefault(); e.stopPropagation(); this.toggleWishlist(product); const btn = card.querySelector('.product-wishlist, .wishlist-btn'); if (btn) btn.classList.toggle('active'); return; }
@@ -845,11 +864,16 @@ const CategoryApp = {
     card.setAttribute('data-product-id', product.id || '');
     const badgeText = this.badgeTranslations[this.currentLang]?.[product.badge] || product.badge;
     const badgeHtml = product.badge ? `<div class="product-badge">${badgeText}</div>` : '';
+    const images = [...new Set((Array.isArray(product.images) ? product.images : []).filter(Boolean).concat(product.imageUrl || []))].slice(0, 4);
+    if (!images.length) images.push('https://via.placeholder.com/300x400?text=LOVARA');
+    const galleryData = JSON.stringify(images).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    const galleryDisabled = images.length < 2 ? ' disabled aria-disabled="true"' : '';
+    const galleryControls = `<button type="button" class="product-gallery-arrow product-gallery-prev" aria-label="Previous image"${galleryDisabled}><i class="fas fa-chevron-left"></i></button><button type="button" class="product-gallery-arrow product-gallery-next" aria-label="Next image"${galleryDisabled}><i class="fas fa-chevron-right"></i></button><span class="product-gallery-counter">1/${images.length}</span>`;
     const oldPriceHtml = product.oldPrice ? `<span class="old-price">EGP ${product.oldPrice.toFixed(2)}</span>` : '';
     const sizesHtml = product.sizes ? product.sizes.map(s => `<span class="product-size-tag">${s}</span>`).join('') : '';
     const colorsHtml = product.colors ? product.colors.map(c => `<span class="product-color-tag" style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span>`).join('') : '';
     const isWished = this.isInWishlist(product.id);
-    card.innerHTML = `<div class="product-img-wrap" onclick="CategoryApp.openProductDetail('${product.id}')" style="cursor:pointer;"><img src="${product.imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA'}" alt="${product.name}" class="product-img" loading="lazy" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">${badgeHtml}<button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="event.stopPropagation(); CategoryApp.handleWishlistClick('${product.id}')"><i class="fas fa-heart"></i></button></div><div class="product-info"><h4 class="product-name">${product.name}</h4><p class="product-price">EGP ${product.price ? (parseFloat(product.price) || 0).toFixed(2) : '0.00'} ${oldPriceHtml}</p>${sizesHtml ? `<div class="product-sizes"><span class="product-meta-label">${this.t('size')}:</span>${sizesHtml}</div>` : ''}${colorsHtml ? `<div class="product-colors"><span class="product-meta-label">${this.t('color')}:</span>${colorsHtml}</div>` : ''}${product.badge === 'Coming Soon' || product.comingSoon === true ? `<div class="product-actions coming-soon-actions"><span class="coming-soon-label" style="flex:1;text-align:center;padding:10px 14px;background:#f5f5f5;border-radius:8px;color:#888;font-size:13px;font-weight:500;"><i class="fas fa-clock" style="margin-right:6px;"></i>${this.badgeTranslations[this.currentLang]?.['Coming Soon'] || 'Coming Soon'}</span><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share" style="width:40px;height:40px;border-radius:8px;border:1px solid #e8e4e0;background:#fff;color:#666;cursor:pointer;"><i class="fas fa-share-nodes"></i></button></div>` : `<div class="product-actions"><button class="add-to-cart" onclick="CategoryApp.handleAddToCart('${product.id}')"><i class="fas fa-bag-shopping"></i> ${this.t('addToCart')}</button><button class="btn-buy-now" onclick="CategoryApp.handleBuyNow('${product.id}')"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share"><i class="fas fa-share-nodes"></i></button></div>`}</div>`;
+    card.innerHTML = `<div class="product-img-wrap" data-images="${galleryData}" data-image-index="0" onclick="CategoryApp.openProductDetail('${product.id}')" style="cursor:pointer;"><img src="${images[0]}" alt="${product.name}" class="product-img" loading="lazy" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">${galleryControls}${badgeHtml}<button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="event.stopPropagation(); CategoryApp.handleWishlistClick('${product.id}')"><i class="fas fa-heart"></i></button></div><div class="product-info"><h4 class="product-name">${product.name}</h4><p class="product-price">EGP ${product.price ? (parseFloat(product.price) || 0).toFixed(2) : '0.00'} ${oldPriceHtml}</p>${sizesHtml ? `<div class="product-sizes"><span class="product-meta-label">${this.t('size')}:</span>${sizesHtml}</div>` : ''}${colorsHtml ? `<div class="product-colors"><span class="product-meta-label">${this.t('color')}:</span>${colorsHtml}</div>` : ''}${product.badge === 'Coming Soon' || product.comingSoon === true ? `<div class="product-actions coming-soon-actions"><span class="coming-soon-label" style="flex:1;text-align:center;padding:10px 14px;background:#f5f5f5;border-radius:8px;color:#888;font-size:13px;font-weight:500;"><i class="fas fa-clock" style="margin-right:6px;"></i>${this.badgeTranslations[this.currentLang]?.['Coming Soon'] || 'Coming Soon'}</span><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share" style="width:40px;height:40px;border-radius:8px;border:1px solid #e8e4e0;background:#fff;color:#666;cursor:pointer;"><i class="fas fa-share-nodes"></i></button></div>` : `<div class="product-actions"><button class="add-to-cart" onclick="CategoryApp.handleAddToCart('${product.id}')"><i class="fas fa-bag-shopping"></i> ${this.t('addToCart')}</button><button class="btn-buy-now" onclick="CategoryApp.handleBuyNow('${product.id}')"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share"><i class="fas fa-share-nodes"></i></button></div>`}</div>`;
     return card;
   },
 
