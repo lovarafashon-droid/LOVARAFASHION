@@ -829,7 +829,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             <span id="errorMsgText" data-i18n="error">Error</span>
           </div>
 
-          <form id="productForm" onsubmit="return ProductManager.addProduct(event)">
+          <form id="productForm">
             <input type="hidden" id="editProductId" value="">
           <div class="edit-mode-badge hidden" id="editModeBadge"><i class="fas fa-pen"></i> <span data-i18n="editMode">Edit Mode</span></div>
             <div class="form-row">
@@ -2006,6 +2006,19 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       }
 
     };  // End ProductManager
+
+    // Handle product creation entirely in JavaScript. Do not rely on an inline
+    // async onsubmit return value, because browsers may fall back to a native
+    // form navigation after the awaited Firestore write.
+    const productForm = document.getElementById('productForm');
+    if (productForm) {
+      productForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        ProductManager.addProduct(event);
+        return false;
+      });
+    }
 
     // Setup color input Enter key
     (function setupColorInput() {
