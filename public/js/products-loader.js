@@ -2,44 +2,7 @@
 // LOVARA - Products Loader (Homepage) - FIXED v2
 // ============================================
 
-const CACHE_KEY = 'lovara_products_cache';
-const CACHE_DURATION = 10 * 60 * 1000;
-
-function getCachedProducts() {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_DURATION) {
-        console.log('Using cached products');
-        return data;
-      }
-    }
-  } catch (e) {
-    console.warn('Cache read error:', e);
-  }
-  return null;
-}
-
-function getAnyCachedProducts() {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) return JSON.parse(cached).data || null;
-  } catch (e) { console.warn('Stale cache read error:', e); }
-  return null;
-}
-
-function setCachedProducts(products) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
-      data: products,
-      timestamp: Date.now()
-    }));
-  } catch (e) {
-    console.warn('Cache write error:', e);
-  }
-}
-
+// Product catalog is always fetched fresh; no localStorage cache is used.
 async function waitForFirebase(timeoutMs = 2000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -151,27 +114,12 @@ async function loadHomepageProducts() {
   }
 
   if (!isOnline()) {
-    const cached = getCachedProducts();
-    if (cached && cached.length > 0) {
-      if (loading) loading.style.display = 'none';
-      if (emptyState) emptyState.style.display = 'none';
-      initProductCarousel(grid, cached);
-      return;
-    }
     if (loading) loading.style.display = 'none';
     showOfflineState(grid);
     return;
   }
 
-  const cachedNow = getAnyCachedProducts();
-  if (cachedNow && cachedNow.length) {
-    if (loading) loading.style.display = 'none';
-    if (emptyState) emptyState.style.display = 'none';
-    initProductCarousel(grid, cachedNow);
-  } else {
-    showSkeletonLoading(grid, 4);
-  }
-
+  showSkeletonLoading(grid, 4);
   try {
     // REST is fast and does not wait for the Firebase streaming channel.
     // The SDK remains a fallback for environments where REST is blocked.
@@ -204,8 +152,6 @@ async function loadHomepageProducts() {
       return bTime - aTime;
     });
 
-    setCachedProducts(products);
-
     if (loading) loading.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
 
@@ -219,12 +165,6 @@ async function loadHomepageProducts() {
 
   } catch (error) {
     console.error('Error loading products:', error);
-    const cached = getCachedProducts();
-    if (cached && cached.length > 0) {
-      grid.innerHTML = '';
-      initProductCarousel(grid, cached);
-      return;
-    }
     if (loading) loading.style.display = 'none';
     grid.innerHTML = '';
     if (emptyState) {
