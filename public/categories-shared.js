@@ -192,7 +192,9 @@ const CategoryApp = {
     this.setupCartDelegation();
     // The homepage has a dedicated carousel loader. Running both loaders at
     // once causes duplicate Firestore requests and can leave the UI hanging.
-    const hasHomepageLoader = document.querySelector('script[src$="products-loader.js"]');
+    // The homepage script has a cache-busting query string, so an exact
+    // suffix selector misses it and starts a second Firestore loader.
+    const hasHomepageLoader = document.querySelector('script[src*="products-loader.js"]');
     if (!hasHomepageLoader) this.loadProducts();
     this.cart = JSON.parse(localStorage.getItem('lovara_cart') || '[]');
     this.wishlist = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]');

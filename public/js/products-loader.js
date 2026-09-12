@@ -133,6 +133,12 @@ function renderHomepageProducts(grid, emptyState, loading, products) {
   });
   if (loading) loading.style.display = 'none';
   if (emptyState) emptyState.style.display = 'none';
+  // Keep the homepage on the same product/card/action implementation as the
+  // category pages. This also gives cart and wishlist handlers the exact
+  // product objects they expect.
+  if (window.CategoryApp) {
+    CategoryApp.products = products;
+  }
   initProductCarousel(grid, products);
   homepageProductsLoaded = true;
   writeHomepageProductsCache(products);
@@ -317,7 +323,9 @@ function renderCarouselPage() {
   setTimeout(() => {
     container.innerHTML = '';
     pageProducts.forEach(product => {
-      const card = createProductCard(product.id, product);
+      const card = window.CategoryApp
+        ? CategoryApp.createProductCard(product)
+        : createProductCard(product.id, product);
       container.appendChild(card);
     });
     container.style.opacity = '1';
