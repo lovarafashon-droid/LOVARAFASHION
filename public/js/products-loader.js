@@ -109,22 +109,31 @@ function firestoreRestValue(value) {
 async function fetchProductsViaRest() {
   const projectId = firebase?.app?.().options?.projectId;
   if (!projectId) return [];
-  const url = new URL(
-    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/products`
-  );
-  url.searchParams.set('pageSize', '100');
-  // Do not download the gallery array for the carousel; it can be several
-  // megabytes while the card only needs its primary image.
-  ['showOnHome', 'name', 'price', 'oldPrice', 'category', 'badge', 'sizes',
+  const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+  const fields = ['showOnHome', 'name', 'price', 'oldPrice', 'category', 'badge', 'sizes',
     'colors', 'comingSoon', 'imageUrl', 'image', 'imageURL', 'photo', 'img',
-    'thumbnail', 'createdAt'].forEach(field => url.searchParams.append('mask.fieldPaths', field));
-  const response = await fetch(url);
+    'thumbnail', 'createdAt'].map(field => ({ fieldPath: field }));
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: 'products' }],
+        where: { fieldFilter: { field: { fieldPath: 'showOnHome' }, op: 'EQUAL', value: { booleanValue: true } } },
+        orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
+        select: { fields }
+      }
+    })
+  });
   if (!response.ok) throw new Error(`Products REST request failed (${response.status})`);
   const payload = await response.json();
-  return (payload.documents || []).map(document => ({
-    id: document.name.split('/').pop(),
-    ...Object.fromEntries(Object.entries(document.fields || {}).map(([key, value]) => [key, firestoreRestValue(value)]))
-  })).filter(product => product.showOnHome !== false);
+  return (Array.isArray(payload) ? payload : []).filter(row => row.document).map(row => {
+    const document = row.document;
+    return {
+      id: document.name.split('/').pop(),
+      ...Object.fromEntries(Object.entries(document.fields || {}).map(([key, value]) => [key, firestoreRestValue(value)]))
+    };
+  });
 }
 
 let homepageProductsLoading = false;
