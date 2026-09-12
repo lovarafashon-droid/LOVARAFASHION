@@ -15,6 +15,7 @@ const CategoryApp = {
   wishlist: JSON.parse(localStorage.getItem('lovara_wishlist') || '[]'),
   currentUser: null,
   products: [],
+  activeSubcategory: 'all',
   firebaseReady: false,
   authInitialized: false,
 
@@ -190,6 +191,7 @@ const CategoryApp = {
     this.setupNewsletterForm();
     this.setupProductCardDelegation();
     this.setupCartDelegation();
+    this.setupProductFilters();
     // The homepage has a dedicated carousel loader. Running both loaders at
     // once causes duplicate Firestore requests and can leave the UI hanging.
     // The homepage script has a cache-busting query string, so an exact
@@ -743,6 +745,7 @@ const CategoryApp = {
     const existingCards = grid.querySelectorAll('.product-card');
     if (existingCards.length > 0) {
       this.collectProductsFromDOM();
+      this.refreshProductFilterOptions();
       if (loading) loading.style.display = 'none';
       if (emptyState) emptyState.style.display = 'none';
       return;
@@ -756,6 +759,7 @@ const CategoryApp = {
         const snapshot = await query.get();
         this.products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       } else { this.products = []; }
+      this.refreshProductFilterOptions();
       if (loading) loading.style.display = 'none';
       if (this.products.length === 0) { if (emptyState) emptyState.style.display = 'flex'; }
       else { if (emptyState) emptyState.style.display = 'none'; this.products.forEach(product => { const card = this.createProductCard(product); grid.appendChild(card); }); }
@@ -784,30 +788,58 @@ const CategoryApp = {
 
   // ==================== SUBCATEGORY FILTER ====================
   filterBySubcategory(subcat) {
-    const grid = document.getElementById('productsGrid');
-    const emptyState = document.getElementById('emptyState');
-    if (!grid) return;
-    const cards = grid.querySelectorAll('.product-card');
-    let visibleCount = 0;
-    cards.forEach(card => {
-      if (subcat === 'all') {
-        card.style.display = '';
-        visibleCount++;
-      } else {
-        const cardSubcat = card.getAttribute('data-subcategory');
-        if (cardSubcat === subcat) {
-          card.style.display = '';
-          visibleCount++;
-        } else {
-          card.style.display = 'none';
-        }
-      }
-    });
-    if (emptyState) emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
+    this.activeSubcategory = subcat;
     document.querySelectorAll('.subcat-tab').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.subcat === subcat);
     });
-    console.log('[LOVARA] Filtered by subcategory:', subcat, '-', visibleCount, 'visible');
+    this.applyProductFilters();
+  },
+
+  setupProductFilters() {
+    const grid = document.getElementById('productsGrid');
+    if (!grid || document.getElementById('productFilters')) return;
+    const toolbar = document.createElement('div');
+    toolbar.id = 'productFilters';
+    toolbar.className = 'product-filters';
+    toolbar.innerHTML = `<label><span>${this.currentLang === 'ar' ? 'السعر من' : 'Price from'}</span><input id="filterMinPrice" type="number" min="0" placeholder="0"></label><label><span>${this.currentLang === 'ar' ? 'إلى' : 'to'}</span><input id="filterMaxPrice" type="number" min="0" placeholder="∞"></label><label><span>${this.currentLang === 'ar' ? 'المقاس' : 'Size'}</span><select id="filterSize"><option value="">${this.currentLang === 'ar' ? 'كل المقاسات' : 'All sizes'}</option></select></label><button type="button" id="clearProductFilters">${this.currentLang === 'ar' ? 'مسح الفلاتر' : 'Clear filters'}</button>`;
+    grid.parentNode.insertBefore(toolbar, grid);
+    ['filterMinPrice', 'filterMaxPrice', 'filterSize'].forEach(id => document.getElementById(id)?.addEventListener('input', () => this.applyProductFilters()));
+    document.getElementById('clearProductFilters')?.addEventListener('click', () => {
+      document.getElementById('filterMinPrice').value = '';
+      document.getElementById('filterMaxPrice').value = '';
+      document.getElementById('filterSize').value = '';
+      this.applyProductFilters();
+    });
+  },
+
+  refreshProductFilterOptions() {
+    const select = document.getElementById('filterSize');
+    if (!select) return;
+    const current = select.value;
+    const sizes = [...new Set(this.products.flatMap(product => Array.isArray(product.sizes) ? product.sizes : []))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    select.innerHTML = `<option value="">${this.currentLang === 'ar' ? 'كل المقاسات' : 'All sizes'}</option>` + sizes.map(size => `<option value="${size}">${size}</option>`).join('');
+    if (sizes.includes(current)) select.value = current;
+  },
+
+  applyProductFilters() {
+    const grid = document.getElementById('productsGrid');
+    const emptyState = document.getElementById('emptyState');
+    if (!grid) return;
+    const min = parseFloat(document.getElementById('filterMinPrice')?.value);
+    const max = parseFloat(document.getElementById('filterMaxPrice')?.value);
+    const size = document.getElementById('filterSize')?.value || '';
+    let visibleCount = 0;
+    grid.querySelectorAll('.product-card').forEach(card => {
+      const product = this.products.find(item => item.id === card.getAttribute('data-product-id'));
+      const price = parseFloat(product?.price) || 0;
+      const matchesSubcategory = this.activeSubcategory === 'all' || card.getAttribute('data-subcategory') === this.activeSubcategory;
+      const matchesPrice = (!Number.isFinite(min) || price >= min) && (!Number.isFinite(max) || price <= max);
+      const matchesSize = !size || (Array.isArray(product?.sizes) && product.sizes.includes(size));
+      const visible = matchesSubcategory && matchesPrice && matchesSize;
+      card.style.display = visible ? '' : 'none';
+      if (visible) visibleCount++;
+    });
+    if (emptyState) emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
   },
 
   setupProductCardDelegation() {
