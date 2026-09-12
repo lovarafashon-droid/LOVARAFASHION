@@ -1421,7 +1421,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         if (category === 'accessories' && subcategory === 'shoes') {
           return this.getSelectedShoeSizes();
         }
-        if (category === 'accessories' && (subcategory === 'personal-care' || subcategory === 'cosmetics')) {
+        if (category === 'accessories' && subcategory === 'cosmetics') {
           return this.getSelectedVolumes();
         }
         return Array.from(document.querySelectorAll('#sizeSelector input[name="size"]:checked')).map(cb => cb.value);
@@ -1477,10 +1477,15 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           if (shoeSizeGroup) shoeSizeGroup.classList.remove('hidden');
           if (volumeGroup) volumeGroup.classList.add('hidden');
           if (sizeSelector) sizeSelector.classList.add('hidden');
-        } else if (subcategory === 'personal-care' || subcategory === 'cosmetics') {
+        } else if (subcategory === 'cosmetics') {
           if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
           if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
           if (volumeGroup) volumeGroup.classList.remove('hidden');
+          if (sizeSelector) sizeSelector.classList.add('hidden');
+        } else if (subcategory === 'personal-care') {
+          if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
+          if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
+          if (volumeGroup) volumeGroup.classList.add('hidden');
           if (sizeSelector) sizeSelector.classList.add('hidden');
         } else {
           if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
@@ -1941,7 +1946,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             document.getElementById('pShoeSize').value = product.sizes.join(',');
             this.renderShoeSizeTags();
           }
-        } else if (category === 'accessories' && (subcategory === 'personal-care' || subcategory === 'cosmetics')) {
+        } else if (category === 'accessories' && subcategory === 'cosmetics') {
           if (product.sizes && Array.isArray(product.sizes)) {
             document.getElementById('pVolume').value = product.sizes.join(',');
             this.renderVolumeTags();
