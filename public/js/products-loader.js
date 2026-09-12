@@ -381,7 +381,14 @@ function filterProducts(category) {
   carouselState.currentPage = 0;
 
   if (category === 'all') {
-    carouselState.filteredProducts = carouselState.products;
+    // The All tab shows up to four products from every category, so one
+    // oversized category cannot hide the rest of the catalog.
+    const categoryOrder = ['dresses', 'tops', 'pants', 'accessories', 'lingerie', 'sets', 'winter', 'hijab'];
+    const grouped = categoryOrder.map(name => carouselState.products.filter(product => {
+      const value = String(product.category || '').trim().toLowerCase();
+      return (name === 'sets' ? ['sets', 'set', 'اطقم', 'أطقم', 'طقم'] : [name]).includes(value);
+    }).slice(0, 4));
+    carouselState.filteredProducts = grouped.flat();
   } else {
     const aliases = {
       sets: ['sets', 'set', 'اطقم', 'أطقم', 'طقم'],
@@ -397,7 +404,7 @@ function filterProducts(category) {
     carouselState.filteredProducts = carouselState.products.filter(product => {
       const value = String(product.category || '').trim().toLowerCase();
       return accepted.has(value);
-    });
+    }).slice(0, 4);
   }
 
   renderCarouselPage();
