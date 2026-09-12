@@ -969,7 +969,7 @@
   <script src="js/auth-check.js"></script>
   <script src="categories-shared.js"></script>
   <script src="js/main.js"></script>
-  <script src="js/products-loader.js"></script>
+  <script src="js/products-loader.js?v=8e5e8e2"></script>
 
   <!-- Language -->
   <script>
@@ -1561,10 +1561,11 @@
         }).join('');
       },
       add(item) {
-        const existing = this.items.find(i => i.id === item.id && i.size === (item.size||null) && i.color === (item.color||null));
+        const items = this.items;
+        const existing = items.find(i => i.id === item.id && i.size === (item.size||null) && i.color === (item.color||null));
         if (existing) { existing.qty = (existing.qty || 1) + (item.qty || 1); }
-        else { this.items.push({...item, qty: item.qty || 1}); }
-        this.save(); this.render();
+        else { items.push({...item, qty: item.qty || 1}); }
+        this.save(items); this.render();
         showToast(item.name + ' added to cart!');
       },
       updateQty(idx, delta) {
@@ -1572,17 +1573,18 @@
         if (!items[idx]) return;
         items[idx].qty = (items[idx].qty || 1) + delta;
         if (items[idx].qty <= 0) { items.splice(idx, 1); }
-        this.save(); this.render();
+        this.save(items); this.render();
       },
       remove(idx) {
-        this.items.splice(idx, 1); this.save(); this.render();
+        const items = this.items;
+        if (idx < 0 || idx >= items.length) return;
+        items.splice(idx, 1); this.save(items); this.render();
       },
       clear() {
-        while (this.items.length > 0) this.items.pop();
-        this.save(); this.render();
+        this.save([]); this.render();
       },
-      save() {
-        localStorage.setItem('lovara_cart', JSON.stringify(this.items));
+      save(items = this.items) {
+        localStorage.setItem('lovara_cart', JSON.stringify(items));
         window.LovaraData?.saveCart();
       },
       checkout() {
