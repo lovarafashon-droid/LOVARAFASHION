@@ -90,7 +90,7 @@ async function fetchProductsViaRest(limit = 0) {
     select: { fields: [
       'showOnHome', 'name', 'price', 'oldPrice', 'category', 'badge',
       'sizes', 'colors', 'comingSoon', 'imageUrl', 'image', 'imageURL',
-      'photo', 'img', 'thumbnail', 'createdAt'
+      'photo', 'img', 'thumbnail', 'images', 'createdAt'
     ].map(fieldPath => ({ fieldPath })) }
   };
   if (limit > 0) structuredQuery.limit = limit;
@@ -344,6 +344,32 @@ function filterProducts(category) {
 // CREATE PRODUCT CARD - FIXED: buttons always visible under image + share button
 // Uses data-* attributes + event delegation (no inline onclick)
 // ============================================
+function getHomepageProduct(productId) {
+  return (window.carouselState?.products || window.allProducts || []).find(product => product.id === productId) || null;
+}
+
+window.addHomepageProductToCart = function(productId) {
+  const product = getHomepageProduct(productId);
+  if (!product || !window.CartApp) return;
+  if (product.badge === 'Coming Soon' || product.comingSoon === true) {
+    showProductToast('This product is coming soon!');
+    return;
+  }
+  if ((Array.isArray(product.sizes) && product.sizes.length) || (Array.isArray(product.colors) && product.colors.length)) {
+    window.CartApp.openBuyNowModal(product, false);
+  } else {
+    window.CartApp.add({ ...product, qty: 1, quantity: 1 });
+  }
+};
+
+window.toggleHomepageWishlist = function(productId) {
+  const product = getHomepageProduct(productId);
+  if (!product || !window.CartApp) return;
+  window.CartApp.toggleWishlist(product);
+  const button = document.querySelector(`[data-product-id="${productId}"] .product-wishlist`);
+  if (button) button.classList.toggle('active', window.CartApp.isInWishlist(productId));
+};
+
 function createProductCard(id, product) {
   const div = document.createElement('div');
   div.className = 'product-card';
@@ -386,7 +412,7 @@ function createProductCard(id, product) {
     <div class="product-img-wrap">
       <img src="${finalImage}" alt="${safeName}" class="product-img" loading="lazy" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">
       ${badgeHtml}
-      <button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="CartApp.handleWishlistClick('${id}')">
+      <button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="event.stopPropagation(); window.toggleHomepageWishlist('${id}')">
         <i class="fas fa-heart"></i>
       </button>
     </div>
@@ -401,10 +427,10 @@ function createProductCard(id, product) {
           return `<div class="product-actions coming-soon-actions"><span class="coming-soon-label" style="flex:1;text-align:center;padding:10px 14px;background:#f5f5f5;border-radius:8px;color:#888;font-size:13px;font-weight:500;"><i class="fas fa-clock" style="margin-right:6px;"></i>${badgeTranslations[lang]?.['Coming Soon'] || 'Coming Soon'}</span><button class="btn-share" onclick="CartApp.shareProduct('${id}')" aria-label="Share" style="width:40px;height:40px;border-radius:8px;border:1px solid #e8e4e0;background:#fff;color:#666;cursor:pointer;"><i class="fas fa-share-nodes"></i></button></div>`;
         }
         return `<div class="product-actions">
-        <button class="add-to-cart" onclick="CartApp.handleAddToCart('${id}')">
+        <button class="add-to-cart" onclick="event.stopPropagation(); window.addHomepageProductToCart('${id}')">
           <i class="fas fa-bag-shopping"></i> Add to Cart
         </button>
-        <button class="btn-buy-now" onclick="CartApp.handleBuyNow('${id}')">
+        <button class="btn-buy-now" onclick="event.stopPropagation(); window.addHomepageProductToCart('${id}')">
           <i class="fas fa-bolt"></i> Buy Now
         </button>
         <button class="btn-share" onclick="CartApp.shareProduct('${id}')" aria-label="Share">
