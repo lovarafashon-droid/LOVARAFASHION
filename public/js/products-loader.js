@@ -156,52 +156,23 @@ async function loadHomepageProducts() {
     showSkeletonLoading(grid, 4);
   }
 
-  // Firebase may finish loading just after DOMContentLoaded. Wait briefly so
-  // the homepage does not remain stuck on skeleton cards forever.
-  const firebaseReady = await waitForFirebase(5000);
-
-  if (!firebaseReady) {
-    grid.innerHTML = '';
-    const cached = getCachedProducts();
-    if (cached && cached.length > 0) {
-      grid.innerHTML = '';
-      if (loading) loading.style.display = 'none';
-      if (emptyState) emptyState.style.display = 'none';
-      initProductCarousel(grid, cached);
-      return;
-    }
-    if (loading) loading.style.display = 'none';
-    if (emptyState) {
-      const title = emptyState.querySelector('h3');
-      const description = emptyState.querySelector('p');
-      if (title) title.textContent = 'Connection Error';
-      if (description) description.innerHTML = 'Unable to connect to our servers.<br>Please check your internet connection and try again.';
-      emptyState.style.display = 'flex';
-    }
-    return;
-  }
-
-  const db = firebase.firestore();
-
   try {
-    const snapshot = await Promise.race([
-      db.collection('products').get(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Products request timed out')), 8000))
+    // REST is fast and does not wait for the Firebase streaming channel.
+    // The SDK remains a fallback for environments where REST is blocked.
+    let products = await Promise.race([
+      fetchProductsViaRest(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Products request timed out')), 5000))
     ]);
 
-    let products = [];
-    if (!snapshot.empty) {
+    if (products.length === 0 && typeof firebase !== 'undefined' && firebase.firestore) {
+      const snapshot = await Promise.race([
+        firebase.firestore().collection('products').get(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase products request timed out')), 5000))
+      ]);
       snapshot.forEach(doc => {
         const data = doc.data();
         if (data.showOnHome !== false) products.push({ id: doc.id, ...data });
       });
-    }
-
-    // Some browsers can return an empty SDK snapshot from a stale local
-    // Firestore cache even though the public collection has products.
-    if (products.length === 0) {
-      try { products = await fetchProductsViaRest(); }
-      catch (restError) { console.warn('REST products fallback failed:', restError); }
     }
 
     if (products.length === 0) {
