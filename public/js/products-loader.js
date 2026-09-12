@@ -79,16 +79,25 @@ function firestoreRestValue(value) {
   return null;
 }
 
-async function fetchProductsViaRest() {
+async function fetchProductsViaRest(limit = 0) {
   const projectId = (typeof firebaseConfig !== 'undefined' && firebaseConfig.projectId)
     || firebase?.app?.().options?.projectId
     || 'lovara-89510';
   if (!projectId) throw new Error('Firebase project is not available');
   const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+  const structuredQuery = {
+    from: [{ collectionId: 'products' }],
+    select: { fields: [
+      'showOnHome', 'name', 'price', 'oldPrice', 'category', 'badge',
+      'sizes', 'colors', 'comingSoon', 'imageUrl', 'image', 'imageURL',
+      'photo', 'img', 'thumbnail', 'createdAt'
+    ].map(fieldPath => ({ fieldPath })) }
+  };
+  if (limit > 0) structuredQuery.limit = limit;
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'products' }] } }),
+    body: JSON.stringify({ structuredQuery }),
     cache: 'no-store'
   });
   if (!response.ok) throw new Error(`Products request failed (${response.status})`);
@@ -123,9 +132,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     return;
   }
 
-  showSkeletonLoading(grid, 4);
+  const cached = getCachedProducts();
+  if (cached && cached.length > 0) {
+    if (loading) loading.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
+    // Paint the last successful catalog immediately while refreshing it.
+    initProductCarousel(grid, cached);
+  } else {
+    showSkeletonLoading(grid, 4);
+  }
 
   try {
+    // First paint: only fetch the first eight cards so the carousel appears
+    // immediately. The full catalog refresh follows in the same request.
+    const firstProducts = await fetchProductsViaRest(8);
+    const firstVisible = firstProducts.filter(product => product.showOnHome !== false);
+    const firstToRender = firstVisible.length > 0 ? firstVisible : firstProducts;
+    if (firstToRender.length > 0) {
+      setCachedProducts(firstToRender);
+      if (loading) loading.style.display = 'none';
+      if (emptyState) emptyState.style.display = 'none';
+      initProductCarousel(grid, firstToRender);
+    }
+
+    // Then fetch all products for filters and pagination and replace the
+    // initial eight-card view when the complete catalog is ready.
     const products = await fetchProductsViaRest();
     const visibleProducts = products.filter(product => product.showOnHome !== false);
     const productsToRender = visibleProducts.length > 0 ? visibleProducts : products;
@@ -150,10 +181,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   } catch (error) {
     console.error('Error loading products:', error);
-    const cached = getCachedProducts();
-    if (cached && cached.length > 0) {
+    const fallbackCached = getCachedProducts();
+    if (fallbackCached && fallbackCached.length > 0) {
       grid.innerHTML = '';
-      initProductCarousel(grid, cached);
+      initProductCarousel(grid, fallbackCached);
       return;
     }
     if (loading) loading.style.display = 'none';
