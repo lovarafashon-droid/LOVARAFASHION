@@ -198,6 +198,21 @@
     .product-modal-img-wrap img {
       width: 100%; height: 100%; object-fit: cover; display: block;
     }
+    .pm-gallery-control {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 38px; height: 38px; border: none; border-radius: 50%;
+      background: rgba(255,255,255,0.92); color: #333; box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+      cursor: pointer; z-index: 2; display: flex; align-items: center; justify-content: center;
+    }
+    .pm-gallery-control:hover { background: #c9a87c; color: #fff; }
+    .pm-gallery-prev { left: 12px; }
+    .pm-gallery-next { right: 12px; }
+    .pm-gallery-counter {
+      position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+      padding: 4px 10px; border-radius: 12px; background: rgba(0,0,0,0.55);
+      color: #fff; font-size: 11px; z-index: 2;
+    }
+    .product-modal-gallery { position: relative; }
 
     .product-modal-details {
       padding: 40px 35px; display: flex; flex-direction: column; gap: 20px;
@@ -255,6 +270,7 @@
     .product-modal-actions {
       display: flex; align-items: center; gap: 12px; margin-top: 10px;
       padding-top: 20px; border-top: 1px solid #eee;
+      flex-wrap: wrap;
     }
     .pm-qty-control {
       display: flex; align-items: center; border: 1.5px solid #e8e4e0;
@@ -272,7 +288,7 @@
       border-right: 1.5px solid #e8e4e0; line-height: 44px;
     }
     .pm-btn-add {
-      flex: 1; padding: 14px 24px; background: #c9a87c; color: #fff;
+      flex: 1 1 calc(100% - 72px); padding: 14px 24px; background: #c9a87c; color: #fff;
       border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       gap: 10px; transition: all 0.3s; font-family: 'Jost', sans-serif;
@@ -289,6 +305,13 @@
     }
     .pm-btn-wishlist:hover { border-color: #e74c3c; background: #ffebee; }
     .pm-btn-wishlist.active { background: #e74c3c; color: #fff; border-color: #e74c3c; }
+    .pm-btn-buy {
+      flex: 1 1 100%; padding: 13px 24px; background: #1f1f1f; color: #fff;
+      border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 10px; transition: all 0.3s; font-family: 'Jost', sans-serif;
+    }
+    .pm-btn-buy:hover { background: #c9a87c; transform: translateY(-2px); }
 
     @media (max-width: 768px) {
       .product-modal { width: 95%; max-height: 95vh; border-radius: 16px; }
@@ -1593,7 +1616,7 @@
         showToast('Proceeding to checkout...');
       },
       handleAddToCart(productId) {
-        const product = (window.carouselState && window.carouselState.products) ? window.carouselState.products.find(p => p.id === productId) : null;
+        const product = (window.carouselState && Array.isArray(window.carouselState.products)) ? window.carouselState.products.find(p => p.id === productId) : null;
         if (!product) return;
         if (product.badge === 'Coming Soon' || product.comingSoon === true) {
           showToast('This product is coming soon!');
@@ -1606,7 +1629,7 @@
         }
       },
       handleBuyNow(productId) {
-        const product = (window.carouselState && window.carouselState.products) ? window.carouselState.products.find(p => p.id === productId) : null;
+        const product = (window.carouselState && Array.isArray(window.carouselState.products)) ? window.carouselState.products.find(p => p.id === productId) : null;
         if (!product) return;
         if (product.badge === 'Coming Soon' || product.comingSoon === true) {
           showToast('This product is coming soon!');
@@ -1636,7 +1659,7 @@
         if (modal) { modal.classList.remove('show'); setTimeout(() => modal.remove(), 300); }
       },
       confirmBuyNow(productId, isDirectBuy) {
-        const product = (window.carouselState && window.carouselState.products) ? window.carouselState.products.find(p => p.id === productId) : null;
+        const product = (window.carouselState && Array.isArray(window.carouselState.products)) ? window.carouselState.products.find(p => p.id === productId) : null;
         if (!product) return;
         const sizeEl = document.querySelector('input[name="buySize"]:checked');
         const colorEl = document.querySelector('input[name="buyColor"]:checked');
@@ -1653,11 +1676,11 @@
       },
       handleWishlistClick(productId) {
         let product = null;
-        if (window.carouselState && carouselState.products) {
-          product = carouselState.products.find(p => p.id === productId);
+        if (window.carouselState && Array.isArray(window.carouselState.products)) {
+          product = window.carouselState.products.find(p => p.id === productId);
         }
         if (!product && window.allProducts) {
-          product = allProducts.find(p => p.id === productId);
+          product = window.allProducts.find(p => p.id === productId);
         }
         if (!product) return;
         this.toggleWishlist(product);
@@ -1671,7 +1694,7 @@
         this.updateWishlistCount();
       },
       shareProduct(productId) {
-        const product = (window.carouselState && window.carouselState.products) ? window.carouselState.products.find(p => p.id === productId) : null;
+        const product = (window.carouselState && Array.isArray(window.carouselState.products)) ? window.carouselState.products.find(p => p.id === productId) : null;
         if (!product) return;
         const shareData = { title: product.name, text: 'Check out ' + product.name + ' on LOVARA!', url: window.location.href };
         if (navigator.share) { navigator.share(shareData); } else { navigator.clipboard.writeText(window.location.href); showToast('Link copied to clipboard!'); }
@@ -1786,6 +1809,35 @@
     let pmSelectedSize = null;
     let pmSelectedColor = null;
     let pmQty = 1;
+    let pmImages = [];
+    let pmImageIndex = 0;
+
+    function pmGetImages(product) {
+      const sources = [product.imageUrl, product.image, product.imageURL, product.photo, product.img, product.thumbnail];
+      if (Array.isArray(product.images)) sources.push(...product.images);
+      return [...new Set(sources.map(image => {
+        if (typeof image === 'string') return image;
+        if (image && typeof image === 'object') return image.url || image.src || image.imageUrl || '';
+        return '';
+      }).filter(Boolean))];
+    }
+
+    function pmRenderImage() {
+      const image = document.getElementById('pmImage');
+      const counter = document.getElementById('pmImageCounter');
+      if (!image) return;
+      image.src = pmImages[pmImageIndex] || 'https://via.placeholder.com/400x500/c9a87c/ffffff?text=LOVARA';
+      if (counter) counter.textContent = `${pmImageIndex + 1} / ${Math.max(pmImages.length, 1)}`;
+      document.querySelectorAll('.pm-gallery-control').forEach(button => {
+        button.style.display = pmImages.length > 1 ? 'flex' : 'none';
+      });
+    }
+
+    function pmChangeImage(direction) {
+      if (pmImages.length < 2) return;
+      pmImageIndex = (pmImageIndex + direction + pmImages.length) % pmImages.length;
+      pmRenderImage();
+    }
 
     function openProductModal(product) {
       if (!product) return;
@@ -1793,9 +1845,11 @@
       pmSelectedSize = Array.isArray(product.sizes) && product.sizes.length > 0 ? product.sizes[0] : null;
       pmSelectedColor = Array.isArray(product.colors) && product.colors.length > 0 ? product.colors[0] : null;
       pmQty = 1;
+      pmImages = pmGetImages(product);
+      pmImageIndex = 0;
 
-      document.getElementById('pmImage').src = product.imageUrl || 'https://via.placeholder.com/400x500/c9a87c/ffffff?text=LOVARA';
       document.getElementById('pmImage').alt = product.name || 'Product';
+      pmRenderImage();
       document.getElementById('pmName').textContent = product.name || 'Product';
       document.getElementById('pmPrice').textContent = 'EGP ' + (parseFloat(product.price) || 0).toFixed(2);
 
@@ -1918,6 +1972,24 @@
       }
       showToast((pmCurrentProduct.name || 'Product') + ' added to cart!');
       closeProductModal();
+    }
+
+    function pmBuyNow() {
+      if (!pmCurrentProduct) return;
+      if (pmCurrentProduct.badge === 'Coming Soon' || pmCurrentProduct.comingSoon === true) {
+        showToast('This product is coming soon!');
+        return;
+      }
+      const item = {
+        ...pmCurrentProduct,
+        size: pmSelectedSize,
+        color: pmSelectedColor,
+        qty: pmQty,
+        quantity: pmQty
+      };
+      CartApp.add(item);
+      closeProductModal();
+      window.location.href = 'checkout.html';
     }
 
     function pmToggleWishlist() {
@@ -2116,9 +2188,12 @@
     </button>
     <div class="product-modal-body">
       <div class="product-modal-gallery">
+        <button type="button" class="pm-gallery-control pm-gallery-prev" onclick="pmChangeImage(-1)" aria-label="Previous image"><i class="fas fa-chevron-left"></i></button>
         <div class="product-modal-img-wrap">
           <img id="pmImage" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="">
         </div>
+        <button type="button" class="pm-gallery-control pm-gallery-next" onclick="pmChangeImage(1)" aria-label="Next image"><i class="fas fa-chevron-right"></i></button>
+        <span class="pm-gallery-counter" id="pmImageCounter">1 / 1</span>
       </div>
       <div class="product-modal-details">
         <div class="product-modal-header">
@@ -2156,6 +2231,9 @@
           </button>
           <button class="pm-btn-wishlist" id="pmWishlist" onclick="pmToggleWishlist()">
             <i class="far fa-heart"></i>
+          </button>
+          <button class="pm-btn-buy" id="pmBuyNow" onclick="pmBuyNow()">
+            <i class="fas fa-bolt"></i> <span data-i18n="buyNow">Buy Now</span>
           </button>
         </div>
       </div>

@@ -217,6 +217,7 @@ const badgeTranslations = {
 function initProductCarousel(grid, products) {
   carouselState.products = products;
   carouselState.filteredProducts = products;
+  window.allProducts = products;
 
   grid.innerHTML = '';
   grid.classList.add('carousel-grid');
