@@ -82,8 +82,7 @@ async function fetchProductsViaRest() {
     body: JSON.stringify({
       structuredQuery: {
         from: [{ collectionId: 'products' }],
-        // Load the complete catalog so category filters, including Sets, work.
-        limit: 100,
+        // Load the complete catalog so All and every category filter use Firebase data.
         select: { fields }
       }
     })
@@ -369,7 +368,7 @@ function createProductCard(id, product) {
   const imageUrl = product.imageUrl || product.image || product.imageURL || product.photo || product.img || product.thumbnail || '';
   const finalImage = imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA';
 
-  const lang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : (localStorage.getItem('lovara_lang') || 'en');
+  const lang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'en';
   const badgeText = badgeTranslations[lang]?.[product.badge] || product.badge;
   const badgeHtml = product.badge ? `<div class="product-badge">${badgeText}</div>` : '';
   const oldPriceHtml = oldPrice > 0 ? `<span class="old-price">EGP ${oldPrice.toFixed(2)}</span>` : '';
