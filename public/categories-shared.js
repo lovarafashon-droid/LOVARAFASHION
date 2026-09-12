@@ -848,11 +848,15 @@ const CategoryApp = {
     if (document.getElementById('productPagination')) return;
     const grid = document.getElementById('productsGrid');
     if (!grid) return;
+    const stage = document.createElement('div');
+    stage.className = 'product-stage';
+    grid.parentNode.insertBefore(stage, grid);
+    stage.appendChild(grid);
     const controls = document.createElement('div');
     controls.id = 'productPagination';
     controls.className = 'product-pagination';
     controls.innerHTML = `<button type="button" id="productsPrev" aria-label="Previous products"><i class="fas fa-chevron-left"></i></button><span id="productsPageLabel"></span><button type="button" id="productsNext" aria-label="Next products"><i class="fas fa-chevron-right"></i></button>`;
-    grid.parentNode.insertBefore(controls, grid.nextSibling);
+    stage.appendChild(controls);
     document.getElementById('productsPrev').addEventListener('click', () => { if (this.currentProductPage > 0) { this.currentProductPage--; this.renderProductPage(); } });
     document.getElementById('productsNext').addEventListener('click', () => { this.currentProductPage++; this.renderProductPage(); });
   },

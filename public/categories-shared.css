@@ -576,12 +576,21 @@ body.lang-ar {
   gap: 20px;
 }
 
+.product-stage {
+  position: relative;
+  padding: 0 54px;
+}
+
 .product-pagination {
+  position: absolute;
+  inset: 50% 0 auto;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
-  margin: 28px auto 0;
+  justify-content: space-between;
+  gap: 0;
+  margin: 0;
+  pointer-events: none;
 }
 
 .product-pagination button {
@@ -593,6 +602,7 @@ body.lang-ar {
   color: var(--secondary);
   cursor: pointer;
   transition: var(--transition);
+  pointer-events: auto;
 }
 
 .product-pagination button:hover:not(:disabled) {
@@ -606,6 +616,10 @@ body.lang-ar {
 }
 
 .product-pagination span {
+  position: absolute;
+  top: calc(100% + 18px);
+  left: 50%;
+  transform: translateX(-50%);
   min-width: 56px;
   text-align: center;
   color: var(--text-light);
@@ -2656,6 +2670,8 @@ body.lang-ar .toggle-pw {
   .product-filters { align-items: stretch; gap: 8px; margin-top: -10px; }
   .product-filters label { min-width: calc(50% - 4px); }
   .product-filters button { width: 100%; }
+  .product-stage { padding: 0 40px; }
+  .product-pagination button { width: 34px; height: 34px; }
   .add-to-cart, .btn-buy-now { font-size: 11px; min-height: 40px; }
   .btn-share { width: 36px; height: 36px; }
 }
