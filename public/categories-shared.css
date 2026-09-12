@@ -572,8 +572,44 @@ body.lang-ar {
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 30px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.product-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin: 28px auto 0;
+}
+
+.product-pagination button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.product-pagination button:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--white);
+}
+
+.product-pagination button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.product-pagination span {
+  min-width: 56px;
+  text-align: center;
+  color: var(--text-light);
+  font-size: 13px;
 }
 
 .products-loading {

@@ -16,6 +16,8 @@ const CategoryApp = {
   currentUser: null,
   products: [],
   activeSubcategory: 'all',
+  currentProductPage: 0,
+  productsPerPage: 10,
   firebaseReady: false,
   authInitialized: false,
 
@@ -746,6 +748,7 @@ const CategoryApp = {
     if (existingCards.length > 0) {
       this.collectProductsFromDOM();
       this.refreshProductFilterOptions();
+      this.setupProductPagination();
       if (loading) loading.style.display = 'none';
       if (emptyState) emptyState.style.display = 'none';
       return;
@@ -760,9 +763,10 @@ const CategoryApp = {
         this.products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       } else { this.products = []; }
       this.refreshProductFilterOptions();
+      this.setupProductPagination();
       if (loading) loading.style.display = 'none';
       if (this.products.length === 0) { if (emptyState) emptyState.style.display = 'flex'; }
-      else { if (emptyState) emptyState.style.display = 'none'; this.products.forEach(product => { const card = this.createProductCard(product); grid.appendChild(card); }); }
+      else { if (emptyState) emptyState.style.display = 'none'; this.renderProductPage(); }
     } catch (error) {
       console.error('Error loading products:', error);
       if (loading) loading.style.display = 'none';
@@ -789,6 +793,7 @@ const CategoryApp = {
   // ==================== SUBCATEGORY FILTER ====================
   filterBySubcategory(subcat) {
     this.activeSubcategory = subcat;
+    this.currentProductPage = 0;
     document.querySelectorAll('.subcat-tab').forEach(tab => {
       tab.classList.toggle('active', tab.dataset.subcat === subcat);
     });
@@ -822,24 +827,53 @@ const CategoryApp = {
   },
 
   applyProductFilters() {
-    const grid = document.getElementById('productsGrid');
-    const emptyState = document.getElementById('emptyState');
-    if (!grid) return;
+    this.currentProductPage = 0;
+    this.renderProductPage();
+  },
+
+  getFilteredProducts() {
     const min = parseFloat(document.getElementById('filterMinPrice')?.value);
     const max = parseFloat(document.getElementById('filterMaxPrice')?.value);
     const size = document.getElementById('filterSize')?.value || '';
-    let visibleCount = 0;
-    grid.querySelectorAll('.product-card').forEach(card => {
-      const product = this.products.find(item => item.id === card.getAttribute('data-product-id'));
+    return this.products.filter(product => {
       const price = parseFloat(product?.price) || 0;
-      const matchesSubcategory = this.activeSubcategory === 'all' || card.getAttribute('data-subcategory') === this.activeSubcategory;
+      const matchesSubcategory = this.activeSubcategory === 'all' || product.subcategory === this.activeSubcategory;
       const matchesPrice = (!Number.isFinite(min) || price >= min) && (!Number.isFinite(max) || price <= max);
       const matchesSize = !size || (Array.isArray(product?.sizes) && product.sizes.includes(size));
-      const visible = matchesSubcategory && matchesPrice && matchesSize;
-      card.style.display = visible ? '' : 'none';
-      if (visible) visibleCount++;
+      return matchesSubcategory && matchesPrice && matchesSize;
     });
-    if (emptyState) emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
+  },
+
+  setupProductPagination() {
+    if (document.getElementById('productPagination')) return;
+    const grid = document.getElementById('productsGrid');
+    if (!grid) return;
+    const controls = document.createElement('div');
+    controls.id = 'productPagination';
+    controls.className = 'product-pagination';
+    controls.innerHTML = `<button type="button" id="productsPrev" aria-label="Previous products"><i class="fas fa-chevron-left"></i></button><span id="productsPageLabel"></span><button type="button" id="productsNext" aria-label="Next products"><i class="fas fa-chevron-right"></i></button>`;
+    grid.parentNode.insertBefore(controls, grid.nextSibling);
+    document.getElementById('productsPrev').addEventListener('click', () => { if (this.currentProductPage > 0) { this.currentProductPage--; this.renderProductPage(); } });
+    document.getElementById('productsNext').addEventListener('click', () => { this.currentProductPage++; this.renderProductPage(); });
+  },
+
+  renderProductPage() {
+    const grid = document.getElementById('productsGrid');
+    const emptyState = document.getElementById('emptyState');
+    if (!grid) return;
+    const filtered = this.getFilteredProducts();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / this.productsPerPage));
+    this.currentProductPage = Math.min(this.currentProductPage, totalPages - 1);
+    const start = this.currentProductPage * this.productsPerPage;
+    grid.querySelectorAll('.product-card').forEach(card => card.remove());
+    filtered.slice(start, start + this.productsPerPage).forEach(product => grid.appendChild(this.createProductCard(product)));
+    if (emptyState) emptyState.style.display = filtered.length === 0 ? 'flex' : 'none';
+    const prev = document.getElementById('productsPrev');
+    const next = document.getElementById('productsNext');
+    const label = document.getElementById('productsPageLabel');
+    if (prev) prev.disabled = this.currentProductPage === 0;
+    if (next) next.disabled = this.currentProductPage >= totalPages - 1;
+    if (label) label.textContent = `${this.currentProductPage + 1} / ${totalPages}`;
   },
 
   setupProductCardDelegation() {
