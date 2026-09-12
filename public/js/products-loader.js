@@ -120,7 +120,6 @@ async function fetchProductsViaRest() {
       structuredQuery: {
         from: [{ collectionId: 'products' }],
         where: { fieldFilter: { field: { fieldPath: 'showOnHome' }, op: 'EQUAL', value: { booleanValue: true } } },
-        orderBy: [{ field: { fieldPath: 'createdAt' }, direction: 'DESCENDING' }],
         select: { fields }
       }
     })
