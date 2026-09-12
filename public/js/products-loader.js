@@ -119,9 +119,8 @@ async function fetchProductsViaRest() {
     body: JSON.stringify({
       structuredQuery: {
         from: [{ collectionId: 'products' }],
-        where: { fieldFilter: { field: { fieldPath: 'showOnHome' }, op: 'EQUAL', value: { booleanValue: true } } },
-        // Keep the first paint small; the carousel displays only four cards.
-        limit: 20,
+        // Load the complete catalog so category filters, including Sets, work.
+        limit: 100,
         select: { fields }
       }
     })
@@ -384,7 +383,21 @@ function filterProducts(category) {
   if (category === 'all') {
     carouselState.filteredProducts = carouselState.products;
   } else {
-    carouselState.filteredProducts = carouselState.products.filter(p => p.category === category);
+    const aliases = {
+      sets: ['sets', 'set', 'اطقم', 'أطقم', 'طقم'],
+      dresses: ['dresses', 'dress', 'فساتين', 'فستان'],
+      tops: ['tops', 'top', 'بلوزات', 'بلوزة', 'تيشرت'],
+      pants: ['pants', 'pant', 'بناطيل', 'بنطلون'],
+      accessories: ['accessories', 'accessory', 'إكسسوارات', 'اكسسوارات'],
+      lingerie: ['lingerie', 'ملابس داخلية', 'داخلي'],
+      winter: ['winter', 'شتوي', 'الشتوي'],
+      hijab: ['hijab', 'حجاب', 'محجبات']
+    };
+    const accepted = new Set(aliases[category] || [category]);
+    carouselState.filteredProducts = carouselState.products.filter(product => {
+      const value = String(product.category || '').trim().toLowerCase();
+      return accepted.has(value);
+    });
   }
 
   renderCarouselPage();
