@@ -1,60 +1,15 @@
-// ============================================
-// LOVARA - Products Loader (Homepage) - FIXED v2
-// ============================================
+// LOVARA homepage product loader
+// Uses the same product cards and cart/wishlist handlers as category pages.
 
-// Product catalog is always fetched fresh; no localStorage cache is used.
-async function waitForFirebase(timeoutMs = 2000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      if (typeof firebase !== 'undefined' &&
-          typeof firebase.firestore === 'function' &&
-          firebase.apps && firebase.apps.length > 0) {
-        return true;
-      }
-    } catch (e) {
-      // Firebase may still be initializing; keep the short retry window.
-    }
-    await new Promise(r => setTimeout(r, 200));
-  }
-  return false;
-}
+const HOMEPAGE_PRODUCTS_CACHE_KEY = 'lovara_homepage_products_v3';
+const homepageState = {
+  products: [],
+  filteredProducts: [],
+  currentFilter: 'all'
+};
+window.carouselState = homepageState;
 
-function isOnline() {
-  return navigator.onLine;
-}
-
-function showOfflineState(container) {
-  container.innerHTML = `
-    <div class="offline-state">
-      <div class="offline-icon"><i class="fas fa-wifi-slash"></i></div>
-      <h3>You are Offline</h3>
-      <p>Please check your internet connection and try again.</p>
-      <button class="btn btn-primary" onclick="window.location.reload()">
-        <i class="fas fa-rotate-right"></i> Retry
-      </button>
-    </div>
-  `;
-}
-
-function showSkeletonLoading(grid, count = 4) {
-  grid.innerHTML = '';
-  for (let i = 0; i < count; i++) {
-    const skeleton = document.createElement('div');
-    skeleton.className = 'product-card skeleton-card';
-    skeleton.innerHTML = `
-      <div class="skeleton-img"></div>
-      <div class="skeleton-info">
-        <div class="skeleton-line skeleton-title"></div>
-        <div class="skeleton-line skeleton-price"></div>
-        <div class="skeleton-line skeleton-btn"></div>
-      </div>
-    `;
-    grid.appendChild(skeleton);
-  }
-}
-
-function firestoreRestValue(value) {
+function productFieldValue(value) {
   if (!value) return null;
   if ('stringValue' in value) return value.stringValue;
   if ('integerValue' in value) return Number(value.integerValue);
@@ -62,176 +17,191 @@ function firestoreRestValue(value) {
   if ('booleanValue' in value) return value.booleanValue;
   if ('timestampValue' in value) return value.timestampValue;
   if ('nullValue' in value) return null;
-  if ('arrayValue' in value) return (value.arrayValue.values || []).map(firestoreRestValue);
-  if ('mapValue' in value) return Object.fromEntries(
-    Object.entries(value.mapValue.fields || {}).map(([key, item]) => [key, firestoreRestValue(item)])
-  );
+  if ('arrayValue' in value) return (value.arrayValue.values || []).map(productFieldValue);
+  if ('mapValue' in value) {
+    return Object.fromEntries(Object.entries(value.mapValue.fields || {})
+      .map(([key, item]) => [key, productFieldValue(item)]));
+  }
   return null;
 }
 
-async function fetchProductsViaRest() {
-  const projectId = firebase?.app?.().options?.projectId;
-  if (!projectId) return [];
-  const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
-  const fields = ['showOnHome', 'name', 'price', 'oldPrice', 'category', 'badge', 'sizes',
-    'colors', 'comingSoon', 'imageUrl', 'image', 'imageURL', 'photo', 'img',
-    'thumbnail', 'createdAt'].map(field => ({ fieldPath: field }));
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      structuredQuery: {
-        from: [{ collectionId: 'products' }],
-        // Load the complete catalog so All and every category filter use Firebase data.
-        select: { fields }
-      }
-    })
-  });
-  if (!response.ok) throw new Error(`Products REST request failed (${response.status})`);
-  const payload = await response.json();
-  return (Array.isArray(payload) ? payload : []).filter(row => row.document).map(row => {
-    const document = row.document;
-    return {
-      id: document.name.split('/').pop(),
-      ...Object.fromEntries(Object.entries(document.fields || {}).map(([key, value]) => [key, firestoreRestValue(value)]))
-    };
-  });
-}
-
-let homepageProductsLoading = false;
-let homepageProductsLoaded = false;
-const HOMEPAGE_PRODUCTS_CACHE_KEY = 'lovara_homepage_products_v2';
-
-function readHomepageProductsCache() {
+function readProductCache() {
   try {
     const cached = JSON.parse(localStorage.getItem(HOMEPAGE_PRODUCTS_CACHE_KEY));
     return Array.isArray(cached) ? cached : [];
-  } catch (e) {
+  } catch (error) {
     return [];
   }
 }
 
-function writeHomepageProductsCache(products) {
+function writeProductCache(products) {
   try {
-    // Keep only the fields needed to render cards and avoid storing large galleries.
-    const compact = products.map(({ id, name, price, oldPrice, category, badge, sizes,
-      colors, comingSoon, imageUrl, image, imageURL, photo, img, thumbnail, createdAt }) => ({
-      id, name, price, oldPrice, category, badge, sizes, colors, comingSoon,
-      imageUrl, image, imageURL, photo, img, thumbnail, createdAt
-    }));
-    localStorage.setItem(HOMEPAGE_PRODUCTS_CACHE_KEY, JSON.stringify(compact));
-  } catch (e) {
-    console.warn('Could not cache homepage products:', e.message);
+    localStorage.setItem(HOMEPAGE_PRODUCTS_CACHE_KEY, JSON.stringify(products));
+  } catch (error) {
+    console.warn('[LOVARA] Product cache unavailable:', error.message);
   }
 }
 
-function renderHomepageProducts(grid, emptyState, loading, products) {
-  products.sort((a, b) => {
-    const aTime = a.createdAt ? (a.createdAt.toMillis ? a.createdAt.toMillis() : a.createdAt) : 0;
-    const bTime = b.createdAt ? (b.createdAt.toMillis ? b.createdAt.toMillis() : b.createdAt) : 0;
-    return bTime - aTime;
-  });
-  if (loading) loading.style.display = 'none';
-  if (emptyState) emptyState.style.display = 'none';
-  // Keep the homepage on the same product/card/action implementation as the
-  // category pages. This also gives cart and wishlist handlers the exact
-  // product objects they expect.
-  if (window.CategoryApp) {
-    CategoryApp.products = products;
+function normalizeProducts(products) {
+  return products
+    .filter(product => product && product.id && product.showOnHome !== false)
+    .map(product => ({
+      ...product,
+      price: Number(product.price) || 0,
+      oldPrice: product.oldPrice == null ? null : Number(product.oldPrice),
+      sizes: Array.isArray(product.sizes) ? product.sizes : [],
+      colors: Array.isArray(product.colors) ? product.colors : [],
+      imageUrl: product.imageUrl || product.image || product.imageURL || product.photo || product.img || product.thumbnail || ''
+    }))
+    .sort((a, b) => {
+      const aTime = typeof a.createdAt === 'number' ? a.createdAt : Date.parse(a.createdAt || '') || 0;
+      const bTime = typeof b.createdAt === 'number' ? b.createdAt : Date.parse(b.createdAt || '') || 0;
+      return bTime - aTime;
+    });
+}
+
+async function fetchProductsFromFirebase() {
+  if (typeof firebase === 'undefined' || typeof firebase.firestore !== 'function') {
+    throw new Error('Firebase is not available');
   }
-  initProductCarousel(grid, products);
-  homepageProductsLoaded = true;
-  writeHomepageProductsCache(products);
+  const snapshot = await firebase.firestore().collection('products').get();
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+async function fetchProductsFromRest() {
+  const projectId = firebase?.app?.().options?.projectId;
+  if (!projectId) throw new Error('Firebase project is not available');
+  const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/products?pageSize=100`;
+  const response = await fetch(endpoint, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`Products request failed (${response.status})`);
+  const payload = await response.json();
+  return (payload.documents || []).map(document => ({
+    id: document.name.split('/').pop(),
+    ...Object.fromEntries(Object.entries(document.fields || {})
+      .map(([key, value]) => [key, productFieldValue(value)])
+    )
+  }));
+}
+
+function showProductLoading(grid, loading, emptyState) {
+  if (loading) loading.style.display = 'flex';
+  if (emptyState) emptyState.style.display = 'none';
+}
+
+function renderHomepageProducts(products, filter = 'all') {
+  const grid = document.getElementById('productsGrid');
+  const loading = document.getElementById('productsLoading');
+  const emptyState = document.getElementById('emptyState');
+  if (!grid) return;
+
+  homepageState.products = products;
+  homepageState.filteredProducts = products;
+  homepageState.currentFilter = filter;
+  window.carouselState = homepageState;
+  if (window.CategoryApp) CategoryApp.products = products;
+
+  if (loading) loading.style.display = 'none';
+  if (emptyState) emptyState.style.display = products.length ? 'none' : 'flex';
+  grid.innerHTML = '';
+  grid.classList.remove('carousel-grid');
+  grid.classList.add('category-products-grid');
+
+  if (!products.length) return;
+  products.forEach(product => {
+    const card = window.CategoryApp
+      ? CategoryApp.createProductCard(product)
+      : createFallbackProductCard(product);
+    grid.appendChild(card);
+  });
+}
+
+function createFallbackProductCard(product) {
+  const card = document.createElement('article');
+  card.className = 'product-card';
+  card.dataset.productId = product.id;
+  card.innerHTML = `
+    <div class="product-img-wrap">
+      <img class="product-img" src="${product.imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA'}" alt="${product.name || 'LOVARA'}">
+    </div>
+    <div class="product-info">
+      <h4 class="product-name">${product.name || 'LOVARA'}</h4>
+      <p class="product-price">EGP ${product.price.toFixed(2)}</p>
+    </div>`;
+  return card;
+}
+
+function categoryAliases(category) {
+  const aliases = {
+    dresses: ['dresses', 'dress', 'فساتين', 'دريس'],
+    tops: ['tops', 'top', 'بلوزات', 'توب'],
+    pants: ['pants', 'pant', 'بناطيل'],
+    accessories: ['accessories', 'accessory', 'إكسسوارات', 'اكسسوارات'],
+    lingerie: ['lingerie', 'ملابس داخلية', 'داخلي'],
+    sets: ['sets', 'set', 'اطقم', 'أطقم'],
+    winter: ['winter', 'شتوي', 'الشتوي'],
+    hijab: ['hijab', 'حجاب', 'محجبات']
+  };
+  return new Set(aliases[category] || [category]);
+}
+
+function filterProducts(category) {
+  const filteredProducts = category === 'all'
+    ? homepageState.products
+    : homepageState.products.filter(product => categoryAliases(category)
+      .has(String(product.category || '').trim().toLowerCase()));
+  homepageState.filteredProducts = filteredProducts;
+  renderHomepageProducts(filteredProducts, category);
+  document.querySelectorAll('.filter-btn').forEach(button => {
+    button.classList.toggle('active', button.dataset.filter === category);
+  });
+}
+window.filterProducts = filterProducts;
+
+function setupHomepageFilters() {
+  document.querySelectorAll('.filter-btn').forEach(button => {
+    button.addEventListener('click', () => filterProducts(button.dataset.filter || 'all'));
+  });
 }
 
 async function loadHomepageProducts() {
-  if (homepageProductsLoading) return;
-  homepageProductsLoading = true;
   const grid = document.getElementById('productsGrid');
-  const emptyState = document.getElementById('emptyState');
   const loading = document.getElementById('productsLoading');
+  const emptyState = document.getElementById('emptyState');
+  if (!grid || grid.dataset.productsLoaderStarted === 'true') return;
+  grid.dataset.productsLoaderStarted = 'true';
+  setupHomepageFilters();
+  showProductLoading(grid, loading, emptyState);
 
-  if (!grid) {
-    console.error('productsGrid not found');
-    return;
-  }
-
-  if (!isOnline()) {
-    if (loading) loading.style.display = 'none';
-    showOfflineState(grid);
-    return;
-  }
-
-  showSkeletonLoading(grid, 4);
+  let products = [];
   try {
-    // REST is fast and does not wait for the Firebase streaming channel.
-    // The SDK remains a fallback for environments where REST is blocked.
-    let products = await Promise.race([
-      fetchProductsViaRest(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Products request timed out')), 5000))
-    ]);
-
-    if (products.length === 0 && typeof firebase !== 'undefined' && firebase.firestore) {
-      const snapshot = await Promise.race([
-        firebase.firestore().collection('products').get(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase products request timed out')), 5000))
-      ]);
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        if (data.showOnHome !== false) products.push({ id: doc.id, ...data });
-      });
+    try {
+      products = normalizeProducts(await Promise.race([
+        fetchProductsFromFirebase(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timed out')), 10000))
+      ]));
+    } catch (sdkError) {
+      console.warn('[LOVARA] Firebase SDK failed; trying REST:', sdkError.message);
+      products = normalizeProducts(await fetchProductsFromRest());
     }
-
-    if (products.length > 0) {
-      renderHomepageProducts(grid, emptyState, loading, products);
+    if (products.length) {
+      writeProductCache(products);
+      renderHomepageProducts(products);
       return;
     }
-
-    const cachedProducts = readHomepageProductsCache();
-    if (cachedProducts.length > 0) {
-      console.warn('Firebase returned no products; keeping cached catalog visible.');
-      renderHomepageProducts(grid, emptyState, loading, cachedProducts);
-      return;
-    }
-
-    // Never clear an already-rendered catalog because of a transient empty response.
-    if (homepageProductsLoaded) return;
-    grid.innerHTML = '';
-    if (loading) loading.style.display = 'none';
-    if (emptyState) emptyState.style.display = 'flex';
-
   } catch (error) {
-    console.error('Error loading products:', error);
-    if (loading) loading.style.display = 'none';
-    if (homepageProductsLoaded) return;
-    const cachedProducts = readHomepageProductsCache();
-    if (cachedProducts.length > 0) {
-      console.warn('Product request failed; keeping cached catalog visible.', error);
-      renderHomepageProducts(grid, emptyState, loading, cachedProducts);
-      return;
-    }
-    grid.innerHTML = '';
-    if (emptyState) {
-      const title = emptyState.querySelector('h3');
-      const description = emptyState.querySelector('p');
-      if (title) title.textContent = 'Error Loading Products';
-      if (description) description.textContent = 'Please refresh the page. Error: ' + error.message;
-      emptyState.style.display = 'flex';
-    }
+    console.error('[LOVARA] Product loading failed:', error);
   }
-}
 
-// ============================================
-// CAROUSEL LOGIC
-// ============================================
-let carouselState = {
-  products: [],
-  currentPage: 0,
-  itemsPerPage: 4,
-  filteredProducts: [],
-  currentFilter: 'all'
-};
-window.carouselState = carouselState;
+  const cached = normalizeProducts(readProductCache());
+  if (cached.length) {
+    console.warn('[LOVARA] Showing cached products after a temporary load failure.');
+    renderHomepageProducts(cached);
+    return;
+  }
+
+  if (loading) loading.style.display = 'none';
+  if (emptyState) emptyState.style.display = 'flex';
+}
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', loadHomepageProducts, { once: true });
@@ -239,439 +209,4 @@ if (document.readyState === 'loading') {
   loadHomepageProducts();
 }
 
-const badgeTranslations = {
-  en: { 'New': 'New', 'Sale': 'Sale', 'Bestseller': 'Bestseller', 'Limited': 'Limited', 'Coming Soon': 'Coming Soon' },
-  ar: { 'New': 'جديد', 'Sale': 'تخفيض', 'Bestseller': 'الأكثر مبيعاً', 'Limited': 'محدود', 'Coming Soon': 'قريباً' }
-};
-
-
-
-function initProductCarousel(grid, products) {
-  carouselState.products = products;
-  carouselState.filteredProducts = products;
-  // Start on All so the homepage shows the full catalog; filters narrow it by category.
-  carouselState.currentFilter = 'all';
-  // Keep the layout compact on mobile too: four cards per page, navigated
-  // with the carousel arrows and pagination dots.
-  carouselState.itemsPerPage = 4;
-
-  grid.innerHTML = '';
-  grid.classList.add('carousel-grid');
-
-  const carouselWrapper = document.createElement('div');
-  carouselWrapper.className = 'carousel-wrapper';
-
-  const leftArrow = document.createElement('button');
-  leftArrow.className = 'carousel-arrow carousel-arrow-left';
-  leftArrow.innerHTML = '<i class="fas fa-chevron-left"></i>';
-  leftArrow.setAttribute('aria-label', 'Previous products');
-  leftArrow.onclick = () => navigateCarousel(-1);
-
-  const productsContainer = document.createElement('div');
-  productsContainer.className = 'carousel-products-container';
-  productsContainer.id = 'carouselProductsContainer';
-
-  const rightArrow = document.createElement('button');
-  rightArrow.className = 'carousel-arrow carousel-arrow-right';
-  rightArrow.innerHTML = '<i class="fas fa-chevron-right"></i>';
-  rightArrow.setAttribute('aria-label', 'Next products');
-  rightArrow.onclick = () => navigateCarousel(1);
-
-  const pagination = document.createElement('div');
-  pagination.className = 'carousel-pagination';
-  pagination.id = 'carouselPagination';
-
-  carouselWrapper.appendChild(leftArrow);
-  carouselWrapper.appendChild(productsContainer);
-  carouselWrapper.appendChild(rightArrow);
-
-  grid.appendChild(carouselWrapper);
-  grid.appendChild(pagination);
-
-  renderCarouselPage();
-  updateArrowVisibility();
-
-  // Setup event delegation for product actions
-  // setupProductActionsDelegation removed — using inline onclick
-}
-
-/* Event delegation removed — using inline onclick with CategoryApp */
-
-function navigateCarousel(direction) {
-  const totalPages = Math.ceil(carouselState.filteredProducts.length / carouselState.itemsPerPage);
-  const newPage = carouselState.currentPage + direction;
-
-  if (newPage >= 0 && newPage < totalPages) {
-    carouselState.currentPage = newPage;
-    renderCarouselPage();
-    updateArrowVisibility();
-  }
-}
-
-function renderCarouselPage() {
-  const container = document.getElementById('carouselProductsContainer');
-  const pagination = document.getElementById('carouselPagination');
-  if (!container) return;
-
-  const start = carouselState.currentPage * carouselState.itemsPerPage;
-  const end = start + carouselState.itemsPerPage;
-  const pageProducts = carouselState.filteredProducts.slice(start, end);
-
-  container.style.opacity = '0';
-  container.style.transform = 'translateX(' + (carouselState.currentPage > 0 ? '-20px' : '20px') + ')';
-
-  setTimeout(() => {
-    container.innerHTML = '';
-    pageProducts.forEach(product => {
-      const card = window.CategoryApp
-        ? CategoryApp.createProductCard(product)
-        : createProductCard(product.id, product);
-      container.appendChild(card);
-    });
-    container.style.opacity = '1';
-    container.style.transform = 'translateX(0)';
-  }, 150);
-
-  if (pagination) {
-    const totalPages = Math.ceil(carouselState.filteredProducts.length / carouselState.itemsPerPage);
-    pagination.innerHTML = '';
-    for (let i = 0; i < totalPages; i++) {
-      const dot = document.createElement('button');
-      dot.className = 'carousel-dot' + (i === carouselState.currentPage ? ' active' : '');
-      dot.setAttribute('aria-label', 'Page ' + (i + 1));
-      dot.onclick = () => {
-        carouselState.currentPage = i;
-        renderCarouselPage();
-        updateArrowVisibility();
-      };
-      pagination.appendChild(dot);
-    }
-  }
-}
-
-function updateArrowVisibility() {
-  const totalPages = Math.ceil(carouselState.filteredProducts.length / carouselState.itemsPerPage);
-  const leftArrow = document.querySelector('.carousel-arrow-left');
-  const rightArrow = document.querySelector('.carousel-arrow-right');
-
-  if (leftArrow) {
-    leftArrow.style.opacity = carouselState.currentPage === 0 ? '0.3' : '1';
-    leftArrow.style.pointerEvents = carouselState.currentPage === 0 ? 'none' : 'auto';
-  }
-  if (rightArrow) {
-    rightArrow.style.opacity = carouselState.currentPage >= totalPages - 1 ? '0.3' : '1';
-    rightArrow.style.pointerEvents = carouselState.currentPage >= totalPages - 1 ? 'none' : 'auto';
-  }
-}
-
-function filterProducts(category) {
-  carouselState.currentFilter = category;
-  carouselState.currentPage = 0;
-
-  if (category === 'all') {
-    // All shows the complete catalog, without limiting products by category.
-    carouselState.filteredProducts = carouselState.products;
-  } else {
-    const aliases = {
-      sets: ['sets', 'set', 'اطقم', 'أطقم', 'طقم'],
-      dresses: ['dresses', 'dress', 'فساتين', 'فستان'],
-      tops: ['tops', 'top', 'بلوزات', 'بلوزة', 'تيشرت'],
-      pants: ['pants', 'pant', 'بناطيل', 'بنطلون'],
-      accessories: ['accessories', 'accessory', 'إكسسوارات', 'اكسسوارات'],
-      lingerie: ['lingerie', 'ملابس داخلية', 'داخلي'],
-      winter: ['winter', 'شتوي', 'الشتوي'],
-      hijab: ['hijab', 'حجاب', 'محجبات']
-    };
-    const accepted = new Set(aliases[category] || [category]);
-    carouselState.filteredProducts = carouselState.products.filter(product => {
-      const value = String(product.category || '').trim().toLowerCase();
-      return accepted.has(value);
-    });
-  }
-
-  renderCarouselPage();
-  updateArrowVisibility();
-}
-
-// ============================================
-// CREATE PRODUCT CARD - FIXED: buttons always visible under image + share button
-// Uses data-* attributes + event delegation (no inline onclick)
-// ============================================
-function createProductCard(id, product) {
-  const div = document.createElement('div');
-  div.className = 'product-card';
-  div.setAttribute('data-category', product.category || 'all');
-  div.setAttribute('data-product-id', id);
-  div.addEventListener('click', (event) => {
-    if (event.target.closest('button, a, input, select, textarea')) return;
-    if (typeof CartApp !== 'undefined' && typeof CartApp.handleBuyNow === 'function') {
-      CartApp.handleBuyNow(id);
-    }
-  });
-
-  const safeName = String(product.name || 'Unnamed').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const price = parseFloat(product.price) || 0;
-  const oldPrice = parseFloat(product.oldPrice) || 0;
-  const imageUrl = product.imageUrl || product.image || product.imageURL || product.photo || product.img || product.thumbnail || '';
-  const finalImage = imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA';
-
-  const lang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'en';
-  const badgeText = badgeTranslations[lang]?.[product.badge] || product.badge;
-  const badgeHtml = product.badge ? `<div class="product-badge">${badgeText}</div>` : '';
-  const oldPriceHtml = oldPrice > 0 ? `<span class="old-price">EGP ${oldPrice.toFixed(2)}</span>` : '';
-
-  // Sizes
-  let sizesHtml = '';
-  if (Array.isArray(product.sizes) && product.sizes.length > 0) {
-    const sizesTags = product.sizes.map(s => `<span class="product-size-tag">${String(s)}</span>`).join('');
-    sizesHtml = `<div class="product-sizes"><span class="product-meta-label">Size:</span>${sizesTags}</div>`;
-  }
-
-  // Colors
-  let colorsHtml = '';
-  if (Array.isArray(product.colors) && product.colors.length > 0) {
-    const colorsTags = product.colors.map(c => `<span class="product-color-tag" style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${String(c)}</span>`).join('');
-    colorsHtml = `<div class="product-colors"><span class="product-meta-label">Color:</span>${colorsTags}</div>`;
-  }
-
-  // Check wishlist (CategoryApp style)
-  let isWished = false;
-  try {
-    const wishlist = JSON.parse(localStorage.getItem('lovara_wishlist')) || [];
-    isWished = wishlist.some(item => item && item.id === id);
-  } catch(e) {}
-
-  div.innerHTML = `
-    <div class="product-img-wrap">
-      <img src="${finalImage}" alt="${safeName}" class="product-img" loading="lazy" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">
-      ${badgeHtml}
-      <button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="CartApp.handleWishlistClick('${id}')">
-        <i class="fas fa-heart"></i>
-      </button>
-    </div>
-    <div class="product-info">
-      <h4 class="product-name">${safeName}</h4>
-      <p class="product-price">EGP ${price.toFixed(2)} ${oldPriceHtml}</p>
-      ${sizesHtml}
-      ${colorsHtml}
-      ${(() => {
-        const isCS = product.badge === 'Coming Soon' || product.comingSoon === true;
-        if (isCS) {
-          return `<div class="product-actions coming-soon-actions"><span class="coming-soon-label" style="flex:1;text-align:center;padding:10px 14px;background:#f5f5f5;border-radius:8px;color:#888;font-size:13px;font-weight:500;"><i class="fas fa-clock" style="margin-right:6px;"></i>${badgeTranslations[lang]?.['Coming Soon'] || 'Coming Soon'}</span><button class="btn-share" onclick="CartApp.shareProduct('${id}')" aria-label="Share" style="width:40px;height:40px;border-radius:8px;border:1px solid #e8e4e0;background:#fff;color:#666;cursor:pointer;"><i class="fas fa-share-nodes"></i></button></div>`;
-        }
-        return `<div class="product-actions">
-        <button class="add-to-cart" onclick="CartApp.handleAddToCart('${id}')">
-          <i class="fas fa-bag-shopping"></i> Add to Cart
-        </button>
-        <button class="btn-buy-now" onclick="CartApp.handleBuyNow('${id}')">
-          <i class="fas fa-bolt"></i> Buy Now
-        </button>
-        <button class="btn-share" onclick="CartApp.shareProduct('${id}')" aria-label="Share">
-          <i class="fas fa-share-nodes"></i>
-        </button>
-      </div>`;
-      })()}
-    </div>
-  `;
-
-  return div;
-}
-
-function getCategoryPage(category) {
-  const pages = {
-    'dresses': 'dresses.html',
-    'tops': 'tops.html',
-    'pants': 'pants.html',
-    'accessories': 'accessories.html',
-    'lingerie': 'lingerie.html',
-    'sets': 'sets.html'
-  };
-  return pages[category] || 'index.html#shop';
-}
-
-// ============================================
-// ADD TO CART FROM PRODUCT CARD
-// ============================================
-function addToCartFromCard(id, name, price, image, category, badge, comingSoon) {
-  if (badge === 'Coming Soon' || comingSoon === true) {
-    showProductToast('This product is coming soon!');
-    return;
-  }
-  if (typeof CartApp !== 'undefined' && CartApp.add) {
-    CartApp.add({
-      id: id,
-      name: name,
-      price: price,
-      image: image,
-      category: category,
-      qty: 1
-    });
-  } else {
-    // Fallback if CartApp not loaded yet
-    let cart = JSON.parse(localStorage.getItem('lovara_cart')) || [];
-    const existing = cart.find(item => item.id === id);
-    if (existing) {
-      existing.qty = (parseInt(existing.qty) || 1) + 1;
-    } else {
-      cart.push({ id: id, name: name, price: price, image: image, category: category, qty: 1 });
-    }
-    localStorage.setItem('lovara_cart', JSON.stringify(cart));
-    showProductToast(name + ' added to cart!');
-    // Update cart count badge
-    const totalQty = cart.reduce((sum, item) => sum + (parseInt(item.qty) || 1), 0);
-    const cartCount = document.getElementById('cartCount');
-    if (cartCount) {
-      cartCount.textContent = totalQty;
-      cartCount.style.display = totalQty > 0 ? 'flex' : 'none';
-    }
-  }
-}
-
-// ============================================
-// BUY NOW - Add to cart then go to checkout
-// ============================================
-function buyNow(id, name, price, image, category, badge, comingSoon) {
-  if (badge === 'Coming Soon' || comingSoon === true) {
-    showProductToast('This product is coming soon!');
-    return;
-  }
-  // Add to cart first
-  if (typeof CartApp !== 'undefined' && CartApp.add) {
-    CartApp.add({
-      id: id,
-      name: name,
-      price: price,
-      image: image,
-      category: category,
-      qty: 1
-    });
-  } else {
-    let cart = JSON.parse(localStorage.getItem('lovara_cart')) || [];
-    const existing = cart.find(item => item.id === id);
-    if (existing) {
-      existing.qty = (parseInt(existing.qty) || 1) + 1;
-    } else {
-      cart.push({ id: id, name: name, price: price, image: image, category: category, qty: 1 });
-    }
-    localStorage.setItem('lovara_cart', JSON.stringify(cart));
-  }
-  // Go to checkout
-  window.location.href = 'checkout.html';
-}
-
-// ============================================
-// WISHLIST
-// ============================================
-function toggleWishlist(productId) {
-  let wishlist = JSON.parse(localStorage.getItem('lovara_wishlist')) || [];
-  const index = wishlist.indexOf(productId);
-
-  if (index > -1) {
-    wishlist.splice(index, 1);
-    showProductToast('Removed from wishlist');
-  } else {
-    wishlist.push(productId);
-    showProductToast('Added to wishlist!');
-  }
-
-  localStorage.setItem('lovara_wishlist', JSON.stringify(wishlist));
-  updateWishlistButtons(productId, index === -1);
-}
-
-function updateWishlistButtons(productId, isAdded) {
-  const buttons = document.querySelectorAll(`[data-product-id="${productId}"] .wishlist-btn, .wishlist-btn[data-product-id="${productId}"]`);
-  buttons.forEach(btn => {
-    if (isAdded) {
-      btn.classList.add('active');
-      btn.style.color = '#c97c82';
-      btn.title = 'Remove from Wishlist';
-    } else {
-      btn.classList.remove('active');
-      btn.style.color = '';
-      btn.title = 'Add to Wishlist';
-    }
-  });
-  // Update wishlist count
-  const wishlistCount = document.getElementById('wishlistCount');
-  if (wishlistCount) {
-    const wishlist = JSON.parse(localStorage.getItem('lovara_wishlist')) || [];
-    wishlistCount.textContent = wishlist.length;
-    wishlistCount.style.display = wishlist.length > 0 ? 'flex' : 'none';
-  }
-}
-
-// ============================================
-// SHARE
-// ============================================
-async function shareProduct(productId, productName) {
-  const product = carouselState.products.find(p => p.id === productId);
-  if (!product) return;
-
-  const shareData = {
-    title: productName,
-    text: 'Check out ' + productName + ' on LOVARA!',
-    url: window.location.origin + '/' + getCategoryPage(product.category)
-  };
-
-  if (navigator.share) {
-    try {
-      await navigator.share(shareData);
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error('Share failed:', err);
-      }
-    }
-  } else {
-    try {
-      await navigator.clipboard.writeText(shareData.url);
-      showProductToast('Link copied to clipboard!');
-    } catch (err) {
-      const textArea = document.createElement('textarea');
-      textArea.value = shareData.url;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      showProductToast('Link copied to clipboard!');
-    }
-  }
-}
-
-// ============================================
-// TOAST
-// ============================================
-function showProductToast(message) {
-  const existingToast = document.querySelector('.product-toast');
-  if (existingToast) existingToast.remove();
-
-  const toast = document.createElement('div');
-  toast.className = 'product-toast';
-  toast.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
-  document.body.appendChild(toast);
-
-  requestAnimationFrame(() => {
-    toast.classList.add('show');
-  });
-
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 400);
-  }, 2500);
-}
-
-// ============================================
-// FILTER BUTTONS
-// ============================================
-function setupFilterButtons() {
-  const filterButtons = document.querySelectorAll('.filter-btn');
-  filterButtons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      filterButtons.forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
-      const filter = e.target.getAttribute('data-filter');
-      filterProducts(filter);
-    });
-  });
-}
-
-document.addEventListener('DOMContentLoaded', setupFilterButtons);
+window.loadHomepageProducts = loadHomepageProducts;
