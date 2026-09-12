@@ -109,9 +109,16 @@ function firestoreRestValue(value) {
 async function fetchProductsViaRest() {
   const projectId = firebase?.app?.().options?.projectId;
   if (!projectId) return [];
-  const response = await fetch(
-    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/products?pageSize=100`
+  const url = new URL(
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/products`
   );
+  url.searchParams.set('pageSize', '100');
+  // Do not download the gallery array for the carousel; it can be several
+  // megabytes while the card only needs its primary image.
+  ['showOnHome', 'name', 'price', 'oldPrice', 'category', 'badge', 'sizes',
+    'colors', 'comingSoon', 'imageUrl', 'image', 'imageURL', 'photo', 'img',
+    'thumbnail', 'createdAt'].forEach(field => url.searchParams.append('mask.fieldPaths', field));
+  const response = await fetch(url);
   if (!response.ok) throw new Error(`Products REST request failed (${response.status})`);
   const payload = await response.json();
   return (payload.documents || []).map(document => ({
@@ -249,9 +256,9 @@ const badgeTranslations = {
 function initProductCarousel(grid, products) {
   carouselState.products = products;
   carouselState.filteredProducts = products;
-  carouselState.itemsPerPage = window.matchMedia('(max-width: 768px)').matches
-    ? Math.max(products.length, 1)
-    : 4;
+  // Keep the layout compact on mobile too: four cards per page, navigated
+  // with the carousel arrows and pagination dots.
+  carouselState.itemsPerPage = 4;
 
   grid.innerHTML = '';
   grid.classList.add('carousel-grid');
