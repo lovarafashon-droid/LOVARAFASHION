@@ -120,6 +120,8 @@ async function fetchProductsViaRest() {
       structuredQuery: {
         from: [{ collectionId: 'products' }],
         where: { fieldFilter: { field: { fieldPath: 'showOnHome' }, op: 'EQUAL', value: { booleanValue: true } } },
+        // Keep the first paint small; the carousel displays only four cards.
+        limit: 20,
         select: { fields }
       }
     })
