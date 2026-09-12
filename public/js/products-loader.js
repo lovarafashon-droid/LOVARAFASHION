@@ -61,20 +61,43 @@ function showOfflineState(container) {
 }
 
 function showSkeletonLoading(grid, count = 4) {
-  grid.innerHTML = '';
-  for (let i = 0; i < count; i++) {
-    const skeleton = document.createElement('div');
-    skeleton.className = 'product-card skeleton-card';
-    skeleton.innerHTML = `
-      <div class="skeleton-img"></div>
-      <div class="skeleton-info">
-        <div class="skeleton-line skeleton-title"></div>
-        <div class="skeleton-line skeleton-price"></div>
-        <div class="skeleton-line skeleton-btn"></div>
-      </div>
-    `;
-    grid.appendChild(skeleton);
-  }
+  const loading = document.getElementById('productsLoading');
+  if (loading) loading.style.display = 'flex';
+}
+
+function firestoreRestValue(value) {
+  if (!value) return null;
+  if ('stringValue' in value) return value.stringValue;
+  if ('integerValue' in value) return Number(value.integerValue);
+  if ('doubleValue' in value) return Number(value.doubleValue);
+  if ('booleanValue' in value) return value.booleanValue;
+  if ('timestampValue' in value) return value.timestampValue;
+  if ('nullValue' in value) return null;
+  if ('arrayValue' in value) return (value.arrayValue.values || []).map(firestoreRestValue);
+  if ('mapValue' in value) return Object.fromEntries(Object.entries(value.mapValue.fields || {})
+    .map(([key, item]) => [key, firestoreRestValue(item)]));
+  return null;
+}
+
+async function fetchProductsViaRest() {
+  const projectId = (typeof firebaseConfig !== 'undefined' && firebaseConfig.projectId)
+    || firebase?.app?.().options?.projectId
+    || 'lovara-89510';
+  if (!projectId) throw new Error('Firebase project is not available');
+  const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'products' }] } }),
+    cache: 'no-store'
+  });
+  if (!response.ok) throw new Error(`Products request failed (${response.status})`);
+  const payload = await response.json();
+  return (Array.isArray(payload) ? payload : []).filter(row => row.document).map(row => ({
+    id: row.document.name.split('/').pop(),
+    ...Object.fromEntries(Object.entries(row.document.fields || {})
+      .map(([key, value]) => [key, firestoreRestValue(value)]))
+  }));
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -102,68 +125,28 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   showSkeletonLoading(grid, 4);
 
-  const firebaseReady = await waitForFirebase(30, 300);
-
-  if (!firebaseReady) {
-    const cached = getCachedProducts();
-    if (cached && cached.length > 0) {
-      grid.innerHTML = '';
-      if (loading) loading.style.display = 'none';
-      if (emptyState) emptyState.style.display = 'none';
-      initProductCarousel(grid, cached);
-      return;
-    }
-    if (loading) loading.style.display = 'none';
-    if (emptyState) {
-      emptyState.querySelector('h3').textContent = 'Connection Error';
-      emptyState.querySelector('p').innerHTML = 'Unable to connect to our servers.<br>Please check your internet connection and try again.';
-      emptyState.style.display = 'flex';
-    }
-    return;
-  }
-
-  const db = firebase.firestore();
-
   try {
-    const snapshot = await db.collection('products').get();
+    const products = await fetchProductsViaRest();
+    const visibleProducts = products.filter(product => product.showOnHome !== false);
+    const productsToRender = visibleProducts.length > 0 ? visibleProducts : products;
 
-    if (snapshot.empty) {
-      if (loading) loading.style.display = 'none';
-      if (emptyState) emptyState.style.display = 'flex';
-      return;
-    }
-
-    const products = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.showOnHome !== false) {
-        products.push({ id: doc.id, ...data });
-      }
-    });
-
-    if (products.length === 0) {
-      snapshot.forEach(doc => {
-        products.push({ id: doc.id, ...doc.data() });
-      });
-    }
-
-    products.sort((a, b) => {
+    productsToRender.sort((a, b) => {
       const aTime = a.createdAt ? (a.createdAt.toMillis ? a.createdAt.toMillis() : a.createdAt) : 0;
       const bTime = b.createdAt ? (b.createdAt.toMillis ? b.createdAt.toMillis() : b.createdAt) : 0;
       return bTime - aTime;
     });
 
-    setCachedProducts(products);
+    setCachedProducts(productsToRender);
 
     if (loading) loading.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
 
-    if (products.length === 0) {
+    if (productsToRender.length === 0) {
       if (emptyState) emptyState.style.display = 'flex';
       return;
     }
 
-    initProductCarousel(grid, products);
+    initProductCarousel(grid, productsToRender);
 
   } catch (error) {
     console.error('Error loading products:', error);
