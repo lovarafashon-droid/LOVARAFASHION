@@ -1228,7 +1228,15 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         // Check if there's a saved session
         const saved = sessionStorage.getItem('lovara_admin');
         if (saved) {
-          const savedUser = JSON.parse(saved);
+          let savedUser;
+          try {
+            savedUser = JSON.parse(saved);
+          } catch (parseError) {
+            console.warn('Invalid saved admin session; clearing it.', parseError);
+            sessionStorage.removeItem('lovara_admin');
+            savedUser = null;
+          }
+          if (!savedUser || !savedUser.uid) return;
           // Verify the user is still authenticated and is admin
           firebase.auth().onAuthStateChanged(async (user) => {
             if (user && user.uid === savedUser.uid) {
@@ -1800,7 +1808,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         // Translation maps for stored English values
         const catMap = {
           'dresses': t.dresses, 'tops': t.tops, 'pants': t.pants,
-          'accessories': t.accessories, 'lingerie': t.lingerie, 'sets': t.sets
+          'accessories': t.accessories, 'lingerie': t.lingerie, 'sets': t.sets,
+          'hijab': t.hijab, 'winter': t.winter
         };
         const badgeMap = {
           'New': t.newBadge, 'Sale': t.saleBadge, 'Bestseller': t.bestsellerBadge,
@@ -2306,7 +2315,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           'accessories': t.accessories || 'Accessories',
           'lingerie': t.lingerie || 'Lingerie',
           'sets': t.sets || 'Sets',
-          'hijab': t.hijab || 'Hijab'
+          'hijab': t.hijab || 'Hijab',
+          'winter': t.winter || 'Winter'
         };
 
         Object.entries(categories).forEach(([cat, data]) => {
