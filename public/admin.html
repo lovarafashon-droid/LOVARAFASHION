@@ -1190,7 +1190,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         // Re-translate subcategory options if visible
         const pCategory = document.getElementById('pCategory');
         if (pCategory && pCategory.value) {
-          ProductManager.onCategoryChange(pCategory.value);
+          ProductManager.onCategoryChange(pCategory.value, true);
         }
         document.getElementById('pageTitle').textContent = this.currentLang === 'ar' ? 'LOVARA – لوحة التحكم' : 'LOVARA – Admin';
       },
@@ -1426,17 +1426,33 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         }
         return Array.from(document.querySelectorAll('#sizeSelector input[name="size"]:checked')).map(cb => cb.value);
       },
-      onCategoryChange(category) {
+      clearCategorySelections() {
+        document.querySelectorAll('#sizeSelector input, #bagSizeGrid input').forEach(cb => { cb.checked = false; });
+        ['pShoeSize', 'pVolume'].forEach(id => {
+          const input = document.getElementById(id);
+          if (input) input.value = '';
+        });
+        ['shoeSizeTagsDisplay', 'volumeTagsDisplay'].forEach(id => {
+          const display = document.getElementById(id);
+          if (display) display.innerHTML = '';
+        });
+      },
+      onCategoryChange(category, preserveValues = false) {
         const subcatGroup = document.getElementById('subcategoryGroup');
         const subcatSelect = document.getElementById('pSubcategory');
         const sizeSelector = document.getElementById('sizeSelector').closest('.selector-group');
         const bagSizeSelector = document.getElementById('bagSizeSelector');
+        const shoeSizeGroup = document.getElementById('shoeSizeGroup');
+        const volumeGroup = document.getElementById('volumeGroup');
         const t = translations[AppSettings.currentLang];
 
         // Reset all first
+        if (!preserveValues) this.clearCategorySelections();
         if (subcatGroup) subcatGroup.classList.add('hidden');
         if (sizeSelector) sizeSelector.classList.add('hidden');
         if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
+        if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
+        if (volumeGroup) volumeGroup.classList.add('hidden');
         if (subcatSelect) subcatSelect.value = '';
 
         if (category === 'accessories') {
@@ -1457,15 +1473,16 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               '<option value="panties">' + (t.subcatPanties || 'Panties') + '</option>' +
               '<option value="nightgowns">' + (t.subcatNightgowns || 'Nightgowns') + '</option>';
           }
-        } else if (category === 'dresses' || category === 'tops' || category === 'pants' || category === 'sets') {
+        } else if (['dresses', 'tops', 'pants', 'sets', 'winter', 'hijab'].includes(category)) {
           if (sizeSelector) sizeSelector.classList.remove('hidden');
         }
       },
-      onSubcategoryChange(subcategory) {
+      onSubcategoryChange(subcategory, preserveValues = false) {
         const bagSizeSelector = document.getElementById('bagSizeSelector');
         const shoeSizeGroup = document.getElementById('shoeSizeGroup');
         const volumeGroup = document.getElementById('volumeGroup');
         const sizeSelector = document.getElementById('sizeSelector').closest('.selector-group');
+        if (!preserveValues) this.clearCategorySelections();
 
         if (subcategory === 'bags') {
           if (bagSizeSelector) bagSizeSelector.classList.remove('hidden');
@@ -1487,6 +1504,11 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
           if (volumeGroup) volumeGroup.classList.add('hidden');
           if (sizeSelector) sizeSelector.classList.add('hidden');
+        } else if (['bras', 'panties', 'nightgowns'].includes(subcategory)) {
+          if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
+          if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
+          if (volumeGroup) volumeGroup.classList.add('hidden');
+          if (sizeSelector) sizeSelector.classList.remove('hidden');
         } else {
           if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
           if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
@@ -1922,7 +1944,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           const subcat = document.getElementById('pSubcategory');
           if (subcat && product.subcategory) {
             subcat.value = product.subcategory;
-            this.onSubcategoryChange(product.subcategory);
+            this.onSubcategoryChange(product.subcategory, true);
           }
         }, 50);
         const category = product.category || '';
@@ -1934,7 +1956,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               if (cb) cb.checked = true;
             });
           }
-        } else if (['dresses','tops','pants','sets'].includes(category)) {
+        } else if (['dresses','tops','pants','sets','winter','hijab','lingerie'].includes(category)) {
           if (product.sizes && Array.isArray(product.sizes)) {
             product.sizes.forEach(s => {
               const cb = document.querySelector('#sizeSelector input[name="size"][value="' + s + '"]');
