@@ -25,7 +25,15 @@ module.exports = async (req, res) => {
   const failed = ['failed', 'cancelled', 'canceled', 'declined', 'expired'].includes(status);
   const transactionId = event.transaction_id || event.transactionId || event.id || null;
   try {
-    const order = await findOrderByNumber(orderNumber);
+    let order = await findOrderByNumber(orderNumber);
+    let pendingRef = null;
+    if (!order) {
+      const pending = await admin().firestore().collection('pendingOrders').doc(String(orderNumber)).get();
+      if (pending.exists) {
+        pendingRef = pending.ref;
+        order = { ref: pending.ref, data: pending.data() };
+      }
+    }
     if (!order) return res.status(404).json({ error: 'Order not found.' });
     const previous = order.data.payment || {};
     const nextStatus = paid ? 'paid' : failed ? 'failed' : 'payment_update';
@@ -34,7 +42,19 @@ module.exports = async (req, res) => {
       updatedAt: admin().firestore.FieldValue.serverTimestamp()
     };
     if (paid) update.payment.paidAt = admin().firestore.FieldValue.serverTimestamp();
-    await order.ref.update(update);
+    if (pendingRef && paid) {
+      await admin().firestore().collection('orders').doc(String(orderNumber)).set({
+        ...order.data,
+        ...update,
+        orderNumber: String(orderNumber),
+        confirmationStatus: 'pending'
+      });
+      await pendingRef.delete();
+    } else if (pendingRef) {
+      await pendingRef.update(update);
+    } else {
+      await order.ref.update(update);
+    }
     console.log(JSON.stringify({ source: 'xpay', orderNumber, status, paid, transactionId }));
     return res.status(200).json({ received: true, orderNumber, paid });
   } catch (error) {

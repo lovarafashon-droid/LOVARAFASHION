@@ -1,4 +1,4 @@
-const { findOrderByNumber, orderTotal } = require('../_lib/firestore');
+const { findOrderByNumber, orderTotal, admin } = require('../_lib/firestore');
 
 const required = ['XPAY_CHECKOUT_URL', 'XPAY_API_KEY', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
 
@@ -7,15 +7,18 @@ module.exports = async (req, res) => {
   const missing = required.filter((key) => !process.env[key]);
   if (missing.length) return res.status(503).json({ error: 'Payment service is not configured on the server.', missing });
 
-  const orderNumber = String((req.body || {}).orderNumber || '').trim();
+  const body = req.body || {};
+  const orderNumber = String(body.orderNumber || '').trim();
+  const submittedOrder = body.orderData || null;
   if (!orderNumber) return res.status(400).json({ error: 'orderNumber is required.' });
 
   try {
-    const order = await findOrderByNumber(orderNumber);
-    if (!order) return res.status(404).json({ error: 'Order not found.' });
-    const amount = orderTotal(order.data);
+    let order = await findOrderByNumber(orderNumber);
+    const orderData = order ? order.data : submittedOrder;
+    if (!orderData) return res.status(404).json({ error: 'Order not found.' });
+    const amount = orderTotal(orderData);
     if (!amount) return res.status(422).json({ error: 'Order total is invalid.' });
-    const currentStatus = String(order.data.payment?.status || '').toLowerCase();
+    const currentStatus = String(orderData.payment?.status || '').toLowerCase();
     if (['paid', 'succeeded', 'completed'].includes(currentStatus)) return res.status(409).json({ error: 'This order is already paid.' });
 
     const origin = process.env.PUBLIC_SITE_URL || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
@@ -48,7 +51,18 @@ module.exports = async (req, res) => {
     if (!data.clientSecret) return res.status(502).json({ error: 'XPay response did not include a client secret.' });
 
     const reference = String(data.reference || orderNumber);
-    await order.ref.update({ payment: { ...(order.data.payment || {}), method: 'visa', status: 'awaiting_payment', checkoutReference: reference }, updatedAt: new Date() });
+    if (order) {
+      await order.ref.update({ payment: { ...(order.data.payment || {}), method: 'visa', status: 'awaiting_payment', checkoutReference: reference }, updatedAt: new Date() });
+    } else {
+      const db = admin().firestore();
+      await db.collection('pendingOrders').doc(orderNumber).set({
+        ...orderData,
+        payment: { ...(orderData.payment || {}), method: 'visa', status: 'awaiting_payment', checkoutReference: reference },
+        xpaySessionId: data.id || null,
+        createdAt: admin().firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin().firestore.FieldValue.serverTimestamp()
+      });
+    }
     return res.status(200).json({ clientSecret: data.clientSecret, sessionId: data.id || null, reference });
   } catch (error) {
     console.error('[XPay create-checkout]', error);

@@ -1175,14 +1175,16 @@
           // Never report success for a localStorage-only order.
           const db = this.db || await this.firebaseReady;
           if (!db) throw new Error('Cloud database is unavailable. Please try again.');
-          const orderRef = await db.collection('orders').add(orderData);
-          console.log('[LOVARA Checkout] Order saved to Firestore:', orderNumber);
+          let orderRef = null;
+          if (paymentMethod !== 'visa') {
+            orderRef = await db.collection('orders').add(orderData);
+            console.log('[LOVARA Checkout] Order saved to Firestore:', orderNumber);
+          }
           if (paymentMethod === 'visa') {
             const amount = Number(String(totalText).replace(/[^0-9.]/g, '')) || 0;
-            const payResponse = await fetch('/api/xpay/create-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderNumber, amount, customer: orderData.customer }) });
+            const payResponse = await fetch('/api/xpay/create-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderNumber, amount, orderData }) });
             const payData = await payResponse.json().catch(() => ({}));
             if (!payResponse.ok || !payData.clientSecret) throw new Error(payData.detail || payData.error || 'تعذر بدء الدفع عبر XPay.');
-            await orderRef.update({ payment: { ...orderData.payment, status: 'awaiting_payment', checkoutReference: payData.reference || orderNumber } });
             await this.mountXPay(payData.clientSecret, orderData);
             return;
           }
