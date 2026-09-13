@@ -1674,18 +1674,21 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       // FIX #1: Use simple .get() without orderBy to avoid index issues
       // FIX #2: Handle missing createdAt gracefully
       // FIX #3: Show debug info if empty
-      async loadProducts() {
+      async loadProducts(options = {}) {
         const container = document.getElementById('productsContainer');
         const debugEl = document.getElementById('debugInfo');
         const t = translations[AppSettings.currentLang];
-        container.innerHTML = '<div class="empty-products"><i class="fas fa-spinner fa-spin"></i><p>' + t.loading + '</p></div>';
+        const previousProducts = Array.isArray(this.products) ? [...this.products] : [];
+        if (!options.silent) {
+          container.innerHTML = '<div class="empty-products"><i class="fas fa-spinner fa-spin"></i><p>' + t.loading + '</p></div>';
+        }
         debugEl.style.display = 'none';
 
         try {
           // Use simple get() without orderBy to avoid composite index requirements
           const snapshot = await AdminApp.db.collection('products').get();
 
-          this.products = snapshot.docs.map(doc => {
+          const loadedProducts = snapshot.docs.map(doc => {
             const data = doc.data();
             // Normalize createdAt - handle both Timestamp objects and missing values
             let createdAt = 0;
@@ -1701,6 +1704,15 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             return { id: doc.id, ...data, _createdAt: createdAt };
           });
 
+          // Do not erase a visible catalog because a just-written Firestore read
+          // temporarily returns no documents.
+          if (loadedProducts.length === 0 && previousProducts.length > 0) {
+            this.products = previousProducts;
+            this.renderProducts();
+            return;
+          }
+          this.products = loadedProducts;
+
           // Sort in JavaScript instead of Firestore query
           this.products.sort((a, b) => b._createdAt - a._createdAt);
 
@@ -1713,6 +1725,11 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           this.renderProducts();
         } catch (error) {
           console.error('Error loading products:', error);
+          if (previousProducts.length > 0) {
+            this.products = previousProducts;
+            this.renderProducts();
+            return;
+          }
           container.innerHTML = '<div class="empty-products"><i class="fas fa-exclamation-circle"></i><p>' + t.errorLoading + ': ' + error.message + '</p></div>';
           debugEl.textContent = 'Debug Error: ' + error.message;
           debugEl.style.display = 'block';
@@ -1797,7 +1814,9 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             product.colors = product.colors || [];
             product.sizes = product.sizes || [];
             product.images = product.images || [];
-            await AdminApp.db.collection('products').add(product);
+            const addedRef = await AdminApp.db.collection('products').add(product);
+            this.products = [{ id: addedRef.id, ...product, _createdAt: product.createdAt }, ...this.products];
+            this.renderProducts();
             AdminApp.showSuccess();
             document.getElementById('productForm').reset();
             document.getElementById('pCost').value = '';
@@ -1808,7 +1827,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             this.resetSelectors();
             [1,2,3].forEach(i => AdminApp.removeImage(i));
           }
-          this.loadProducts();
+          // Reconcile silently without blanking the list while Firestore propagates.
+          this.loadProducts({ silent: true });
         } catch (error) {
           console.error('Error ' + (isEdit ? 'updating' : 'adding') + ' product:', error);
           AdminApp.showError((isEdit ? 'Failed to update: ' : t.failedAdd) + error.message);
