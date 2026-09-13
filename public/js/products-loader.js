@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const firstProducts = await fetchProductsViaRest(8);
     const firstVisible = firstProducts.filter(product => product.showOnHome !== false);
     const firstToRender = firstVisible.length > 0 ? firstVisible : firstProducts;
-    if (firstToRender.length > 0) {
+    if (firstToRender.length > 0 && (!cached || cached.length === 0)) {
       setCachedProducts(firstToRender);
       if (loading) loading.style.display = 'none';
       if (emptyState) emptyState.style.display = 'none';
@@ -167,6 +167,18 @@ document.addEventListener('DOMContentLoaded', async function() {
       return bTime - aTime;
     });
 
+    // Never replace a previously successful catalog with a transient empty response.
+    // Firestore can briefly return no rows while a new admin write propagates.
+    if (productsToRender.length === 0) {
+      const currentProducts = carouselState.products || cached || [];
+      if (currentProducts.length > 0) {
+        if (loading) loading.style.display = 'none';
+        if (emptyState) emptyState.style.display = 'none';
+        initProductCarousel(grid, currentProducts);
+        return;
+      }
+    }
+
     setCachedProducts(productsToRender);
 
     if (loading) loading.style.display = 'none';
@@ -183,8 +195,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.error('Error loading products:', error);
     const fallbackCached = getCachedProducts();
     if (fallbackCached && fallbackCached.length > 0) {
-      grid.innerHTML = '';
-      initProductCarousel(grid, fallbackCached);
+      if (!carouselState.products || carouselState.products.length === 0) {
+        initProductCarousel(grid, fallbackCached);
+      }
       return;
     }
     if (loading) loading.style.display = 'none';
