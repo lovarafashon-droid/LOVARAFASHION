@@ -815,14 +815,14 @@
             <div class="order-actions">
               ${confirmStatus === 'pending' ? `
               <button type="button" class="btn btn-confirm" onclick="OrdersApp.confirmOrder(${index})">
-                <i class="fas fa-check-circle"></i> Confirm Order
+                <i class="fas fa-user-check"></i> تم تأكيد الأوردر من العميل
               </button>
               <button type="button" class="btn btn-reject" onclick="OrdersApp.showRejectModal(${index})">
                 <i class="fas fa-times-circle"></i> Reject Order
               </button>
               ` : confirmStatus === 'confirmed' ? `
               <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;">
-                <i class="fas fa-check-circle"></i> Confirmed
+                <i class="fas fa-user-check"></i> تم تأكيد الأوردر من العميل ✓
               </button>
               ` : `
               <button type="button" class="btn btn-reject" disabled style="opacity:0.7;cursor:default;">
@@ -840,13 +840,13 @@
               </button>
               ${orderStatus === 'delivered' ? `
               <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;">
-                <i class="fas fa-truck"></i> Order Delivered ✓
+                <i class="fas fa-person-walking-luggage"></i> تم الوصول ✓
               </button>
-              ` : `
+              ` : confirmStatus === 'confirmed' ? `
               <button type="button" class="btn btn-confirm" onclick="OrdersApp.markDelivered(${index})">
-                <i class="fas fa-truck"></i> Order Delivered
+                <i class="fas fa-person-walking-luggage"></i> تم الوصول
               </button>
-              `}
+              ` : ''}
               <a href="${whatsappLink}" class="btn btn-whatsapp" target="_blank" rel="noopener noreferrer">
                 <i class="fab fa-whatsapp"></i> WhatsApp
               </a>
