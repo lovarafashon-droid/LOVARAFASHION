@@ -453,8 +453,8 @@ function createProductCard(id, product) {
         <button class="add-to-cart" onclick="event.stopPropagation(); window.addHomepageProductToCart('${id}')">
           <i class="fas fa-bag-shopping"></i> Add to Cart
         </button>
-        <button class="btn-buy-now" onclick="event.stopPropagation(); window.openHomepageProductPreview('${id}')">
-          <i class="fas fa-bolt"></i> Buy Now
+        <button type="button" class="btn-buy-now homepage-preview-buy" onclick="event.stopPropagation(); window.openHomepageProductPreview('${id}')">
+          <i class="fas fa-eye"></i> Buy Now
         </button>
         <button class="btn-share" onclick="CartApp.shareProduct('${id}')" aria-label="Share">
           <i class="fas fa-share-nodes"></i>
