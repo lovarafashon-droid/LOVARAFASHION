@@ -894,19 +894,28 @@
           const snap = await this.db.collection('promoCodes').where('code', '==', code).where('active', '==', true).limit(1).get();
           if (request !== this.promoRequest) return;
           if (snap.empty) { this.promo = null; msg.textContent = 'الكود غير صحيح أو غير فعال'; msg.className = 'promo-msg bad'; }
-          else { const d = snap.docs[0].data(); this.promo = { id: snap.docs[0].id, ...d, code }; msg.textContent = `تم تطبيق الخصم ${Number(d.discount || 0)} جنيه`; msg.className = 'promo-msg ok'; }
+          else { const d = snap.docs[0].data(); this.promo = { id: snap.docs[0].id, ...d, code }; msg.textContent = `تم تطبيق الخصم ${Number(d.discount || 0) * this.getPromoUnits()} جنيه على ${this.getPromoUnits()} قطعة`; msg.className = 'promo-msg ok'; }
           this.renderCartItems();
         } catch (e) { this.promo = null; msg.textContent = 'تعذر التحقق من الكود'; msg.className = 'promo-msg bad'; }
       },
 
 
+      getPromoUnits() {
+        return (this.cart || []).reduce((sum, item) => sum + Math.max(1, Number(item.quantity || item.qty) || 1), 0);
+      },
+      getPromoDiscountTotal() {
+        return this.promo ? (Number(this.promo.discount) || 0) * this.getPromoUnits() : 0;
+      },
+      getPromoCommissionTotal() {
+        return this.promo ? (Number(this.promo.commission ?? 10) || 10) * this.getPromoUnits() : 0;
+      },
       calculateShipping(subtotal) {
         const governorate = document.getElementById('governorate')?.value || '';
         let shipping = this.getShippingPrice(governorate);
         if (subtotal >= 2500) {
           shipping = 0;
         }
-        const discount = this.promo ? Math.min(Number(this.promo.discount) || 0, subtotal + shipping) : 0;
+        const discount = Math.min(this.getPromoDiscountTotal(), subtotal + shipping);
         const total = Math.max(0, subtotal + shipping - discount);
         document.getElementById('subtotal').textContent = 'EGP ' + subtotal.toFixed(2);
         const shipEl = document.getElementById('shipping');
@@ -1163,12 +1172,12 @@
           },
           payment: { method: paymentMethod, transactionId: transactionId, methodName: this.getPaymentMethodName(paymentMethod) },
           items: this.cart.map(item => ({ name: item.name || 'Product', price: parseFloat(item.price) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
-          totals: { subtotal: subtotalText, shipping: shippingText, discount: this.promo ? ('EGP ' + (Number(this.promo.discount) || 0).toFixed(2)) : 'EGP 0.00', total: totalText },
+          totals: { subtotal: subtotalText, shipping: shippingText, discount: this.promo ? ('EGP ' + this.getPromoDiscountTotal().toFixed(2)) : 'EGP 0.00', total: totalText },
           promoCode: this.promo ? this.promo.code : '',
           promoId: this.promo ? this.promo.id : '',
           employeeId: this.promo ? (this.promo.employeeId || '') : '',
-          employeeDiscount: this.promo ? (Number(this.promo.discount) || 0) : 0,
-          employeeCommission: this.promo ? (Number(this.promo.commission ?? 10) || 10) : 0,
+          employeeDiscount: this.getPromoDiscountTotal(),
+          employeeCommission: this.getPromoCommissionTotal(),
           profit: this.calculateProfit(),
           confirmationStatus: 'pending',
           rejectionReason: '' 
