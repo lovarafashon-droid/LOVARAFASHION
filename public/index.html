@@ -1688,7 +1688,7 @@
           showToast('This product is coming soon!');
           return;
         }
-        this.openBuyNowModal(product, true);
+        openProductModal(product);
       },
       openBuyNowModal(product, isDirectBuy) {
         const existing = document.getElementById('buyNowModal');
