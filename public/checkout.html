@@ -627,7 +627,9 @@
       promoRequest: 0,
 
       async init() {
-        this.cart = JSON.parse(localStorage.getItem('lovara_cart')) || [];
+        const directBuy = JSON.parse(localStorage.getItem('lovara_direct_buy') || 'null');
+        this.isDirectPurchase = !!directBuy;
+        this.cart = directBuy ? [directBuy] : (JSON.parse(localStorage.getItem('lovara_cart')) || []);
         this.firebaseReady = this.initFirebase();
         await this.firebaseReady.catch(() => null);
         await this.enrichCartCosts();

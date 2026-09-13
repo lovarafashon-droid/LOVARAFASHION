@@ -1015,7 +1015,7 @@ const CategoryApp = {
     modal.querySelectorAll('.category-preview-option').forEach(option => option.addEventListener('click', () => { option.parentNode.querySelectorAll('.category-preview-option').forEach(item => item.classList.remove('selected')); option.classList.add('selected'); }));
     modal.querySelectorAll('[data-qty]').forEach(button => button.addEventListener('click', () => { const qty = modal.querySelector('.category-preview-qty span'); qty.textContent = String(Math.max(1, parseInt(qty.textContent, 10) + parseInt(button.dataset.qty, 10))); }));
     modal.querySelector('.category-preview-add').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.addToCart(product, selectedSize(), selectedColor(), quantity); this.closeProductDetail(); });
-    modal.querySelector('.category-preview-buy').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.addToCart(product, selectedSize(), selectedColor(), quantity); this.closeProductDetail(); window.location.href = 'checkout.html'; });
+    modal.querySelector('.category-preview-buy').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.startDirectCheckout(product, selectedSize(), selectedColor(), quantity); this.closeProductDetail(); });
     modal.querySelector('.category-preview-wish').addEventListener('click', event => { this.toggleWishlist(product); event.currentTarget.classList.toggle('active'); });
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => modal.classList.add('show'));
@@ -1055,6 +1055,7 @@ const CategoryApp = {
     if (modal) { modal.classList.remove('show'); setTimeout(() => modal.remove(), 300); }
   },
 
+  startDirectCheckout(product, size, color, quantity = 1) { localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, size: size || null, color: color || null, quantity, qty: quantity })); window.location.href = 'checkout.html'; },
   confirmBuyNow(productId, isDirectBuy) {
     const product = this.products.find(p => p.id === productId);
     if (!product) return;
@@ -1067,7 +1068,7 @@ const CategoryApp = {
     const size = sizeEl ? sizeEl.value : null;
     const color = colorEl ? colorEl.value : null;
     this.closeBuyNowModal();
-    if (isDirectBuy) { this.addToCart(product, size, color); window.location.href = 'checkout.html'; }
+    if (isDirectBuy) this.startDirectCheckout(product, size, color, 1);
     else this.addToCart(product, size, color);
   },
 

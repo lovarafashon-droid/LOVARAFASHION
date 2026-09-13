@@ -1720,9 +1720,8 @@
         const color = colorEl ? colorEl.value : null;
         this.closeBuyNowModal();
         if (isDirectBuy) {
-          const price = parseFloat(product.price) || 0;
-          const message = `I want to buy: ${product.name}%0ASize: ${size || 'N/A'}%0AColor: ${color || 'N/A'}%0APrice: EGP ${price.toFixed(2)}`;
-          window.open(`https://wa.me/20128845212?text=${message}`, '_blank');
+          localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, size: size || null, color: color || null, quantity: 1, qty: 1 }));
+          window.location.href = 'checkout.html';
         } else {
           this.add({...product, size, color, qty: 1});
         }
