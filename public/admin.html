@@ -789,6 +789,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         <button onclick="AdminApp.login()">
           <i class="fas fa-sign-in-alt"></i> <span data-i18n="signInBtn">Sign In</span>
         </button>
+        <p class="admin-login-note">صفحة الأدمن مخصصة لتسجيل الدخول بحساب أدمن موجود مسبقًا، ولا تنشئ حسابات جديدة من الموقع.</p>
 
         <div class="error" id="loginError">
           <i class="fas fa-exclamation-circle"></i> <span id="errorText" data-i18n="invalidCreds">Invalid credentials</span>
@@ -1283,7 +1284,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
           if (!userDoc.exists) {
             await firebase.auth().signOut();
-            errorText.textContent = 'Access denied. User not found in database.';
+            errorText.textContent = 'تم تسجيل الدخول، لكن حسابك غير مضاف كأدمن في قاعدة البيانات. أضف users/' + user.uid + ' مع role: admin.';
             errorDiv.classList.add('show');
             return;
           }
@@ -1293,7 +1294,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           // REJECT if not admin
           if (userData.role !== 'admin') {
             await firebase.auth().signOut();
-            errorText.textContent = 'Access denied. Admins only.';
+            errorText.textContent = 'هذا الحساب ليس لديه صلاحية أدمن. يجب أن تكون قيمة role في users/' + user.uid + ' هي admin.';
             errorDiv.classList.add('show');
             return;
           }
@@ -1304,7 +1305,15 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           this.showPanel();
 
         } catch (error) {
-          errorText.textContent = error.message || t.invalidCreds;
+          if (error.code === 'permission-denied') {
+            errorText.textContent = 'تم الدخول لكن Firebase رفض صلاحيات الأدمن. راجع مستند users/' + (firebase.auth().currentUser?.uid || 'UID') + ' وقواعد Firestore.';
+          } else if (error.code === 'auth/user-not-found') {
+            errorText.textContent = 'الحساب غير موجود في Firebase Authentication. يجب إنشاء الحساب أولًا من Firebase Console.';
+          } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            errorText.textContent = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+          } else {
+            errorText.textContent = error.message || t.invalidCreds;
+          }
           errorDiv.classList.add('show');
         }
       },
@@ -2146,7 +2155,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
     // ============================================
     const FinancialDashboard = {
       currentMonth: 'all',
-      currentStatus: 'confirmed',
+      currentStatus: 'all',
       orders: [],
 
       toggle() {
@@ -2226,7 +2235,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           this.calculateAndRender();
         } catch (error) {
           console.error('Error loading orders:', error);
-          content.innerHTML = '<div class="empty-products"><i class="fas fa-exclamation-circle"></i><p>Error loading orders data</p></div>';
+          const message = error?.code === 'permission-denied'
+            ? 'تم تسجيل الدخول، لكن ليس لديك صلاحية قراءة الأوردرات. تأكد من أن users/{UID} يحتوي على role: admin.'
+            : 'تعذر تحميل الأوردرات. تحقق من الاتصال ثم حاول مرة أخرى.';
+          content.innerHTML = '<div class="empty-products"><i class="fas fa-exclamation-circle"></i><p>' + message + '</p><button type="button" onclick="FinancialDashboard.loadData()">إعادة المحاولة</button></div>';
         }
       },
 
@@ -2412,8 +2424,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
     <!-- Status Filter -->
     <div class="status-filter" id="statusFilter">
-      <button class="status-filter-btn" data-status="all" onclick="FinancialDashboard.setStatus('all')">All Orders</button>
-      <button class="status-filter-btn active" data-status="confirmed" onclick="FinancialDashboard.setStatus('confirmed')">Confirmed Only</button>
+      <button class="status-filter-btn active" data-status="all" onclick="FinancialDashboard.setStatus('all')">All Orders</button>
+      <button class="status-filter-btn" data-status="confirmed" onclick="FinancialDashboard.setStatus('confirmed')">Confirmed Only</button>
       <button class="status-filter-btn" data-status="pending" onclick="FinancialDashboard.setStatus('pending')">Pending</button>
       <button class="status-filter-btn" data-status="rejected" onclick="FinancialDashboard.setStatus('rejected')">Rejected</button>
     </div>
