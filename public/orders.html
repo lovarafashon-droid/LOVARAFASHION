@@ -838,6 +838,15 @@
               <button type="button" class="btn btn-print" onclick="OrdersApp.printInvoice(${index})">
                 <i class="fas fa-print"></i> Print Invoice
               </button>
+              ${orderStatus === 'delivered' ? `
+              <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;">
+                <i class="fas fa-truck"></i> Order Delivered ✓
+              </button>
+              ` : `
+              <button type="button" class="btn btn-confirm" onclick="OrdersApp.markDelivered(${index})">
+                <i class="fas fa-truck"></i> Order Delivered
+              </button>
+              `}
               <a href="${whatsappLink}" class="btn btn-whatsapp" target="_blank" rel="noopener noreferrer">
                 <i class="fab fa-whatsapp"></i> WhatsApp
               </a>
@@ -947,6 +956,31 @@
             this.showToast('Order confirmed successfully!', 'success');
           }
         });
+      },
+
+      markDelivered(index) {
+        const order = this.orders[index];
+        if (!order) return;
+        if (!confirm('هل تم تسليم الأوردر للعميل؟')) return;
+        const updates = {
+          status: 'delivered',
+          deliveredAt: firebase.firestore.FieldValue.serverTimestamp(),
+          employeeCommission: order.employeeId ? Number(order.employeeCommission || 10) : 0
+        };
+        if (this.db && order._docId) {
+          this.db.collection('orders').doc(order._docId).update(updates)
+            .then(() => {
+              this.orders[index] = { ...order, ...updates };
+              this.showToast('تم تسجيل تسليم الأوردر وحساب عمولة الموظف.', 'success');
+              this.renderOrders();
+            })
+            .catch(err => alert('Failed to mark delivered: ' + err.message));
+        } else {
+          this.orders[index] = { ...order, ...updates };
+          localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
+          this.renderOrders();
+          this.showToast('تم تسجيل تسليم الأوردر وحساب عمولة الموظف.', 'success');
+        }
       },
 
       showRejectModal(index) {
