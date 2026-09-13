@@ -1068,6 +1068,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         subcatBags: "Bags", subcatCosmetics: "Cosmetics", subcatPersonalCare: "Personal Care",
         subcatShoes: "Shoes", subcatJewelry: "Jewelry",
         subcatBras: "Bras", subcatPanties: "Panties", subcatNightgowns: "Nightgowns",
+        subcatJackets: "Jackets", subcatSweaters: "Sweaters", subcatHoodies: "Hoodies", subcatKnitwear: "Knitwear",
         bagSizes: "Bag Sizes",
         sizeSmall: "Small", sizeMedium: "Medium", sizeLarge: "Large", oneSize: "One Size",
         availableSizes: "Available Sizes", availableColors: "Available Colors", selectAll: "(select all that apply)",
@@ -1113,6 +1114,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         subcatBags: "شنط", subcatCosmetics: "مستحضرات تجميل", subcatPersonalCare: "عناية شخصية",
         subcatShoes: "كوتشيات", subcatJewelry: "مجوهرات",
         subcatBras: "برهات", subcatPanties: "اندرات", subcatNightgowns: "قمصان نوم",
+        subcatJackets: "جواكت", subcatSweaters: "سيلبرات", subcatHoodies: "هوديات", subcatKnitwear: "تريكو",
         shoeSizes: "مقاسات الأحذية", bagSizes: "مقاسات الشنط",
         sizeSmall: "صغير", sizeMedium: "وسط", sizeLarge: "كبير", oneSize: "مقاس واحد",
         availableSizes: "المقاسات المتاحة", availableColors: "الألوان المتاحة", selectAll: "(اختر كل ما ينطبق)",
@@ -1484,7 +1486,17 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               '<option value="panties">' + (t.subcatPanties || 'Panties') + '</option>' +
               '<option value="nightgowns">' + (t.subcatNightgowns || 'Nightgowns') + '</option>';
           }
-        } else if (['dresses', 'tops', 'pants', 'sets', 'winter', 'hijab'].includes(category)) {
+        } else if (category === 'winter') {
+          if (subcatGroup) subcatGroup.classList.remove('hidden');
+          if (subcatSelect) {
+            subcatSelect.innerHTML = '<option value="">' + (t.selectSubcategory || 'Select Subcategory') + '</option>' +
+              '<option value="jackets">' + (t.subcatJackets || 'Jackets') + '</option>' +
+              '<option value="sweaters">' + (t.subcatSweaters || 'Sweaters') + '</option>' +
+              '<option value="hoodies">' + (t.subcatHoodies || 'Hoodies') + '</option>' +
+              '<option value="knitwear">' + (t.subcatKnitwear || 'Knitwear') + '</option>';
+          }
+          if (sizeSelector) sizeSelector.classList.remove('hidden');
+        } else if (['dresses', 'tops', 'pants', 'sets', 'hijab'].includes(category)) {
           if (sizeSelector) sizeSelector.classList.remove('hidden');
         }
       },
@@ -1515,7 +1527,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
           if (volumeGroup) volumeGroup.classList.add('hidden');
           if (sizeSelector) sizeSelector.classList.add('hidden');
-        } else if (['bras', 'panties', 'nightgowns'].includes(subcategory)) {
+        } else if (['bras', 'panties', 'nightgowns', 'jackets', 'sweaters', 'hoodies', 'knitwear'].includes(subcategory)) {
           if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
           if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
           if (volumeGroup) volumeGroup.classList.add('hidden');
@@ -1876,7 +1888,9 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         const subcatMap = {
           'bras': t.subcatBras, 'panties': t.subcatPanties, 'nightgowns': t.subcatNightgowns,
           'bags': t.subcatBags, 'cosmetics': t.subcatCosmetics, 'personal-care': t.subcatPersonalCare,
-          'jewelry': t.subcatJewelry, 'shoes': t.subcatShoes
+          'jewelry': t.subcatJewelry, 'shoes': t.subcatShoes,
+          'jackets': t.subcatJackets, 'sweaters': t.subcatSweaters,
+          'hoodies': t.subcatHoodies, 'knitwear': t.subcatKnitwear
         };
 
         document.getElementById('productCount').textContent = '(' + filtered.length + ')';

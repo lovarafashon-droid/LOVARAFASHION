@@ -540,6 +540,34 @@ body.lang-ar {
   box-shadow: var(--shadow);
 }
 
+.subcategory-tabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: -18px auto 22px;
+  position: relative;
+  z-index: 2;
+}
+
+.subcategory-tabs .subcat-tab {
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text-light);
+  border-radius: 999px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.subcategory-tabs .subcat-tab:hover,
+.subcategory-tabs .subcat-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--white);
+}
+
 .product-filters label {
   display: flex;
   flex-direction: column;

@@ -71,7 +71,7 @@ const CategoryApp = {
       size: "Size", color: "Color", selectSize: "Select size", selectColor: "Select color",
       subcatAll: "All", subcatBras: "Bras", subcatPanties: "Panties", subcatNightgowns: "Nightgowns",
       subcatBags: "Bags", subcatCosmetics: "Cosmetics", subcatPersonalCare: "Personal Care", subcatJewelry: "Jewelry",
-      subcatShoes: "Shoes"
+      subcatShoes: "Shoes", subcatJackets: "Jackets", subcatSweaters: "Sweaters", subcatHoodies: "Hoodies", subcatKnitwear: "Knitwear"
     },
     ar: {
       pageTitleDresses: "LOVARA – فساتين", pageTitleTops: "LOVARA – بلوزات", pageTitlePants: "LOVARA – بناطيل",
@@ -122,7 +122,7 @@ const CategoryApp = {
       size: "المقاس", color: "اللون", selectSize: "اختيار المقاس", selectColor: "اختيار اللون",
       subcatAll: "الكل", subcatBras: "برهات", subcatPanties: "اندرات", subcatNightgowns: "قمصان نوم",
       subcatBags: "شنط", subcatCosmetics: "مستحضرات تجميل", subcatPersonalCare: "عناية شخصية", subcatJewelry: "مجوهرات",
-      subcatShoes: "كوتشيات"
+      subcatShoes: "كوتشيات", subcatJackets: "جواكت", subcatSweaters: "سيلبرات", subcatHoodies: "هوديات", subcatKnitwear: "تريكو"
     }
   },
 
@@ -806,6 +806,25 @@ const CategoryApp = {
   setupProductFilters() {
     const grid = document.getElementById('productsGrid');
     if (!grid || document.getElementById('productFilters')) return;
+    const category = document.body.getAttribute('data-category');
+    if (category === 'winter' && !document.getElementById('winterSubcategoryTabs')) {
+      const tabs = document.createElement('div');
+      tabs.id = 'winterSubcategoryTabs';
+      tabs.className = 'subcategory-tabs';
+      const labels = [
+        ['all', this.currentLang === 'ar' ? 'الكل' : 'All'],
+        ['jackets', this.translations[this.currentLang].subcatJackets],
+        ['sweaters', this.translations[this.currentLang].subcatSweaters],
+        ['hoodies', this.translations[this.currentLang].subcatHoodies],
+        ['knitwear', this.translations[this.currentLang].subcatKnitwear]
+      ];
+      tabs.innerHTML = labels.map(([value, label]) => `<button type="button" class="subcat-tab${value === 'all' ? ' active' : ''}" data-subcat="${value}">${label}</button>`).join('');
+      tabs.addEventListener('click', event => {
+        const tab = event.target.closest('.subcat-tab');
+        if (tab) this.filterBySubcategory(tab.dataset.subcat);
+      });
+      grid.parentNode.insertBefore(tabs, grid);
+    }
     const toolbar = document.createElement('div');
     toolbar.id = 'productFilters';
     toolbar.className = 'product-filters';
