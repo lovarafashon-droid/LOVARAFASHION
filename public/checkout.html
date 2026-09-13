@@ -1123,9 +1123,12 @@
         const totalText = document.getElementById('total').textContent;
         const orderNumber = 'LOV-' + Date.now().toString(36).toUpperCase();
 
-        const orderData = {
-          orderNumber: orderNumber,
-          userId: (firebase.auth().currentUser ? firebase.auth().currentUser.uid : 'guest'),
+          const currentUser = (typeof firebase !== 'undefined' && typeof firebase.auth === 'function')
+            ? firebase.auth().currentUser
+            : null;
+          const orderData = {
+            orderNumber: orderNumber,
+            userId: (currentUser ? currentUser.uid : 'guest'),
           date: (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue) ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString(),
           status: 'pending',
           customer: {
@@ -1177,7 +1180,7 @@
           const errorCode = err && err.code ? ` (${err.code})` : '';
           const errorMessage = err && err.code === 'permission-denied'
             ? 'Order rejected by Firebase permissions. Please publish the Firestore rules.'
-            : `Could not save the order${errorCode}. Please check your connection and try again.`;
+            : `Could not save the order${errorCode}. ${err && err.message ? err.message : 'Please check your connection and try again.'}`;
           this.showToast(errorMessage, 'error');
         }
       },
