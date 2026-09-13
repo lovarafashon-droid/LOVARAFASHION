@@ -20,12 +20,18 @@ module.exports = async (req, res) => {
 
     const origin = process.env.PUBLIC_SITE_URL || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
     const payload = {
-      amount: amount.toFixed(2),
-      currency: process.env.XPAY_CURRENCY || 'EGP',
-      reference: orderNumber,
-      customer: order.data.customer || {},
-      callback_url: `${origin}/api/xpay/webhook`,
-      return_url: `${origin}/checkout.html?payment=return&order=${encodeURIComponent(orderNumber)}`,
+      afterCompletion: {
+        type: 'redirect',
+        redirect: { url: `${origin}/checkout.html?payment=return&order=${encodeURIComponent(orderNumber)}` }
+      },
+      lineItems: [{
+        priceData: {
+          currency: process.env.XPAY_CURRENCY || 'EGP',
+          unitAmount: Math.round(amount * 100),
+          productData: { name: `LOVARA order ${orderNumber}` }
+        },
+        quantity: 1
+      }],
       metadata: { orderNumber }
     };
     const response = await fetch(process.env.XPAY_CHECKOUT_URL, {
@@ -34,7 +40,10 @@ module.exports = async (req, res) => {
       body: JSON.stringify(payload)
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) return res.status(502).json({ error: 'XPay rejected the checkout request.' });
+    if (!response.ok) {
+      const detail = data.error?.message || data.message || data.error || data.code;
+      return res.status(502).json({ error: 'XPay rejected the checkout request.', ...(detail ? { detail: String(detail) } : {}) });
+    }
     const redirectUrl = data.checkout_url || data.payment_url || data.redirect_url || data.url;
     if (!redirectUrl) return res.status(502).json({ error: 'XPay response did not include a checkout URL.' });
 
