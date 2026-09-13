@@ -17,6 +17,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" integrity="sha384-yuGdyIzzYtOBlBG6JOWn+Ey9kpq7HocusNuxEGyyohr1eEyXpeEyehIIXC/hznw4" crossorigin="anonymous"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js" integrity="sha384-lI+CxEx/bCvWP1b0OK13j5HTrTZP7yf1xle8TVOFq2smz6KC1RChTarRV/RHP5PP" crossorigin="anonymous"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" integrity="sha384-nwX2Qpkhc2sv6L0ZPkLefLGguao67toSowvePuQvGF6cG+8MUphGI2uI94Ls3JF7" crossorigin="anonymous"></script>
+  <script src="https://checkout.xpay.app/v1/sdk.js"></script>
   <script src="js/firebase-config.js"></script><script src="js/visitor-tracker.js"></script><script src="js/user-data-sync.js"></script>
   <style>
     /* ===== ITEM GALLERY ===== */
@@ -540,7 +541,9 @@
                   </label>
                 </div>
                 <div class="payment-details" id="visaDetails" style="display:none;">
-                  <p class="info-text"><i class="fab fa-cc-visa" style="color:#1a4aa1;"></i> سيتم تحويلك إلى صفحة XPay الآمنة لإتمام الدفع بالفيزا أو الماستركارد.</p>
+                  <p class="info-text"><i class="fab fa-cc-visa" style="color:#1a4aa1;"></i> أدخل بيانات الدفع هنا بأمان عبر XPay.</p>
+                  <div id="xpay-payment-element"></div>
+                  <p id="xpay-payment-error" class="payment-error" role="alert"></p>
                 </div>
                 <p class="payment-error" id="paymentError"><i class="fas fa-exclamation-circle"></i> <span data-i18n="paymentRequired">Please select a payment method</span></p>
                 <p class="payment-error" id="transactionError"><i class="fas fa-exclamation-circle"></i> <span data-i18n="transactionRequired">Please enter the transaction reference number</span></p>
@@ -603,6 +606,10 @@
       promoRequest: 0,
       promo: null,
       promoRequest: 0,
+      xpayCheckout: null,
+      xpayPaymentReady: false,
+      xpayOrderData: null,
+      xpayOrderRef: null,
 
       async init() {
         const directBuy = JSON.parse(localStorage.getItem('lovara_direct_buy') || 'null');
@@ -1089,6 +1096,10 @@
       },
 
       async placeOrder() {
+        if (this.xpayCheckout) {
+          await this.confirmXPay();
+          return;
+        }
         // Ensure costs are fetched
         await this.enrichCartCosts();
         const profit = this.calculateProfit();
@@ -1165,9 +1176,9 @@
             const amount = Number(String(totalText).replace(/[^0-9.]/g, '')) || 0;
             const payResponse = await fetch('/api/xpay/create-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderNumber, amount, customer: orderData.customer }) });
             const payData = await payResponse.json().catch(() => ({}));
-            if (!payResponse.ok || !payData.redirectUrl) throw new Error(payData.error || 'تعذر بدء الدفع عبر XPay.');
+            if (!payResponse.ok || !payData.clientSecret) throw new Error(payData.detail || payData.error || 'تعذر بدء الدفع عبر XPay.');
             await orderRef.update({ payment: { ...orderData.payment, status: 'awaiting_payment', checkoutReference: payData.reference || orderNumber } });
-            window.location.href = payData.redirectUrl;
+            await this.mountXPay(payData.clientSecret, orderData);
             return;
           }
           localStorage.removeItem(this.draftKey);
@@ -1183,6 +1194,49 @@
             : `Could not save the order${errorCode}. ${err && err.message ? err.message : 'Please check your connection and try again.'}`;
           this.showToast(errorMessage, 'error');
         }
+      },
+
+      async mountXPay(clientSecret, orderData) {
+        if (typeof XPay !== 'function') throw new Error('XPay payment form could not load.');
+        const xpay = XPay('pk_live_VXKBtN5Mi6kkRICZvZPA3UFmfykPwXm5');
+        const checkout = await xpay.initCheckout({ clientSecret });
+        if (checkout.status?.type === 'expired' || checkout.status?.type === 'complete') throw new Error('جلسة الدفع غير متاحة، أعد المحاولة.');
+        const container = document.getElementById('xpay-payment-element');
+        container.innerHTML = '';
+        const paymentElement = checkout.getElements().create('payment');
+        paymentElement.mount('#xpay-payment-element');
+        paymentElement.on('change', (event) => {
+          this.xpayPaymentReady = !!event.complete;
+          document.getElementById('placeOrderBtn').disabled = !this.xpayPaymentReady || !checkout.canConfirm;
+        });
+        this.xpayCheckout = checkout;
+        this.xpayOrderData = orderData;
+        const button = document.getElementById('placeOrderBtn');
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-lock"></i> إتمام الدفع بأمان';
+        document.getElementById('visaDetails').style.display = 'block';
+        document.getElementById('xpay-payment-element').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      },
+
+      async confirmXPay() {
+        const errorEl = document.getElementById('xpay-payment-error');
+        errorEl.textContent = '';
+        if (!this.xpayCheckout || !this.xpayPaymentReady) return;
+        const customer = this.xpayOrderData?.customer || {};
+        const result = await this.xpayCheckout.confirm({
+          customerDetails: {
+            name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
+            email: customer.email || '',
+            phone: customer.phone || ''
+          },
+          redirect: 'if_required'
+        });
+        if (result?.type === 'error') {
+          errorEl.textContent = result.error?.message || 'تعذر إتمام الدفع.';
+          errorEl.classList.add('show');
+          return;
+        }
+        this.showSuccess(this.xpayOrderData.orderNumber);
       },
 
       showSuccess(orderNumber) {

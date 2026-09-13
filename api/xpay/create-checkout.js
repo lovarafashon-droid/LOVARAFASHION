@@ -20,6 +20,7 @@ module.exports = async (req, res) => {
 
     const origin = process.env.PUBLIC_SITE_URL || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
     const payload = {
+      uiMode: 'custom',
       afterCompletion: {
         type: 'redirect',
         redirect: { url: `${origin}/checkout.html?payment=return&order=${encodeURIComponent(orderNumber)}` }
@@ -44,12 +45,11 @@ module.exports = async (req, res) => {
       const detail = data.error?.message || data.message || data.error || data.code;
       return res.status(502).json({ error: 'XPay rejected the checkout request.', ...(detail ? { detail: String(detail) } : {}) });
     }
-    const redirectUrl = data.checkout_url || data.payment_url || data.redirect_url || data.url;
-    if (!redirectUrl) return res.status(502).json({ error: 'XPay response did not include a checkout URL.' });
+    if (!data.clientSecret) return res.status(502).json({ error: 'XPay response did not include a client secret.' });
 
     const reference = String(data.reference || orderNumber);
     await order.ref.update({ payment: { ...(order.data.payment || {}), method: 'visa', status: 'awaiting_payment', checkoutReference: reference }, updatedAt: new Date() });
-    return res.status(200).json({ redirectUrl, reference });
+    return res.status(200).json({ clientSecret: data.clientSecret, sessionId: data.id || null, reference });
   } catch (error) {
     console.error('[XPay create-checkout]', error);
     return res.status(502).json({ error: 'Could not create the payment checkout.' });
