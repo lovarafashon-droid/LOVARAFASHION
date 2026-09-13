@@ -1390,7 +1390,13 @@
             if (isAdmin) {
               showToast('Admin login successful');
               Modals.close('loginModal');
-              Modals.open('adminPortalModal');
+              setTimeout(() => {
+                const portal = document.getElementById('adminPortalModal');
+                if (portal) {
+                  portal.classList.add('show', 'active');
+                  document.body.style.overflow = 'hidden';
+                }
+              }, 250);
             } else {
               showToast('Welcome back!');
               Modals.close('loginModal');
