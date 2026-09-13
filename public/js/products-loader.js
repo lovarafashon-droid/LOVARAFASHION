@@ -375,6 +375,16 @@ window.addHomepageProductToCart = function(productId) {
   }
 };
 
+window.openHomepageProductPreview = function(productId) {
+  const product = getHomepageProduct(productId);
+  if (!product) return;
+  if (product.badge === 'Coming Soon' || product.comingSoon === true) {
+    showProductToast('This product is coming soon!');
+    return;
+  }
+  if (typeof window.openProductModal === 'function') window.openProductModal(product);
+};
+
 window.toggleHomepageWishlist = function(productId) {
   const product = getHomepageProduct(productId);
   if (!product || !window.CartApp) return;
@@ -443,7 +453,7 @@ function createProductCard(id, product) {
         <button class="add-to-cart" onclick="event.stopPropagation(); window.addHomepageProductToCart('${id}')">
           <i class="fas fa-bag-shopping"></i> Add to Cart
         </button>
-        <button class="btn-buy-now" onclick="event.stopPropagation(); window.addHomepageProductToCart('${id}')">
+        <button class="btn-buy-now" onclick="event.stopPropagation(); window.openHomepageProductPreview('${id}')">
           <i class="fas fa-bolt"></i> Buy Now
         </button>
         <button class="btn-share" onclick="CartApp.shareProduct('${id}')" aria-label="Share">
