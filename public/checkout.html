@@ -542,6 +542,7 @@
                 </div>
                 <div class="payment-details" id="visaDetails" style="display:none;">
                   <p class="info-text"><i class="fab fa-cc-visa" style="color:#1a4aa1;"></i> أدخل بيانات الدفع هنا بأمان عبر XPay.</p>
+                  <p id="xpay-loading" class="info-text" style="display:none;color:#8a6d3b;"><i class="fas fa-spinner fa-spin"></i> جاري تجهيز نموذج الدفع الآمن...</p>
                   <div id="xpay-payment-element"></div>
                   <p id="xpay-payment-error" class="payment-error" role="alert"></p>
                 </div>
@@ -1010,6 +1011,7 @@
             visaDetails.style.display = e.target.value === 'visa' ? 'block' : 'none';
             this.updateSteps(2);
             if (e.target.value === 'visa' && !this.xpayCheckout) {
+              document.getElementById('xpay-loading').style.display = 'flex';
               this.placeOrder();
             }
           });
@@ -1188,6 +1190,8 @@
           this.showSuccess(orderNumber);
         } catch (err) {
           console.error('[LOVARA Checkout] Save error:', err);
+          const xpayLoading = document.getElementById('xpay-loading');
+          if (xpayLoading) xpayLoading.style.display = 'none';
           btn.disabled = false;
           btn.innerHTML = '<i class="fas fa-check-circle"></i> <span data-i18n="placeOrder">' + (this.t('placeOrder') || 'Place Order') + '</span>';
           this.updateSteps(2);
@@ -1208,6 +1212,7 @@
         container.innerHTML = '';
         const paymentElement = checkout.getElements().create('payment');
         paymentElement.mount('#xpay-payment-element');
+        document.getElementById('xpay-loading').style.display = 'none';
         paymentElement.on('change', (event) => {
           this.xpayPaymentReady = !!event.complete;
           document.getElementById('placeOrderBtn').disabled = !this.xpayPaymentReady || !checkout.canConfirm;
