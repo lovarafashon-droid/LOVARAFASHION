@@ -1226,40 +1226,40 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         }
         this.db = firebase.firestore();
 
-        // Check if there's a saved session
-        const saved = sessionStorage.getItem('lovara_admin');
-        if (saved) {
-          let savedUser;
-          try {
-            savedUser = JSON.parse(saved);
-          } catch (parseError) {
-            console.warn('Invalid saved admin session; clearing it.', parseError);
+        const auth = firebase.auth();
+        // Keep the Firebase session across reloads, browser restarts, and navigation.
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
+          console.warn('Could not enable persistent admin session:', err);
+        });
+        const saved = localStorage.getItem('lovara_admin') || sessionStorage.getItem('lovara_admin');
+        if (saved && !localStorage.getItem('lovara_admin')) localStorage.setItem('lovara_admin', saved);
+        // Always observe Firebase state; a persisted Firebase user may exist even if the old
+        // sessionStorage marker was cleared. Never sign out because of a temporary read error.
+        auth.onAuthStateChanged(async (user) => {
+          if (!user) {
+            localStorage.removeItem('lovara_admin');
             sessionStorage.removeItem('lovara_admin');
-            savedUser = null;
+            return;
           }
-          if (!savedUser || !savedUser.uid) return;
-          // Verify the user is still authenticated and is admin
-          firebase.auth().onAuthStateChanged(async (user) => {
-            if (user && user.uid === savedUser.uid) {
-              try {
-                const userDoc = await this.db.collection('users').doc(user.uid).get();
-                if (userDoc.exists && userDoc.data().role === 'admin') {
-                  this.currentUser = { email: user.email, uid: user.uid, role: 'admin' };
-                  this.showPanel();
-                } else {
-                  // Not admin anymore or user deleted
-                  this.logout();
-                }
-              } catch (err) {
-                console.error('Auth check error:', err);
-                this.logout();
-              }
-            } else if (!user) {
-              // Not logged in anymore
-              sessionStorage.removeItem('lovara_admin');
+          try {
+            const userDoc = await this.db.collection('users').doc(user.uid).get();
+            if (userDoc.exists && userDoc.data().role === 'admin') {
+              this.currentUser = { email: user.email, uid: user.uid, role: 'admin' };
+              localStorage.setItem('lovara_admin', JSON.stringify(this.currentUser));
+              sessionStorage.setItem('lovara_admin', JSON.stringify(this.currentUser));
+              this.showPanel();
+            } else if (userDoc.exists) {
+              // Explicitly confirmed non-admin: sign out for security.
+              await auth.signOut();
+              this.showError('هذا الحساب ليس لديه صلاحية أدمن.');
+            } else {
+              this.showError('حساب الأدمن يحتاج مستند users/' + user.uid + ' مع role: admin.');
             }
-          });
-        }
+          } catch (err) {
+            console.error('Auth check error; keeping Firebase session:', err);
+            this.showError('تعذر التحقق من صلاحية الأدمن مؤقتًا. لم يتم تسجيل خروجك؛ أعد المحاولة.');
+          }
+        });
       },
       async login() {
         const email = document.getElementById('loginEmail').value.trim();
@@ -1301,6 +1301,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
           // IS ADMIN - allow access
           this.currentUser = { email: user.email, uid: user.uid, role: 'admin' };
+          localStorage.setItem('lovara_admin', JSON.stringify(this.currentUser));
           sessionStorage.setItem('lovara_admin', JSON.stringify(this.currentUser));
           this.showPanel();
 
@@ -1319,6 +1320,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       },
       logout() {
         if (firebase.auth) firebase.auth().signOut();
+        localStorage.removeItem('lovara_admin');
         sessionStorage.removeItem('lovara_admin');
         this.currentUser = null;
 
