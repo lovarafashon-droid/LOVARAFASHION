@@ -2041,7 +2041,7 @@
         qty: pmQty,
         quantity: pmQty
       };
-      CartApp.add(item);
+      localStorage.setItem('lovara_direct_buy', JSON.stringify(item));
       closeProductModal();
       window.location.href = 'checkout.html';
     }
