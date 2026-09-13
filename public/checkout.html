@@ -130,8 +130,6 @@
     .payment-details { margin-top:12px; padding:20px; background:var(--primary-light); border-radius:12px; border:1px solid var(--border); animation:slideDown 0.3s ease; }
     .payment-details .info-text { margin:0 0 12px; font-size:14px; color:#555; display:flex; align-items:center; gap:6px; }
     .payment-details .number-box { font-size:1.4rem; font-weight:700; color:var(--secondary); letter-spacing:2px; padding:14px 18px; background:var(--white); border-radius:10px; text-align:center; direction:ltr; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04); font-family:'Jost',monospace; }
-    .payment-details .vodafone-box { border:2px dashed #e60000; color:#e60000; }
-    .payment-details .instapay-box { border:2px dashed #c8a48c; }
     .payment-details .help-text { font-size:13px; color:#888; margin-top:8px; margin-bottom:0; }
     .payment-error { display:none; color:#e74c3c; font-size:13px; margin-top:10px; align-items:center; gap:6px; }
     .payment-error.show { display:flex; }
@@ -535,34 +533,14 @@
                     <span><i class="fas fa-money-bill-wave"></i> <span data-i18n="cashOnDelivery">Cash on Delivery</span></span>
                     <i class="fas fa-check-circle check-icon"></i>
                   </label>
-                  <label class="payment-method" data-method="vodafone">
-                    <input type="radio" name="payment" value="vodafone" required>
-                    <span><i class="fas fa-mobile-alt"></i> <span data-i18n="vodafoneCash">Vodafone Cash</span></span>
-                    <i class="fas fa-check-circle check-icon"></i>
-                  </label>
-                  <label class="payment-method" data-method="instapay">
-                    <input type="radio" name="payment" value="instapay" required>
-                    <span><i class="fas fa-mobile-alt"></i> <span data-i18n="instaPay">InstaPay</span></span>
+                  <label class="payment-method" data-method="visa">
+                    <input type="radio" name="payment" value="visa" required>
+                    <span><i class="fab fa-cc-visa"></i> <span>Visa / Mastercard</span></span>
                     <i class="fas fa-check-circle check-icon"></i>
                   </label>
                 </div>
-                <div class="payment-details" id="vodafoneDetails" style="display:none;">
-                  <p class="info-text"><i class="fas fa-info-circle" style="color:#e60000;"></i> <span data-i18n="vodafoneDesc">Send the full amount to this Vodafone Cash number:</span></p>
-                  <div class="number-box vodafone-box">0106 6730 225</div>
-                  <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:13px; font-weight:600; margin-bottom:8px; color:var(--secondary);" data-i18n="transactionIdLabel">Transaction Reference Number *</label>
-                    <input type="text" id="vodafoneTransactionId" placeholder="e.g. TXN123456789" data-field="vodafoneTransactionId">
-                    <p class="help-text" data-i18n="transactionIdHelp">Find this in your Vodafone Cash app after sending</p>
-                  </div>
-                </div>
-                <div class="payment-details" id="instaPayDetails" style="display:none;">
-                  <p class="info-text"><i class="fas fa-info-circle" style="color:#a67c52;"></i> <span data-i18n="instaPayDesc">Transfer the full amount to this number via InstaPay:</span></p>
-                  <div class="number-box instapay-box">0128 845 2212</div>
-                  <div class="form-group" style="margin-bottom:0;">
-                    <label style="font-size:13px; font-weight:600; margin-bottom:8px; color:var(--secondary);" data-i18n="transactionIdLabel">Transaction Reference Number *</label>
-                    <input type="text" id="instaPayTransactionId" placeholder="e.g. INST-123456789" data-field="instaPayTransactionId">
-                    <p class="help-text" data-i18n="transactionIdHelp">Find this in your InstaPay app after transfer</p>
-                  </div>
+                <div class="payment-details" id="visaDetails" style="display:none;">
+                  <p class="info-text"><i class="fab fa-cc-visa" style="color:#1a4aa1;"></i> سيتم تحويلك إلى صفحة XPay الآمنة لإتمام الدفع بالفيزا أو الماستركارد.</p>
                 </div>
                 <p class="payment-error" id="paymentError"><i class="fas fa-exclamation-circle"></i> <span data-i18n="paymentRequired">Please select a payment method</span></p>
                 <p class="payment-error" id="transactionError"><i class="fas fa-exclamation-circle"></i> <span data-i18n="transactionRequired">Please enter the transaction reference number</span></p>
@@ -1013,8 +991,7 @@
         const placeOrderBtn = document.getElementById('placeOrderBtn');
         const paymentError = document.getElementById('paymentError');
         const transactionError = document.getElementById('transactionError');
-        const vodafoneDetails = document.getElementById('vodafoneDetails');
-        const instaPayDetails = document.getElementById('instaPayDetails');
+        const visaDetails = document.getElementById('visaDetails');
 
         document.querySelectorAll('.payment-method input').forEach(input => {
           input.addEventListener('change', (e) => {
@@ -1023,10 +1000,7 @@
             placeOrderBtn.disabled = false;
             paymentError.classList.remove('show');
             transactionError.classList.remove('show');
-            vodafoneDetails.style.display = 'none';
-            instaPayDetails.style.display = 'none';
-            if (e.target.value === 'vodafone') vodafoneDetails.style.display = 'block';
-            else if (e.target.value === 'instapay') instaPayDetails.style.display = 'block';
+            visaDetails.style.display = e.target.value === 'visa' ? 'block' : 'none';
             this.updateSteps(2);
           });
         });
@@ -1137,13 +1111,7 @@
 
         const paymentMethod = selectedPayment.value;
         let transactionId = '';
-        if (paymentMethod === 'vodafone') {
-          transactionId = document.getElementById('vodafoneTransactionId').value.trim();
-          if (!transactionId) { document.getElementById('transactionError').classList.add('show'); document.getElementById('vodafoneDetails').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
-        } else if (paymentMethod === 'instapay') {
-          transactionId = document.getElementById('instaPayTransactionId').value.trim();
-          if (!transactionId) { document.getElementById('transactionError').classList.add('show'); document.getElementById('instaPayDetails').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
-        }
+        // Visa is completed on XPay's hosted checkout; no card data touches this site.
 
         const btn = document.getElementById('placeOrderBtn');
         btn.disabled = true;
@@ -1188,8 +1156,17 @@
           // Never report success for a localStorage-only order.
           const db = this.db || await this.firebaseReady;
           if (!db) throw new Error('Cloud database is unavailable. Please try again.');
-          await db.collection('orders').add(orderData);
+          const orderRef = await db.collection('orders').add(orderData);
           console.log('[LOVARA Checkout] Order saved to Firestore:', orderNumber);
+          if (paymentMethod === 'visa') {
+            const amount = Number(String(totalText).replace(/[^0-9.]/g, '')) || 0;
+            const payResponse = await fetch('/api/xpay/create-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderNumber, amount, customer: orderData.customer }) });
+            const payData = await payResponse.json().catch(() => ({}));
+            if (!payResponse.ok || !payData.redirectUrl) throw new Error(payData.error || 'تعذر بدء الدفع عبر XPay.');
+            await orderRef.update({ payment: { ...orderData.payment, status: 'awaiting_payment', checkoutReference: payData.reference || orderNumber } });
+            window.location.href = payData.redirectUrl;
+            return;
+          }
           localStorage.removeItem(this.draftKey);
           this.showSuccess(orderNumber);
         } catch (err) {
@@ -1241,7 +1218,7 @@
       },
 
       getPaymentMethodName(method) {
-        const names = { cod: 'Cash on Delivery', vodafone: 'Vodafone Cash', instapay: 'InstaPay' };
+        const names = { cod: 'Cash on Delivery', visa: 'Visa / Mastercard' };
         return names[method] || method;
       },
 
