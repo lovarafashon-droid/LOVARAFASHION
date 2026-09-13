@@ -263,10 +263,13 @@ const CategoryApp = {
               this.updateWishlistCount();
             } else {
               console.log('[LOVARA] Auth state: LOGGED OUT');
-              this.currentUser = null;
-              localStorage.removeItem('lovara_user');
-              this.updateAuthUI(null);
-              this.updateAuthRequiredDots();
+              // Firebase may emit null once while LOCAL persistence is restoring.
+              // Do not erase a cached account or flash the logged-out UI in that window.
+              if (!localStorage.getItem('lovara_user')) {
+                this.currentUser = null;
+                this.updateAuthUI(null);
+                this.updateAuthRequiredDots();
+              }
             }
           });
           this.authInitialized = true;

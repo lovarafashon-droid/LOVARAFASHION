@@ -312,8 +312,9 @@
           showUserInfo(user);
         } else {
           console.log('[Auth] User logged out');
-          localStorage.removeItem('lovara_user');
-          showAuthButtons();
+          // Firebase can emit an initial null state while LOCAL persistence is restoring.
+          // Keep the cached account visible until an explicit logout clears it.
+          if (!localStorage.getItem('lovara_user')) showAuthButtons();
         }
       });
 

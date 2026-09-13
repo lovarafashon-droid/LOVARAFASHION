@@ -1035,8 +1035,8 @@
   <button class="back-to-top" id="backToTop" aria-label="Back to top"><i class="fas fa-chevron-up"></i></button>
 
   <!-- ===================== SCRIPTS ===================== -->
-  <script src="js/auth-check.js"></script>
-  <script src="categories-shared.js"></script>
+  <script src="js/auth-check.js?v=auth2"></script>
+  <script src="categories-shared.js?v=auth2"></script>
   <script src="js/main.js"></script>
   <script src="js/products-loader.js?v=attached-loader-20260912-gallery-actions"></script>
 
@@ -1357,9 +1357,12 @@
               } catch (e) { console.log('Admin check skipped:', e.message); }
             }
           } else {
-            this.currentUser = null;
-            localStorage.removeItem('lovara_user');
-            this.updateUI(null);
+            // Firebase emits an initial null while LOCAL persistence may still restore.
+            // Keep the cached account until an explicit logout removes it.
+            if (!localStorage.getItem('lovara_user')) {
+              this.currentUser = null;
+              this.updateUI(null);
+            }
           }
         });
         // Load from localStorage for instant UI
