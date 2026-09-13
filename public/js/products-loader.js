@@ -231,6 +231,7 @@ function initProductCarousel(grid, products) {
   carouselState.products = products;
   carouselState.filteredProducts = products;
   window.allProducts = products;
+  updateAvailableFilterButtons(products);
 
   grid.innerHTML = '';
   grid.classList.add('carousel-grid');
@@ -299,6 +300,12 @@ function renderCarouselPage() {
 
   setTimeout(() => {
     container.innerHTML = '';
+    if (pageProducts.length === 0) {
+      container.innerHTML = '<div class="empty-state"><h3>No products found</h3><p>Try another category.</p></div>';
+      container.style.opacity = '1';
+      container.style.transform = 'translateX(0)';
+      return;
+    }
     pageProducts.forEach(product => {
       const card = createProductCard(product.id, product);
       container.appendChild(card);
@@ -346,11 +353,24 @@ function filterProducts(category) {
   if (category === 'all') {
     carouselState.filteredProducts = carouselState.products;
   } else {
-    carouselState.filteredProducts = carouselState.products.filter(p => p.category === category);
+    const wanted = normalizeProductCategory(category);
+    carouselState.filteredProducts = carouselState.products.filter(p => normalizeProductCategory(p.category) === wanted);
   }
 
   renderCarouselPage();
   updateArrowVisibility();
+}
+
+function normalizeProductCategory(category) {
+  return String(category || '').trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+}
+
+function updateAvailableFilterButtons(products) {
+  document.querySelectorAll('.filter-btn').forEach(button => {
+    const category = button.getAttribute('data-filter');
+    const available = category === 'all' || products.some(product => normalizeProductCategory(product.category) === normalizeProductCategory(category));
+    button.hidden = !available;
+  });
 }
 
 // ============================================
@@ -657,8 +677,8 @@ function setupFilterButtons() {
   filterButtons.forEach(btn => {
     btn.addEventListener('click', (e) => {
       filterButtons.forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
-      const filter = e.target.getAttribute('data-filter');
+      e.currentTarget.classList.add('active');
+      const filter = e.currentTarget.getAttribute('data-filter');
       filterProducts(filter);
     });
   });
