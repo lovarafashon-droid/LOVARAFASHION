@@ -671,7 +671,7 @@ const CategoryApp = {
     this.closeCartModal();
     const product = this.products.find(p => p.id === item.id) || item;
     if (this.products.some(p => p.id === item.id)) this.openProductDetail(item.id);
-    else this.openBuyNowModal(product, true);
+    else this.openProductDetail(product.id);
   },
   checkout() {
     if (this.cart.length === 0) {
@@ -725,6 +725,7 @@ const CategoryApp = {
     const wishlistItems = document.getElementById('wishlistItems');
     const wishlistEmpty = document.getElementById('wishlistEmpty');
     if (!wishlistItems) return;
+    this.wishlist = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]') || [];
     if (this.wishlist.length === 0) { wishlistItems.innerHTML = ''; if (wishlistEmpty) wishlistEmpty.style.display = 'flex'; return; }
     if (wishlistEmpty) wishlistEmpty.style.display = 'none';
     wishlistItems.innerHTML = this.wishlist.map((item, index) => {
