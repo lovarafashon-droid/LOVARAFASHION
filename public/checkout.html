@@ -1009,6 +1009,9 @@
             transactionError.classList.remove('show');
             visaDetails.style.display = e.target.value === 'visa' ? 'block' : 'none';
             this.updateSteps(2);
+            if (e.target.value === 'visa' && !this.xpayCheckout) {
+              this.placeOrder();
+            }
           });
         });
       },
