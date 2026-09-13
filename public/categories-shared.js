@@ -643,7 +643,7 @@ const CategoryApp = {
       const color = item.color;
       const variantHtml = (size || color) ? `<p class="cart-item-variant">${size ? '<span class="v-label">Size:</span> <span class="v-val">' + size + '</span>' : ''}${size && color ? '<span class="v-sep">|</span>' : ''}${color ? '<span class="v-label">Color:</span> <span class="v-val">' + color + '</span>' : ''}</p>` : '';
       total += price * qty;
-      return `<div class="cart-item" data-cart-index="${index}"><img src="${image}" alt="${name}" class="cart-item-img" onerror="this.src='https://via.placeholder.com/80x100?text=LOVARA'"><div class="cart-item-info"><p class="cart-item-name">${name}</p>${variantHtml}<p class="cart-item-price">EGP ${price.toFixed(2)}</p><div class="cart-item-qty"><button class="qty-btn" data-action="minus" data-index="${index}" type="button">-</button><span>${qty}</span><button class="qty-btn" data-action="plus" data-index="${index}" type="button">+</button></div></div><button class="cart-item-remove" data-action="remove" data-index="${index}" type="button"><i class="fas fa-trash"></i></button></div>`;
+      return `<div class="cart-item" data-cart-index="${index}"><img src="${image}" alt="${name}" class="cart-item-img" onerror="this.src='https://via.placeholder.com/80x100?text=LOVARA'"><div class="cart-item-info"><p class="cart-item-name">${name}</p>${variantHtml}<p class="cart-item-price">EGP ${price.toFixed(2)}</p><div class="cart-item-qty"><button class="qty-btn" data-action="minus" data-index="${index}" type="button">-</button><span>${qty}</span><button class="qty-btn" data-action="plus" data-index="${index}" type="button">+</button></div><button class="cart-item-buy" data-action="buy" data-index="${index}" type="button"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button></div><button class="cart-item-remove" data-action="remove" data-index="${index}" type="button"><i class="fas fa-trash"></i></button></div>`;
     }).join('');
     if (cartTotal) cartTotal.textContent = total.toFixed(2);
   },
@@ -665,6 +665,14 @@ const CategoryApp = {
     document.body.style.overflow = '';
   },
 
+  buyNowFromCart(index) {
+    const item = this.cart[index];
+    if (!item) return;
+    this.closeCartModal();
+    const product = this.products.find(p => p.id === item.id) || item;
+    if (this.products.some(p => p.id === item.id)) this.openProductDetail(item.id);
+    else this.openBuyNowModal(product, true);
+  },
   checkout() {
     if (this.cart.length === 0) {
       this.showToast(this.currentLang === 'ar' ? 'السلة فارغة!' : 'Your cart is empty!');
@@ -694,7 +702,14 @@ const CategoryApp = {
   isInWishlist(productId) { return this.wishlist.some(item => item && item.id === productId); },
   removeFromWishlist(index) { this.wishlist.splice(index, 1); this.saveWishlist(); this.updateWishlistCount(); this.renderWishlist(); },
   moveToCart(index) { const item = this.wishlist[index]; this.addToCart(item, item.size, item.color); this.removeFromWishlist(index); },
-  buyNowFromWishlist(index) { const item = this.wishlist[index]; this.addToCart(item, item.size, item.color); window.location.href = 'checkout.html'; },
+  buyNowFromWishlist(index) {
+    const item = this.wishlist[index];
+    if (!item) return;
+    this.closeWishlistModal();
+    const product = this.products.find(p => p.id === item.id) || item;
+    if (this.products.some(p => p.id === item.id)) this.openProductDetail(item.id);
+    else this.openBuyNowModal(product, true);
+  },
   saveWishlist() {
     localStorage.setItem('lovara_wishlist', JSON.stringify(this.wishlist));
     window.LovaraData?.saveWishlist();
@@ -1094,6 +1109,7 @@ const CategoryApp = {
       if (action === 'minus') { e.preventDefault(); e.stopPropagation(); this.updateQty(index, -1); }
       else if (action === 'plus') { e.preventDefault(); e.stopPropagation(); this.updateQty(index, 1); }
       else if (action === 'remove') { e.preventDefault(); e.stopPropagation(); this.removeFromCart(index); }
+      else if (action === 'buy') { e.preventDefault(); e.stopPropagation(); this.buyNowFromCart(index); }
     });
   },
 

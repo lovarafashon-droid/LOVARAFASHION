@@ -1633,7 +1633,7 @@
         container.innerHTML = items.map((item, idx) => {
           const image = item.imageUrl || item.image || '';
           const qty = item.qty || item.quantity || 1;
-          return `<div class="cart-item"><img src="${image}" alt="${item.name}" class="cart-item-img" onerror="this.style.display='none'"><div class="cart-item-info"><p class="cart-item-name">${item.name}</p><p class="cart-item-price">EGP ${(parseFloat(item.price)||0).toFixed(2)}</p><div class="cart-item-qty"><button class="qty-btn" onclick="CartApp.updateQty(${idx}, -1)">-</button><span>${qty}</span><button class="qty-btn" onclick="CartApp.updateQty(${idx}, 1)">+</button></div></div><button class="cart-item-remove" onclick="CartApp.remove(${idx})"><i class="fas fa-trash"></i></button></div>`;
+          return `<div class="cart-item"><img src="${image}" alt="${item.name}" class="cart-item-img" onerror="this.style.display='none'"><div class="cart-item-info"><p class="cart-item-name">${item.name}</p><p class="cart-item-price">EGP ${(parseFloat(item.price)||0).toFixed(2)}</p><div class="cart-item-qty"><button class="qty-btn" onclick="CartApp.updateQty(${idx}, -1)">-</button><span>${qty}</span><button class="qty-btn" onclick="CartApp.updateQty(${idx}, 1)">+</button></div><button class="cart-item-buy" onclick="CartApp.buyNow(${idx})"><i class="fas fa-bolt"></i> Buy Now</button></div><button class="cart-item-remove" onclick="CartApp.remove(${idx})"><i class="fas fa-trash"></i></button></div>`;
         }).join('');
       },
       add(item) {
@@ -1662,6 +1662,30 @@
       save(items = this.items) {
         localStorage.setItem('lovara_cart', JSON.stringify(items));
         window.LovaraData?.saveCart();
+      },
+      buyNow(index) {
+        const item = this.items[index];
+        if (!item) return;
+        this.close();
+        if (typeof openProductModal === 'function') openProductModal(item);
+        else this.openBuyNowModal(item, true);
+      },
+      renderWishlist() {
+        const container = document.getElementById('wishlistItems');
+        if (!container) return;
+        const items = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]');
+        container.innerHTML = items.length ? items.map((item, index) => `<div class="wishlist-item"><img src="${item.imageUrl || item.image || ''}" alt="${item.name || 'Product'}" class="wishlist-item-img"><div class="wishlist-item-info"><p class="wishlist-item-name">${item.name || 'Product'}</p><p class="wishlist-item-price">EGP ${(parseFloat(item.price)||0).toFixed(2)}</p><div class="wishlist-item-actions"><button class="wishlist-buy-now" onclick="CartApp.buyNowFromWishlist(${index})"><i class="fas fa-bolt"></i> Buy Now</button></div></div><button class="wishlist-item-remove" onclick="CartApp.removeFromWishlist(${index})"><i class="fas fa-trash"></i></button></div>`).join('') : '<p class="wishlist-empty">Your wishlist is empty</p>';
+      },
+      buyNowFromWishlist(index) {
+        const item = (JSON.parse(localStorage.getItem('lovara_wishlist') || '[]') || [])[index];
+        if (!item) return;
+        window.CategoryApp?.closeWishlistModal?.();
+        if (typeof openProductModal === 'function') openProductModal(item);
+        else this.openBuyNowModal(item, true);
+      },
+      removeFromWishlist(index) {
+        const items = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]') || [];
+        items.splice(index, 1); localStorage.setItem('lovara_wishlist', JSON.stringify(items)); this.renderWishlist(); this.updateWishlistCount();
       },
       checkout() {
         const items = this.items;
@@ -1810,6 +1834,8 @@
       toggleWishlist(product) { CartApp.toggleWishlist(product); },
       isInWishlist(productId) { return CartApp.isInWishlist(productId); },
       updateWishlistCount() { CartApp.updateWishlistCount(); },
+      buyNowFromWishlist(index) { CartApp.buyNowFromWishlist(index); },
+      removeFromWishlist(index) { CartApp.removeFromWishlist(index); },
       addToCart(item, size, color) { CartApp.add(item); },
       handleAddToCart(productId) { CartApp.handleAddToCart(productId); },
       handleBuyNow(productId) { CartApp.handleBuyNow(productId); },
