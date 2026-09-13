@@ -1148,7 +1148,7 @@
           promoId: this.promo ? this.promo.id : '',
           employeeId: this.promo ? (this.promo.employeeId || '') : '',
           employeeDiscount: this.promo ? (Number(this.promo.discount) || 0) : 0,
-          employeeCommission: this.promo ? (Number(this.promo.commission) || 0) : 0,
+          employeeCommission: this.promo ? (Number(this.promo.commission ?? 10) || 10) : 0,
           profit: this.calculateProfit(),
           confirmationStatus: 'pending',
           rejectionReason: '' 
