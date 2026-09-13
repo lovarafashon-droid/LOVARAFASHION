@@ -128,8 +128,10 @@
     .payment-method .check-icon { position:absolute; right:16px; top:50%; transform:translateY(-50%) scale(0); color:var(--primary); font-size:18px; transition:var(--transition); }
     body[dir="rtl"] .payment-method .check-icon { right:auto; left:16px; }
     .payment-method.selected .check-icon { transform:translateY(-50%) scale(1); }
-    .payment-details { margin-top:12px; padding:20px; background:var(--primary-light); border-radius:12px; border:1px solid var(--border); animation:slideDown 0.3s ease; }
-    .payment-details .info-text { margin:0 0 12px; font-size:14px; color:#555; display:flex; align-items:center; gap:6px; }
+    .payment-details { margin-top:12px; padding:20px; background:#1d1d1d; border-radius:12px; border:1px solid #3d3d3d; animation:slideDown 0.3s ease; }
+    .payment-details .info-text { margin:0 0 12px; font-size:14px; color:#e7e0d5; display:flex; align-items:center; gap:6px; }
+    #xpay-payment-element { padding:14px; background:#252525; border:1px solid #4a4a4a; border-radius:10px; }
+    #xpay-payment-error { color:#ff9b9b; }
     .payment-details .number-box { font-size:1.4rem; font-weight:700; color:var(--secondary); letter-spacing:2px; padding:14px 18px; background:var(--white); border-radius:10px; text-align:center; direction:ltr; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04); font-family:'Jost',monospace; }
     .payment-details .help-text { font-size:13px; color:#888; margin-top:8px; margin-bottom:0; }
     .payment-error { display:none; color:#e74c3c; font-size:13px; margin-top:10px; align-items:center; gap:6px; }
@@ -1208,7 +1210,11 @@
       async mountXPay(clientSecret, orderData) {
         if (typeof XPay !== 'function') throw new Error('XPay payment form could not load.');
         const xpay = XPay('pk_live_VXKBtN5Mi6kkRICZvZPA3UFmfykPwXm5');
-        const checkout = await xpay.initCheckout({ clientSecret });
+        const checkout = await xpay.initCheckout({
+          clientSecret,
+          appearance: { colorMode: 'dark', borderStyle: 'rounded', colors: { primary: '#c9a87c' } },
+          locale: this.currentLang === 'ar' ? 'ar' : 'en'
+        });
         if (checkout.status?.type === 'expired' || checkout.status?.type === 'complete') throw new Error('جلسة الدفع غير متاحة، أعد المحاولة.');
         const container = document.getElementById('xpay-payment-element');
         container.innerHTML = '';
