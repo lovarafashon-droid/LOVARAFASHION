@@ -17,7 +17,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" integrity="sha384-yuGdyIzzYtOBlBG6JOWn+Ey9kpq7HocusNuxEGyyohr1eEyXpeEyehIIXC/hznw4" crossorigin="anonymous"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js" integrity="sha384-lI+CxEx/bCvWP1b0OK13j5HTrTZP7yf1xle8TVOFq2smz6KC1RChTarRV/RHP5PP" crossorigin="anonymous"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" integrity="sha384-nwX2Qpkhc2sv6L0ZPkLefLGguao67toSowvePuQvGF6cG+8MUphGI2uI94Ls3JF7" crossorigin="anonymous"></script>
-  <script src="js/firebase-config.js"></script><script src="js/user-data-sync.js"></script>
+  <script src="js/firebase-config.js"></script><script src="js/visitor-tracker.js"></script><script src="js/user-data-sync.js"></script>
   <style>
     /* ===== ITEM GALLERY ===== */
     .item-gallery { flex-shrink: 0; width: 220px; }
@@ -392,6 +392,18 @@
       .btn-remove-item { min-width: 40px; min-height: 40px; }
       .gallery-main { cursor: pointer; }
     }
+
+    .promo-box{margin:16px 0;padding:14px;border:1px dashed var(--primary);border-radius:10px;background:rgba(201,168,124,.08)}
+    .promo-row{display:flex;gap:8px}.promo-row input{flex:1;padding:10px;border:1px solid var(--border);border-radius:7px;font:inherit;text-transform:uppercase}.promo-row button{padding:10px 14px;border:0;border-radius:7px;background:var(--primary);color:#fff;cursor:pointer;font:inherit}.promo-msg{font-size:12px;margin-top:8px;min-height:16px}.promo-msg.ok{color:#267a43}.promo-msg.bad{color:#b42318}.discount-row{color:#267a43}
+    @media(max-width:640px){.promo-row{flex-direction:column}.promo-row button{width:100%}}
+
+    .promo-box{margin:16px 0;padding:14px;border:1px dashed var(--primary);border-radius:10px;background:rgba(201,168,124,.08)}
+    .promo-row{display:flex;gap:8px}.promo-row input{flex:1;padding:10px;border:1px solid var(--border);border-radius:7px;font:inherit;text-transform:uppercase}.promo-row button{padding:10px 14px;border:0;border-radius:7px;background:var(--primary);color:#fff;cursor:pointer;font:inherit}.promo-msg{font-size:12px;margin-top:8px;min-height:16px}.promo-msg.ok{color:#267a43}.promo-msg.bad{color:#b42318}.discount-row{color:#267a43}
+    @media(max-width:640px){.promo-row{flex-direction:column}.promo-row button{width:100%}}
+
+    .promo-box{margin:16px 0;padding:14px;border:1px dashed var(--primary);border-radius:10px;background:rgba(201,168,124,.08)}
+    .promo-row{display:flex;gap:8px}.promo-row input{flex:1;padding:10px;border:1px solid var(--border);border-radius:7px;font:inherit;text-transform:uppercase}.promo-row button{padding:10px 14px;border:0;border-radius:7px;background:var(--primary);color:#fff;cursor:pointer;font:inherit}.promo-msg{font-size:12px;margin-top:8px;min-height:16px}.promo-msg.ok{color:#267a43}.promo-msg.bad{color:#b42318}.discount-row{color:#267a43}
+    @media(max-width:640px){.promo-row{flex-direction:column}.promo-row button{width:100%}}
 </style>
 
 </head>
@@ -562,9 +574,15 @@
             <div class="order-summary" id="orderSummary">
               <h2><i class="fas fa-shopping-bag"></i> <span data-i18n="orderSummary">Order Summary</span></h2>
               <div class="order-items" id="orderItems"></div>
+              <div class="promo-box">
+                <strong><i class="fas fa-ticket-alt"></i> <span>كود الموظف / Employee code</span></strong>
+                <div class="promo-row"><input id="promoCode" maxlength="24" placeholder="مثال: LOVARA-AB12" autocomplete="off"><button type="button" onclick="CheckoutApp.applyPromoCode()">تطبيق / Apply</button></div>
+                <div id="promoMsg" class="promo-msg"></div>
+              </div>
               <div class="order-totals">
                 <div class="order-total-row"><span data-i18n="subtotal">Subtotal</span><span id="subtotal">EGP 0.00</span></div>
                 <div class="order-total-row"><span data-i18n="shipping">Shipping</span><span id="shipping">EGP 0.00</span></div>
+                <div class="order-total-row discount-row" id="discountRow" style="display:none"><span>Employee discount</span><span id="discount">- EGP 0.00</span></div>
                 <div class="order-total-row total"><span data-i18n="total">Total</span><span id="total">EGP 0.00</span></div>
               </div>
               <div class="delivery-estimate" id="deliveryEstimate">
@@ -601,6 +619,12 @@
       db: null,
       firebaseReady: null,
       draftKey: 'lovara_checkout_draft',
+      promo: null,
+      promoRequest: 0,
+      promo: null,
+      promoRequest: 0,
+      promo: null,
+      promoRequest: 0,
 
       async init() {
         this.cart = JSON.parse(localStorage.getItem('lovara_cart')) || [];
@@ -857,13 +881,30 @@
         return this.shippingPrices[governorate] || 100;
       },
 
+      async applyPromoCode() {
+        const input = document.getElementById('promoCode'); const msg = document.getElementById('promoMsg');
+        const code = (input?.value || '').trim().toUpperCase(); if (!code) return;
+        if (!this.db) await this.firebaseReady.catch(() => null);
+        if (!this.db) { msg.textContent = 'تعذر الاتصال بقاعدة البيانات'; msg.className = 'promo-msg bad'; return; }
+        const request = ++this.promoRequest;
+        try {
+          const snap = await this.db.collection('promoCodes').where('code', '==', code).where('active', '==', true).limit(1).get();
+          if (request !== this.promoRequest) return;
+          if (snap.empty) { this.promo = null; msg.textContent = 'الكود غير صحيح أو غير فعال'; msg.className = 'promo-msg bad'; }
+          else { const d = snap.docs[0].data(); this.promo = { id: snap.docs[0].id, ...d, code }; msg.textContent = `تم تطبيق الخصم ${Number(d.discount || 0)} جنيه`; msg.className = 'promo-msg ok'; }
+          this.renderCartItems();
+        } catch (e) { this.promo = null; msg.textContent = 'تعذر التحقق من الكود'; msg.className = 'promo-msg bad'; }
+      },
+
+
       calculateShipping(subtotal) {
         const governorate = document.getElementById('governorate')?.value || '';
         let shipping = this.getShippingPrice(governorate);
         if (subtotal >= 2500) {
           shipping = 0;
         }
-        const total = subtotal + shipping;
+        const discount = this.promo ? Math.min(Number(this.promo.discount) || 0, subtotal + shipping) : 0;
+        const total = Math.max(0, subtotal + shipping - discount);
         document.getElementById('subtotal').textContent = 'EGP ' + subtotal.toFixed(2);
         const shipEl = document.getElementById('shipping');
         if (shipping === 0) {
@@ -873,6 +914,8 @@
           shipEl.textContent = 'EGP ' + shipping.toFixed(2);
           shipEl.className = '';
         }
+        const discountRow = document.getElementById('discountRow');
+        if (discountRow) { discountRow.style.display = discount > 0 ? 'flex' : 'none'; document.getElementById('discount').textContent = '- EGP ' + discount.toFixed(2); }
         document.getElementById('total').textContent = 'EGP ' + total.toFixed(2);
         this.updateMobileBadge();
         this.updateShippingInfoRow(governorate, shipping);
@@ -1100,7 +1143,12 @@
           },
           payment: { method: paymentMethod, transactionId: transactionId, methodName: this.getPaymentMethodName(paymentMethod) },
           items: this.cart.map(item => ({ name: item.name || 'Product', price: parseFloat(item.price) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
-          totals: { subtotal: subtotalText, shipping: shippingText, total: totalText },
+          totals: { subtotal: subtotalText, shipping: shippingText, discount: this.promo ? ('EGP ' + (Number(this.promo.discount) || 0).toFixed(2)) : 'EGP 0.00', total: totalText },
+          promoCode: this.promo ? this.promo.code : '',
+          promoId: this.promo ? this.promo.id : '',
+          employeeId: this.promo ? (this.promo.employeeId || '') : '',
+          employeeDiscount: this.promo ? (Number(this.promo.discount) || 0) : 0,
+          employeeCommission: this.promo ? (Number(this.promo.commission) || 0) : 0,
           profit: this.calculateProfit(),
           confirmationStatus: 'pending',
           rejectionReason: '' 

@@ -18,7 +18,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js" integrity="sha384-lI+CxEx/bCvWP1b0OK13j5HTrTZP7yf1xle8TVOFq2smz6KC1RChTarRV/RHP5PP" crossorigin="anonymous"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" integrity="sha384-nwX2Qpkhc2sv6L0ZPkLefLGguao67toSowvePuQvGF6cG+8MUphGI2uI94Ls3JF7" crossorigin="anonymous"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js" integrity="sha384-oze9siCpFoiDBZ37lLp99ZmOMO+je1s/xtvwtbNv3NXQXLpbpfPSzZSpbT3xV9da" crossorigin="anonymous"></script>
-  <script src="js/firebase-config.js"></script><script src="js/user-data-sync.js"></script>
+  <script src="js/firebase-config.js"></script><script src="js/visitor-tracker.js"></script><script src="js/user-data-sync.js"></script>
 
   <style>
   /* ===== LOVARA ADMIN - FIXED RESPONSIVE CSS (No Overcrowding) ===== */
@@ -746,7 +746,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
 @media (max-width: 1023px) { .container{padding-left:16px;padding-right:16px}.admin-grid{gap:18px}.admin-form-wrapper,.products-list{padding:22px}.admin-header h1{font-size:36px}.form-row{gap:10px}.product-item{align-items:flex-start} }
 @media (max-width: 640px) { .container{padding-left:10px;padding-right:10px}.admin-page{padding-top:62px}.top-bar{justify-content:center!important;flex-wrap:wrap;padding:7px 8px!important}.top-bar-btn{flex:1;justify-content:center;min-width:0;padding:8px 7px!important;font-size:11px!important}.admin-header{margin-bottom:20px}.admin-header h1{font-size:30px}.admin-header p{font-size:12px}.admin-grid{gap:12px!important}.admin-form-wrapper,.products-list{padding:15px;border-radius:12px}.admin-form-wrapper h2,.products-list h2{font-size:23px;margin-bottom:16px}.form-row{grid-template-columns:1fr!important;gap:0}.form-group{margin-bottom:14px}.form-group input,.form-group select,.form-group textarea{font-size:14px;padding:11px 12px}.image-upload-area{min-height:120px;padding:18px}.product-item{display:grid;grid-template-columns:48px minmax(0,1fr);gap:8px;padding:9px}.product-item img{width:48px;height:48px}.product-item-info h4{font-size:13px;white-space:normal}.product-item-info p{font-size:11px;white-space:normal;overflow-wrap:anywhere}.product-item-price{grid-column:2;font-size:13px}.product-item-actions{grid-column:1/-1;justify-content:flex-end;width:100%}.btn-edit,.btn-delete{width:36px;height:36px}.category-filter,.badge-selector{gap:6px}.filter-pill,.badge-option{padding:7px 10px;font-size:12px}.login-box{width:calc(100% - 20px);padding:24px 16px;margin:55px auto}.login-welcome .login-logo-text{font-size:35px}}
-  </style>
+  
+    .other-section{margin-top:24px;background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:0 8px 25px rgba(0,0,0,.05)}
+    .other-section h2{margin:0 0 6px;color:var(--secondary)}.other-sub{color:var(--text-light);margin:0 0 18px;font-size:13px}.other-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:20px}.other-card{padding:16px;border-radius:12px;background:var(--off-white);border:1px solid var(--border)}.other-card small{display:block;color:var(--text-light);margin-bottom:5px}.other-card strong{font-size:25px;color:var(--primary)}.other-columns{display:grid;grid-template-columns:1fr 1fr;gap:18px}.other-panel{border:1px solid var(--border);border-radius:10px;padding:14px;overflow:auto}.other-panel h3{margin:0 0 12px;font-size:17px}.other-form{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:14px}.other-form input{padding:10px;border:1px solid var(--border);border-radius:7px;font:inherit}.other-form button{border:0;border-radius:7px;background:var(--primary);color:#fff;padding:10px 14px;cursor:pointer;font:inherit}.other-table{width:100%;border-collapse:collapse;font-size:12px}.other-table th,.other-table td{padding:9px 6px;border-bottom:1px solid var(--border);text-align:start;white-space:nowrap}.code-pill{font-family:monospace;background:#fff3df;color:#8b5e2b;padding:4px 7px;border-radius:5px}.other-note{font-size:12px;color:var(--text-light);margin-top:10px}@media(max-width:800px){.other-grid,.other-columns{grid-template-columns:1fr}.other-form{grid-template-columns:1fr}.other-form button{width:100%}}
+</style>
 </head>
 <body>
 
@@ -1046,10 +1049,17 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
           <div class="debug-info" id="debugInfo" style="display:none;"></div>
         </div>
-      </div>
+      </div>\n      <section class="other-section" id="otherSection">
+        <h2><i class="fas fa-layer-group"></i> Other</h2>
+        <p class="other-sub">الزوار والموظفون والأكواد الترويجية والعمولات</p>
+        <div class="other-grid"><div class="other-card"><small>إجمالي الجلسات</small><strong id="visitorCount">—</strong></div><div class="other-card"><small>زوار آخر 24 ساعة</small><strong id="recentVisitorCount">—</strong></div><div class="other-card"><small>إجمالي عمولات الموظفين</small><strong id="commissionTotal">EGP 0</strong></div></div>
+        <div class="other-columns">
+          <div class="other-panel"><h3><i class="fas fa-user-tie"></i> الموظفون والأكواد</h3><form class="other-form" id="employeeForm"><input id="employeeName" placeholder="اسم الموظف" required><input id="employeeDiscount" type="number" min="0" value="10" placeholder="خصم العميل"><button type="submit">إضافة موظف</button></form><table class="other-table"><thead><tr><th>الموظف</th><th>الكود</th><th>الخصم</th><th>العمولة</th></tr></thead><tbody id="employeeRows"><tr><td colspan="4">جاري التحميل…</td></tr></tbody></table><p class="other-note">يتم احتساب العمولة من الطلبات المؤكدة التي استخدمت كود الموظف.</p></div>
+          <div class="other-panel"><h3><i class="fas fa-users"></i> الزوار</h3><table class="other-table"><thead><tr><th>الصفحة</th><th>آخر ظهور</th><th>اللغة</th><th>المصدر</th></tr></thead><tbody id="visitorRows"><tr><td colspan="4">جاري التحميل…</td></tr></tbody></table></div>
+        </div>
+      </section>
     </div>
   </div>
-
   <script>
     // ============================================
     // TRANSLATIONS
@@ -1349,6 +1359,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
         ProductManager.loadProducts();
         FinancialDashboard.loadData();
+        OtherManager.init().catch(console.error);
       },
       showError(msg) {
         const el = document.getElementById('errorMsg');

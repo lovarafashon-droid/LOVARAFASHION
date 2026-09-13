@@ -75,6 +75,22 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+
+    match /visitors/{visitorId} {
+      allow create, update: if true;
+      allow read, delete: if isAdmin();
+    }
+
+    match /promoCodes/{codeId} {
+      allow get: if true;
+      allow list: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /employees/{employeeId} {
+      allow read, write: if isAdmin();
+    }
+
     // ============================================
     // DEFAULT: DENY EVERYTHING ELSE
     // ============================================
