@@ -3072,6 +3072,23 @@ html[dir="rtl"] #logoutBtn {
   .hero-scroll { display: none; }
 
   /* Products */
+  .filter-bar {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    margin: -6px 0 28px;
+    padding: 4px 2px 10px;
+    scrollbar-width: none;
+  }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-btn {
+    flex: 0 0 auto;
+    padding: 9px 15px;
+    font-size: 11px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
   .products-grid,
   .carousel-products-container {
     grid-template-columns: repeat(2, 1fr);
