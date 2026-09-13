@@ -446,6 +446,11 @@
           <div class="checkout-form-wrapper">
             <h2><i class="fas fa-truck"></i> <span data-i18n="shippingInfo">Shipping Information</span></h2>
             <form class="checkout-form" id="checkoutForm" novalidate>
+              <div class="promo-box">
+                <strong><i class="fas fa-ticket-alt"></i> <span>كود الموظف / Employee code</span></strong>
+                <div class="promo-row"><input id="promoCode" maxlength="24" placeholder="مثال: LOVARA-AB12" autocomplete="off"><button type="button" onclick="CheckoutApp.applyPromoCode()">تطبيق / Apply</button></div>
+                <div id="promoMsg" class="promo-msg"></div>
+              </div>
               <div class="form-section" style="animation-delay:0.1s">
                 <div class="form-section-title" data-i18n="personalDetails">Personal Details</div>
                 <div class="form-row">
@@ -574,11 +579,6 @@
             <div class="order-summary" id="orderSummary">
               <h2><i class="fas fa-shopping-bag"></i> <span data-i18n="orderSummary">Order Summary</span></h2>
               <div class="order-items" id="orderItems"></div>
-              <div class="promo-box">
-                <strong><i class="fas fa-ticket-alt"></i> <span>كود الموظف / Employee code</span></strong>
-                <div class="promo-row"><input id="promoCode" maxlength="24" placeholder="مثال: LOVARA-AB12" autocomplete="off"><button type="button" onclick="CheckoutApp.applyPromoCode()">تطبيق / Apply</button></div>
-                <div id="promoMsg" class="promo-msg"></div>
-              </div>
               <div class="order-totals">
                 <div class="order-total-row"><span data-i18n="subtotal">Subtotal</span><span id="subtotal">EGP 0.00</span></div>
                 <div class="order-total-row"><span data-i18n="shipping">Shipping</span><span id="shipping">EGP 0.00</span></div>
@@ -636,6 +636,7 @@
         this.loadOrderItems();
         this.setupPaymentMethods();
         this.setupAutoSave();
+        this.setupPromoAutoApply();
         this.loadDraft();
         this.setupValidation();
         this.applyLang(this.currentLang);
@@ -1029,6 +1030,23 @@
         });
       },
 
+      setupPromoAutoApply() {
+        const input = document.getElementById('promoCode');
+        if (!input) return;
+        let timer;
+        input.addEventListener('input', () => {
+          clearTimeout(timer);
+          const code = input.value.trim();
+          if (code.length < 3) {
+            this.promo = null;
+            const msg = document.getElementById('promoMsg');
+            if (msg) { msg.textContent = ''; msg.className = 'promo-msg'; }
+            this.renderCartItems();
+            return;
+          }
+          timer = setTimeout(() => this.applyPromoCode(), 350);
+        });
+      },
       saveDraft() {
         const draft = {};
         document.querySelectorAll('#checkoutForm [data-field]').forEach(input => {
