@@ -1343,19 +1343,8 @@
             localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
             this.updateUI(this.currentUser);
             window.LovaraData?.load();
-            // Check admin (skip if user just came back from admin page)
-            if (sessionStorage.getItem('skipAdminRedirect') === 'true') {
-              sessionStorage.removeItem('skipAdminRedirect');
-              console.log('[LOVARA] Skipping admin redirect (came from back button)');
-            } else {
-              try {
-                const doc = await this.db.collection('users').doc(user.uid).get();
-                if (doc.exists && doc.data().role === 'admin' && sessionStorage.getItem('adminPortalPending') === 'true') {
-                  sessionStorage.removeItem('adminPortalPending');
-                  Modals.open('adminPortalModal');
-                }
-              } catch (e) { console.log('Admin check skipped:', e.message); }
-            }
+            // The admin portal is opened only by the explicit login handler below.
+            // This prevents persisted Firebase sessions from opening it automatically.
           } else {
             // Firebase emits an initial null while LOCAL persistence may still restore.
             // Keep the cached account until an explicit logout removes it.
@@ -1396,9 +1385,17 @@
             sessionStorage.setItem('adminPortalPending', 'true');
             await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
             const result = await firebase.auth().signInWithEmailAndPassword(email, password);
-            showToast('Welcome back!');
-            Modals.close('loginModal');
-            // Admin redirect handled by onAuthStateChanged
+            const userDoc = await this.db.collection('users').doc(result.user.uid).get();
+            const isAdmin = userDoc.exists && userDoc.data().role === 'admin';
+            sessionStorage.removeItem('adminPortalPending');
+            if (isAdmin) {
+              showToast('Admin login successful');
+              Modals.close('loginModal');
+              Modals.open('adminPortalModal');
+            } else {
+              showToast('Welcome back!');
+              Modals.close('loginModal');
+            }
           } catch (err) {
             sessionStorage.removeItem('adminPortalPending');
             let msg = err.message;
