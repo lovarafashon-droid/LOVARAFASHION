@@ -55,22 +55,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const logoutBtn = document.getElementById('logoutBtn');
     const loginBtnText = document.getElementById('loginBtnText');
     
-    // الإيميلات المسموح بيها
-    const ADMIN_EMAILS = ['admin@lovara.com', 'tomathnabil2000@gmail.com'];
-    
     // ✅ استخدم onAuthStateChanged مرة واحدة
     const unsubscribe = auth.onAuthStateChanged(async function(user) {
       if (user) {
         console.log('User logged in:', user.email);
         
-        const isAdmin = ADMIN_EMAILS.includes(user.email);
-        
-        if (isAdmin) {
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists && userDoc.data().role === 'admin') {
           showDashboard(user);
         } else {
           await auth.signOut();
           showLoginScreen();
-          showError('Access denied. Not an admin.');
+          showError('Access denied. Your account is not an admin.');
         }
       } else {
         showLoginScreen();
