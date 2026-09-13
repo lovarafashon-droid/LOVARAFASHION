@@ -1179,8 +1179,14 @@
       },
 
       showSuccess(orderNumber) {
-        localStorage.removeItem('lovara_cart');
-        window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_cart', newValue: '[]' }));
+        const purchasedIds = new Set((this.cart || []).map(item => item.id).filter(Boolean));
+        const remainingCart = (JSON.parse(localStorage.getItem('lovara_cart') || '[]') || []).filter(item => !purchasedIds.has(item.id));
+        localStorage.setItem('lovara_cart', JSON.stringify(remainingCart));
+        const remainingWishlist = (JSON.parse(localStorage.getItem('lovara_wishlist') || '[]') || []).filter(item => !purchasedIds.has(item.id));
+        localStorage.setItem('lovara_wishlist', JSON.stringify(remainingWishlist));
+        localStorage.removeItem('lovara_direct_buy');
+        window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_cart', newValue: JSON.stringify(remainingCart) }));
+        window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_wishlist', newValue: JSON.stringify(remainingWishlist) }));
         let countdown = 5;
         const t = translations[this.currentLang] || translations.en;
         const updateMsg = () => {
