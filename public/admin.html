@@ -117,8 +117,6 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 .login-box input:focus { outline: none; border-color: var(--primary); }
 .login-box button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: var(--transition); }
 .login-box button:hover { background: var(--primary-dark); }
-.login-box .link-button { margin-top: 10px; padding: 8px; background: transparent; color: var(--primary-dark); font-size: 13px; font-weight: 500; }
-.login-box .link-button:hover { background: transparent; color: var(--secondary); text-decoration: underline; }
 .login-box .error { color: var(--danger); margin-top: 15px; font-size: 14px; display: none; }
 .login-box .error.show { display: block; }
 .login-box .admin-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--primary); color: white; padding: 6px 16px; border-radius: 20px; font-size: 12px; margin-bottom: 20px; font-weight: 500; }
@@ -792,9 +790,6 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         <button onclick="AdminApp.login()">
           <i class="fas fa-sign-in-alt"></i> <span data-i18n="signInBtn">Sign In</span>
         </button>
-        <button type="button" class="link-button" onclick="AdminApp.resetPassword()">
-          <i class="fas fa-key"></i> <span data-i18n="forgotPassword">Forgot password?</span>
-        </button>
         <p class="admin-login-note">صفحة الأدمن مخصصة لتسجيل الدخول بحساب أدمن موجود مسبقًا، ولا تنشئ حسابات جديدة من الموقع.</p>
 
         <div class="error" id="loginError">
@@ -1066,7 +1061,6 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       en: {
         welcome: "Welcome to", welcomeBrand: "LOVARA", welcomeSub: "Admin Dashboard", adminPanel: "ADMIN PANEL", signIn: "Sign In", signInDesc: "Enter your admin credentials to manage products",
         email: "Email", password: "Password", signInBtn: "Sign In", invalidCreds: "Invalid credentials",
-        forgotPassword: "Forgot password?", resetSent: "Password reset email sent. Check your inbox.", resetError: "Could not send reset email: ", enterEmailReset: "Enter your email first.",
         productManager: "Product Manager", productManagerDesc: "Add and manage products in Firebase Firestore",
         logout: "Logout", addNewProduct: "Add New Product", productAdded: "Product added to Firebase!",
         error: "Error", productName: "Product Name *", price: "Price (EGP) *", oldPrice: "Old Price (EGP)",
@@ -1113,7 +1107,6 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       ar: {
         welcome: "مرحباً بكم في", welcomeBrand: "لوفارا", welcomeSub: "لوحة التحكم", adminPanel: "لوحة التحكم", signIn: "تسجيل الدخول", signInDesc: "أدخل بيانات الدخول لإدارة المنتجات",
         email: "البريد الإلكتروني", password: "كلمة المرور", signInBtn: "تسجيل الدخول", invalidCreds: "بيانات الدخول غير صحيحة",
-        forgotPassword: "نسيت كلمة المرور؟", resetSent: "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك.", resetError: "تعذر إرسال رابط إعادة التعيين: ", enterEmailReset: "اكتب البريد الإلكتروني أولاً.",
         productManager: "إدارة المنتجات", productManagerDesc: "أضف وادارة المنتجات في Firebase Firestore",
         logout: "تسجيل الخروج", addNewProduct: "إضافة منتج جديد", productAdded: "تم إضافة المنتج إلى Firebase!",
         error: "خطأ", productName: "اسم المنتج *", price: "السعر (ج.م) *", oldPrice: "السعر القديم (ج.م)",
@@ -1344,30 +1337,6 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           } else {
             errorText.textContent = error.message || t.invalidCreds;
           }
-          errorDiv.classList.add('show');
-        }
-      },
-      async resetPassword() {
-        const email = document.getElementById('loginEmail').value.trim();
-        const errorDiv = document.getElementById('loginError');
-        const errorText = document.getElementById('errorText');
-        const t = translations[AppSettings.currentLang];
-        errorDiv.classList.remove('show');
-        if (!email) {
-          errorText.textContent = t.enterEmailReset;
-          errorDiv.classList.add('show');
-          return;
-        }
-        try {
-          await withAdminTimeout(
-            firebase.auth().sendPasswordResetEmail(email),
-            10000,
-            t.resetError
-          );
-          errorText.textContent = t.resetSent;
-          errorDiv.classList.add('show');
-        } catch (error) {
-          errorText.textContent = t.resetError + (error.message || 'Unknown error');
           errorDiv.classList.add('show');
         }
       },
