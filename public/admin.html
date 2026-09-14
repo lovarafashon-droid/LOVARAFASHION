@@ -1503,7 +1503,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               '<option value="panties">' + (t.subcatPanties || 'Panties') + '</option>' +
               '<option value="nightgowns">' + (t.subcatNightgowns || 'Nightgowns') + '</option>';
           }
-        } else if (category === 'tops') {
+        } else if (category === 'tops' || category === 'suits') {
           if (subcatGroup) subcatGroup.classList.remove('hidden');
           if (subcatSelect) {
             subcatSelect.innerHTML = '<option value="">' + (t.selectSubcategory || 'Select Subcategory') + '</option>' +
@@ -1553,7 +1553,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
           if (volumeGroup) volumeGroup.classList.add('hidden');
           if (sizeSelector) sizeSelector.classList.add('hidden');
-        } else if (['bras', 'panties', 'nightgowns', 'jackets', 'sweaters', 'hoodies', 'knitwear'].includes(subcategory)) {
+        } else if (['bras', 'panties', 'nightgowns', 'jackets', 'sweaters', 'hoodies', 'knitwear', 'half-sleeve', 'sleeveless', 'long-sleeve'].includes(subcategory)) {
           if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
           if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
           if (volumeGroup) volumeGroup.classList.add('hidden');
@@ -1908,7 +1908,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         const catMap = {
           'dresses': t.dresses, 'tops': t.tops, 'pants': t.pants,
           'accessories': t.accessories, 'lingerie': t.lingerie, 'sets': t.sets,
-          'hijab': t.hijab, 'winter': t.winter
+          'suits': t.suits, 'pajamas': t.pajamas, 'hijab': t.hijab, 'winter': t.winter
         };
         const badgeMap = {
           'New': t.newBadge, 'Sale': t.saleBadge, 'Bestseller': t.bestsellerBadge,
@@ -1919,7 +1919,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           'bags': t.subcatBags, 'cosmetics': t.subcatCosmetics, 'personal-care': t.subcatPersonalCare,
           'jewelry': t.subcatJewelry, 'shoes': t.subcatShoes,
           'jackets': t.subcatJackets, 'sweaters': t.subcatSweaters,
-          'hoodies': t.subcatHoodies, 'knitwear': t.subcatKnitwear
+          'hoodies': t.subcatHoodies, 'knitwear': t.subcatKnitwear,
+          'half-sleeve': t.subcatHalfSleeve, 'sleeveless': t.subcatSleeveless, 'long-sleeve': t.subcatLongSleeve
         };
 
         document.getElementById('productCount').textContent = '(' + filtered.length + ')';
