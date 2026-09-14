@@ -452,8 +452,13 @@
         return;
       }
       try {
-        const snap = await profileDb.collection('orders').where('userId','==',currentUser.uid).get();
-        const orders = snap.docs.map(d=>({id:d.id, ...d.data()}));
+        const [ownedSnap, emailSnap] = await Promise.all([
+          profileDb.collection('orders').where('userId','==',currentUser.uid).get(),
+          profileDb.collection('orders').where('customer.email','==',currentUser.email).get()
+        ]);
+        const docs = new Map();
+        [...ownedSnap.docs, ...emailSnap.docs].forEach(d=>docs.set(d.id,d));
+        const orders = [...docs.values()].map(d=>({id:d.id, ...d.data()}));
         orders.sort((a,b)=>((b.date?.seconds||0)-(a.date?.seconds||0)));
         document.getElementById('statOrders').textContent = orders.length;
         const totalSpent = orders.reduce((s,o)=>s+(parseFloat(String(o.totals?.total||o.total||'').replace(/[^0-9.]/g,''))||0),0);

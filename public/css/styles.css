@@ -813,6 +813,14 @@ input, select, textarea {
   color: var(--white);
   border-color: var(--off-black);
 }
+.homepage-category-tabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 auto 36px;
+}
+.homepage-category-tabs .filter-btn { white-space: nowrap; }
 
 /* Products Grid */
 .products-grid {
@@ -3089,6 +3097,15 @@ html[dir="rtl"] #logoutBtn {
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(0,0,0,.04);
   }
+  .homepage-category-tabs {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: -6px 0 28px;
+    padding: 4px 2px 10px;
+    scrollbar-width: none;
+  }
+  .homepage-category-tabs::-webkit-scrollbar { display: none; }
   .products-grid,
   .carousel-products-container {
     grid-template-columns: repeat(2, 1fr);

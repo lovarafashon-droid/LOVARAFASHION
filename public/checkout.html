@@ -602,6 +602,7 @@
       currentLang: localStorage.getItem('lovara_lang') || 'en',
       db: null,
       firebaseReady: null,
+      currentUser: null,
       draftKey: 'lovara_checkout_draft',
       promo: null,
       promoRequest: 0,
@@ -620,6 +621,12 @@
         this.cart = directBuy ? [directBuy] : (JSON.parse(localStorage.getItem('lovara_cart')) || []);
         this.firebaseReady = this.initFirebase();
         await this.firebaseReady.catch(() => null);
+        if (typeof firebase !== 'undefined' && firebase.auth) {
+          this.currentUser = await new Promise(resolve => {
+            let unsubscribe = () => {};
+            unsubscribe = firebase.auth().onAuthStateChanged(user => { unsubscribe(); resolve(user); });
+          });
+        }
         await this.enrichCartCosts();
         this.loadOrderItems();
         this.setupPaymentMethods();
@@ -1141,9 +1148,8 @@
         const totalText = document.getElementById('total').textContent;
         const orderNumber = 'LOV-' + Date.now().toString(36).toUpperCase();
 
-          const currentUser = (typeof firebase !== 'undefined' && typeof firebase.auth === 'function')
-            ? firebase.auth().currentUser
-            : null;
+          const currentUser = this.currentUser || ((typeof firebase !== 'undefined' && typeof firebase.auth === 'function')
+            ? firebase.auth().currentUser : null);
           const orderData = {
             orderNumber: orderNumber,
             userId: (currentUser ? currentUser.uid : 'guest'),

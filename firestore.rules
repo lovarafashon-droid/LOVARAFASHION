@@ -46,7 +46,7 @@ service cloud.firestore {
     // Customers can read their own orders and cancel pending/confirmed orders.
     match /orders/{orderId} {
       allow create: if request.resource.data.keys().hasAll(['customer', 'items', 'totals', 'date']);
-      allow read: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow read: if isAdmin() || (request.auth != null && (resource.data.userId == request.auth.uid || resource.data.customer.email == request.auth.token.email));
       allow update: if isAdmin()
         || (request.auth != null
           && resource.data.userId == request.auth.uid
