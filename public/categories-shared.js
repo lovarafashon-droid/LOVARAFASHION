@@ -367,140 +367,68 @@ const CategoryApp = {
     if (typeof window.closeModal === 'function') window.closeModal(modalId);
   },
 
+  async saveAuthUser(user, provider = 'password') {
+    const ref = firebase.firestore().collection('users').doc(user.uid);
+    const snap = await ref.get();
+    if (!snap.exists) await ref.set({ email: user.email || '', role: 'user', provider, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+  },
+
   async handleLogin(e) {
     e.preventDefault();
     const form = e.target;
-    const emailInput = form.querySelector('input[type="email"]');
-    const passwordInput = form.querySelector('input[type="password"]');
-    if (!emailInput || !passwordInput) { this.showToast('Form error: missing fields', 'error'); return; }
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
+    const email = form.querySelector('input[type="email"]')?.value.trim();
+    const password = form.querySelector('input[type="password"]')?.value;
     if (!email || !password) { this.showToast('Please fill in all fields', 'error'); return; }
-    if (!this.firebaseReady || typeof firebase === 'undefined' || !firebase.auth) {
-      this.showToast('Authentication service not ready. Please wait.', 'error'); return;
-    }
     try {
-      await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
       const result = await firebase.auth().signInWithEmailAndPassword(email, password);
-      const user = result.user;
-      const userData = { uid: user.uid, email: user.email, displayName: user.displayName || user.email.split('@')[0], photoURL: user.photoURL };
-      localStorage.setItem('lovara_user', JSON.stringify(userData));
+      await this.saveAuthUser(result.user);
+      const userData = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL };
       this.currentUser = userData;
+      localStorage.setItem('lovara_user', JSON.stringify(userData));
       this.updateAuthUI(userData);
-      try {
-        const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
-        if (userDoc.data() && userDoc.data().role === 'admin') { window.location.href = 'admin.html'; return; }
-      } catch (adminErr) {}
       this.closeModal('loginModal');
       this.showToast(this.t('welcome') + '!');
       form.reset();
-    } catch (error) {
-      let msg = error.message;
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') msg = 'Invalid email or password. Please try again.';
-      else if (error.code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
-      else if (error.code === 'auth/too-many-requests') msg = 'Too many failed attempts. Please try again later.';
-      else if (error.code === 'auth/network-request-failed') msg = 'Network error. Please check your connection.';
-      this.showToast(msg, 'error');
-    }
+    } catch (error) { this.showToast(error.message, 'error'); }
   },
 
   async handleSignup(e) {
     e.preventDefault();
     const form = e.target;
-    const textInputs = form.querySelectorAll('input[type="text"]');
-    const firstName = textInputs[0]?.value || '';
-    const lastName = textInputs[1]?.value || '';
-    const emailInput = form.querySelector('input[type="email"]');
-    const passwordInput = form.querySelector('input[type="password"]');
-    if (!emailInput || !passwordInput) { this.showToast('Form error: missing fields', 'error'); return; }
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
+    const email = form.querySelector('input[type="email"]')?.value.trim();
+    const password = form.querySelector('input[type="password"]')?.value;
     if (!email || !password) { this.showToast('Please fill in all fields', 'error'); return; }
-    if (!this.firebaseReady || typeof firebase === 'undefined' || !firebase.auth) {
-      this.showToast('Authentication service not ready. Please wait.', 'error'); return;
-    }
     try {
-      await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
       const result = await firebase.auth().createUserWithEmailAndPassword(email, password);
-      const user = result.user;
-      await user.updateProfile({ displayName: (firstName + ' ' + lastName).trim() });
-      const userData = { uid: user.uid, email: user.email, displayName: (firstName + ' ' + lastName).trim() || user.email.split('@')[0], photoURL: user.photoURL };
-      localStorage.setItem('lovara_user', JSON.stringify(userData));
+      await this.saveAuthUser(result.user);
+      const userData = { uid: result.user.uid, email: result.user.email, displayName: result.user.email.split('@')[0], photoURL: result.user.photoURL };
       this.currentUser = userData;
+      localStorage.setItem('lovara_user', JSON.stringify(userData));
       this.updateAuthUI(userData);
-      try {
-        await firebase.firestore().collection('users').doc(user.uid).set({ email: email, firstName: firstName, lastName: lastName, role: 'user', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-      } catch (dbErr) {}
       this.closeModal('signupModal');
       this.showToast(this.t('toastDefault'));
       form.reset();
-    } catch (error) {
-      let msg = error.message;
-      if (error.code === 'auth/email-already-in-use') msg = 'This email is already registered. Please login instead.';
-      else if (error.code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
-      else if (error.code === 'auth/weak-password') msg = 'Password is too weak. Use at least 6 characters.';
-      else if (error.code === 'auth/network-request-failed') msg = 'Network error.';
-      this.showToast(msg, 'error');
-    }
+    } catch (error) { this.showToast(error.message, 'error'); }
   },
 
   async handleGoogleAuth(modalId) {
-    if (!this.firebaseReady || typeof firebase === 'undefined' || !firebase.auth) {
-      this.showToast('Authentication service not ready. Please wait.', 'error');
-      return;
-    }
     try {
       await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-      const provider = new firebase.auth.GoogleAuthProvider();
-      const result = await firebase.auth().signInWithPopup(provider);
-      const user = result.user;
-      const userRef = firebase.firestore().collection('users').doc(user.uid);
-      const userDoc = await userRef.get();
-      const nameParts = (user.displayName || '').trim().split(/\s+/).filter(Boolean);
-      if (!userDoc.exists) {
-        await userRef.set({
-          email: user.email || '', firstName: nameParts[0] || '',
-          lastName: nameParts.slice(1).join(' '), role: 'user', provider: 'google',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      }
-      const userData = { uid: user.uid, email: user.email, displayName: user.displayName || user.email.split('@')[0], photoURL: user.photoURL };
-      localStorage.setItem('lovara_user', JSON.stringify(userData));
-      this.currentUser = userData;
-      this.updateAuthUI(userData);
-      if (userDoc.exists && userDoc.data().role === 'admin') { window.location.href = 'admin.html'; return; }
-      this.closeModal(modalId);
-      this.showToast(this.t('welcome') + '!');
-    } catch (error) {
-      let msg = error.message;
-      if (error.code === 'auth/operation-not-allowed') msg = 'Google sign-in is not enabled in Firebase.';
-      else if (error.code === 'auth/unauthorized-domain') msg = 'This website is not authorized for Google sign-in yet.';
-      else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') msg = 'Google sign-in was cancelled.';
-      else if (error.code === 'auth/network-request-failed') msg = 'Network error. Please check your connection.';
-      this.showToast(msg, 'error');
-    }
+      await firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+    } catch (error) { this.showToast(error.message, 'error'); }
   },
 
   async handleForgot(e) {
     e.preventDefault();
-    const emailInput = document.getElementById('forgotEmail');
-    if (!emailInput) { this.showToast('Form error', 'error'); return; }
-    const email = emailInput.value.trim();
+    const input = document.getElementById('forgotEmail');
+    const email = input?.value.trim();
     if (!email) { this.showToast('Please enter your email address', 'error'); return; }
-    if (!this.firebaseReady || typeof firebase === 'undefined' || !firebase.auth) {
-      this.showToast('Authentication service not ready. Please wait.', 'error'); return;
-    }
     try {
       await firebase.auth().sendPasswordResetEmail(email);
       this.closeModal('forgotModal');
       this.showToast('Reset link sent to your email!');
-      emailInput.value = '';
-    } catch (error) {
-      let msg = error.message;
-      if (error.code === 'auth/user-not-found') msg = 'No account found with this email.';
-      else if (error.code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
-      this.showToast(msg, 'error');
-    }
+      if (input) input.value = '';
+    } catch (error) { this.showToast(error.message, 'error'); }
   },
 
   logout() {

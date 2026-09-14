@@ -943,7 +943,7 @@
         <h2 data-i18n="loginTitle">Welcome Back</h2>
         <p data-i18n="loginSub">Sign in to your account</p>
       </div>
-      <button class="google-btn" id="googleLogin" type="button" onclick="startLovaraGoogleSignIn('loginModal')">
+      <button class="google-btn" id="googleLogin" type="button">
         <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
         <span data-i18n="googleSignIn">Continue with Google</span>
       </button>
@@ -982,7 +982,7 @@
         <h2 data-i18n="signupTitle">Join LOVARA</h2>
         <p data-i18n="signupSub">Create your account — it's free</p>
       </div>
-      <button class="google-btn" id="googleSignup" type="button" onclick="startLovaraGoogleSignIn('signupModal')">
+      <button class="google-btn" id="googleSignup" type="button">
         <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
         <span data-i18n="googleSignUp">Sign up with Google</span>
       </button>
@@ -1334,86 +1334,24 @@
       setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    window.startLovaraGoogleSignIn = async function(modalId) {
-      const t = translations[AppSettings.currentLang];
-      if (typeof firebase === 'undefined' || !firebase.auth || !firebase.firestore) {
-        showToast('Authentication service not ready. Please refresh and try again.', 'error');
-        return;
-      }
-      const button = document.getElementById(modalId === 'loginModal' ? 'googleLogin' : 'googleSignup');
-      if (button) { button.disabled = true; button.dataset.originalText = button.textContent; button.textContent = 'Connecting...'; }
-      try {
-        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        await firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider());
-      } catch (err) {
-        let msg = t.googlePopupError;
-        if (err.code === 'auth/operation-not-allowed') msg = t.googleDisabled;
-        else if (err.code === 'auth/unauthorized-domain') msg = t.googleDomain;
-        else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') msg = t.googleCancelled;
-        showToast(msg, 'error');
-      } finally {
-        if (button) { button.disabled = false; button.textContent = button.dataset.originalText || t.googleSignIn; }
-      }
-    };
-
-    // ---- Firebase Auth + Admin Check ----
+    // ---- Fresh Firebase customer authentication ----
     const AuthApp = {
       currentUser: null,
       db: null,
       init() {
-        // Wait for Firebase to be ready
-        let attempts = 0;
-        const check = () => {
-          attempts++;
-          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0 && firebase.auth && firebase.firestore) {
-            this.db = firebase.firestore();
-            this.setupAuthState();
-            this.setupForms();
-            firebase.auth().getRedirectResult().then(async (result) => {
-              if (!result || !result.user) return;
-              const user = result.user;
-              const ref = this.db.collection('users').doc(user.uid);
-              const doc = await ref.get();
-              if (!doc.exists) await ref.set({ email: user.email || '', role: 'user', provider: 'google', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-              showToast((translations[AppSettings.currentLang].googleSignIn || 'Google sign-in') + ' ✓');
-            }).catch((err) => {
-              const t = translations[AppSettings.currentLang];
-              let msg = t.googlePopupError;
-              if (err.code === 'auth/operation-not-allowed') msg = t.googleDisabled;
-              else if (err.code === 'auth/unauthorized-domain') msg = t.googleDomain;
-              showToast(msg, 'error');
-            });
-            console.log('[LOVARA] Firebase Auth ready');
-          } else if (attempts < 30) {
-            setTimeout(check, 300);
-          } else {
-            console.error('[LOVARA] Firebase not loaded after 9s');
-            showToast('Auth service unavailable. Please refresh.', 'error');
-          }
-        };
-        setTimeout(check, 200);
-      },
-      setupAuthState() {
-        firebase.auth().onAuthStateChanged(async (user) => {
-          if (user) {
-            this.currentUser = { uid: user.uid, email: user.email, displayName: user.displayName || user.email.split('@')[0] };
-            localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
-            this.updateUI(this.currentUser);
-            window.LovaraData?.load();
-            // The admin portal is opened only by the explicit login handler below.
-            // This prevents persisted Firebase sessions from opening it automatically.
-          } else {
-            // Firebase emits an initial null while LOCAL persistence may still restore.
-            // Keep the cached account until an explicit logout removes it.
-            if (!localStorage.getItem('lovara_user')) {
-              this.currentUser = null;
-              this.updateUI(null);
-            }
-          }
+        if (typeof firebase === 'undefined' || !firebase.auth || !firebase.firestore) {
+          showToast('Authentication service unavailable. Please refresh.', 'error');
+          return;
+        }
+        this.db = firebase.firestore();
+        firebase.auth().onAuthStateChanged(user => {
+          this.currentUser = user ? { uid: user.uid, email: user.email, displayName: user.displayName || user.email.split('@')[0], photoURL: user.photoURL } : null;
+          if (user) localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
+          else localStorage.removeItem('lovara_user');
+          this.updateUI(this.currentUser);
         });
-        // Load from localStorage for instant UI
-        const saved = localStorage.getItem('lovara_user');
-        if (saved) { try { this.updateUI(JSON.parse(saved)); } catch(e){} }
+        firebase.auth().getRedirectResult().catch(error => this.showAuthError(error));
+        this.bindForms();
       },
       updateUI(user) {
         const authButtons = document.getElementById('authButtons');
@@ -1423,7 +1361,9 @@
         const userEmail = document.getElementById('userEmail');
         if (user) {
           if (authButtons) authButtons.style.display = 'none';
-          if (userDisplay) { userDisplay.style.display = 'flex'; if (userName) userName.textContent = user.displayName; if (userEmail) userEmail.textContent = user.email; }
+          if (userDisplay) userDisplay.style.display = 'flex';
+          if (userName) userName.textContent = user.displayName;
+          if (userEmail) userEmail.textContent = user.email;
           if (logoutBtn) logoutBtn.style.display = 'inline-flex';
         } else {
           if (authButtons) authButtons.style.display = 'flex';
@@ -1431,144 +1371,65 @@
           if (logoutBtn) logoutBtn.style.display = 'none';
         }
       },
-      setupForms() {
-        // Login
-        document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const email = document.getElementById('loginEmail')?.value.trim();
-          const password = document.getElementById('loginPassword')?.value;
-          if (!email || !password) { showToast('Please enter email and password', 'error'); return; }
-          try {
-            sessionStorage.setItem('adminPortalPending', 'true');
-            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            const result = await firebase.auth().signInWithEmailAndPassword(email, password);
-            const userDoc = await this.db.collection('users').doc(result.user.uid).get();
-            const isAdmin = userDoc.exists && userDoc.data().role === 'admin';
-            sessionStorage.removeItem('adminPortalPending');
-            if (isAdmin) {
-              showToast('Admin login successful');
-              Modals.close('loginModal');
-              setTimeout(() => {
-                const portal = document.getElementById('adminPortalModal');
-                if (portal) {
-                  portal.classList.add('show', 'active');
-                  document.body.style.overflow = 'hidden';
-                }
-              }, 250);
-            } else {
-              showToast('Welcome back!');
-              Modals.close('loginModal');
-            }
-          } catch (err) {
-            sessionStorage.removeItem('adminPortalPending');
-            let msg = err.message;
-            if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') msg = 'Invalid email or password.';
-            else if (err.code === 'auth/invalid-email') msg = 'Please enter a valid email.';
-            else if (err.code === 'auth/too-many-requests') msg = 'Too many attempts. Try again later.';
-            showToast(msg, 'error');
-          }
-        });
-
-        const signInWithGoogle = async (modalId) => {
-          const t = translations[AppSettings.currentLang];
-          const button = document.getElementById(modalId === 'loginModal' ? 'googleLogin' : 'googleSignup');
-          showToast(t.googleSignIn + '...');
-          if (button) { button.disabled = true; button.dataset.originalText = button.textContent; button.textContent = 'Connecting...'; }
-          try {
-            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            const provider = new firebase.auth.GoogleAuthProvider();
-            const result = await firebase.auth().signInWithPopup(provider);
-            const user = result.user;
-            const userRef = this.db.collection('users').doc(user.uid);
-            const userDoc = await userRef.get();
-            if (!userDoc.exists) {
-              const nameParts = (user.displayName || '').trim().split(/\s+/).filter(Boolean);
-              await userRef.set({
-                email: user.email || '',
-                firstName: nameParts[0] || '',
-                lastName: nameParts.slice(1).join(' '),
-                role: 'user',
-                provider: 'google',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-              });
-            }
-            showToast(t.googleSignIn + ' ✓');
-            Modals.close(modalId);
-          } catch (err) {
-            let msg = t.googlePopupError;
-            if (err.code === 'auth/operation-not-allowed') msg = t.googleDisabled;
-            else if (err.code === 'auth/unauthorized-domain') msg = t.googleDomain;
-            else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') msg = t.googleCancelled;
-            showToast(msg, 'error');
-          } finally {
-            if (button) { button.disabled = false; button.textContent = button.dataset.originalText || t.googleSignIn; }
-          }
-        };
-        this.signInWithGoogle = signInWithGoogle;
-
-        // Signup
-        document.getElementById('signupForm')?.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const firstName = document.getElementById('signupFirstName')?.value.trim();
-          const lastName = document.getElementById('signupLastName')?.value.trim();
-          const email = document.getElementById('signupEmail')?.value.trim();
-          const password = document.getElementById('signupPassword')?.value;
-          if (!email || !password) { showToast('Please fill all fields', 'error'); return; }
-          try {
-            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            const result = await firebase.auth().createUserWithEmailAndPassword(email, password);
-            const user = result.user;
-            // Save to Firestore
-            try {
-              await this.db.collection('users').doc(user.uid).set({
-                email: email, firstName: firstName, lastName: lastName,
-                role: 'user', createdAt: firebase.firestore.FieldValue.serverTimestamp()
-              });
-            } catch (dbErr) { console.log('Firestore save:', dbErr.message); }
-            showToast('Account created! Welcome to LOVARA.');
-            Modals.close('signupModal');
-          } catch (err) {
-            let msg = err.message;
-            if (err.code === 'auth/email-already-in-use') msg = 'This email is already registered.';
-            else if (err.code === 'auth/weak-password') msg = 'Password is too weak (min 6 chars).';
-            else if (err.code === 'auth/invalid-email') msg = 'Please enter a valid email.';
-            showToast(msg, 'error');
-          }
-        });
-
-        // Forgot Password
-        document.getElementById('forgotForm')?.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const t = translations[AppSettings.currentLang];
-          const email = document.getElementById('forgotEmail')?.value.trim();
-          const submitBtn = e.currentTarget.querySelector('button[type="submit"]');
-          if (!email) { showToast(t.resetEmailRequired, 'error'); return; }
-          if (submitBtn) { submitBtn.disabled = true; submitBtn.dataset.originalText = submitBtn.textContent; submitBtn.textContent = t.resetSending; }
-          try {
-            await firebase.auth().sendPasswordResetEmail(email);
-            showToast(t.resetSent);
-            Modals.close('forgotModal');
-          } catch (err) {
-            let msg = err.message;
-            if (err.code === 'auth/user-not-found') msg = t.resetNoAccount;
-            else if (err.code === 'auth/operation-not-allowed') msg = t.resetDisabled;
-            else if (err.code === 'auth/invalid-email') msg = t.resetInvalidEmail;
-            else if (err.code === 'auth/network-request-failed') msg = t.resetNetworkError;
-            else if (err.code === 'auth/too-many-requests') msg = t.resetTooManyRequests;
-            showToast(msg, 'error');
-          } finally {
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.originalText || t.btnSendReset; }
-          }
-        });
-
-        // Logout
-        document.getElementById('logoutBtn')?.addEventListener('click', () => {
-          if (window.CategoryApp) { CategoryApp.logout(); return; }
-          firebase.auth().signOut().then(() => {
-            localStorage.removeItem('lovara_user');
-            showToast('Logged out successfully');
-          }).catch(() => showToast('Logged out', 'error'));
-        });
+      async saveUser(user, provider = 'password') {
+        const ref = this.db.collection('users').doc(user.uid);
+        const snap = await ref.get();
+        if (!snap.exists) await ref.set({ email: user.email || '', role: 'user', provider, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      },
+      showAuthError(error) {
+        const t = translations[AppSettings.currentLang];
+        let message = error?.message || t.googlePopupError;
+        if (error?.code === 'auth/operation-not-allowed') message = t.googleDisabled;
+        else if (error?.code === 'auth/unauthorized-domain') message = t.googleDomain;
+        else if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') message = t.googleCancelled;
+        else if (error?.code === 'auth/user-not-found') message = t.resetNoAccount;
+        showToast(message, 'error');
+      },
+      async google(modalId) {
+        try {
+          await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+          await firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+        } catch (error) { this.showAuthError(error); }
+      },
+      async login(event) {
+        event.preventDefault();
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        try {
+          const result = await firebase.auth().signInWithEmailAndPassword(email, password);
+          await this.saveUser(result.user);
+          Modals.close('loginModal');
+          showToast('Welcome back!');
+        } catch (error) { this.showAuthError(error); }
+      },
+      async signup(event) {
+        event.preventDefault();
+        const email = document.getElementById('signupEmail').value.trim();
+        const password = document.getElementById('signupPassword').value;
+        try {
+          const result = await firebase.auth().createUserWithEmailAndPassword(email, password);
+          await this.saveUser(result.user);
+          Modals.close('signupModal');
+          showToast('Account created successfully!');
+        } catch (error) { this.showAuthError(error); }
+      },
+      async reset(event) {
+        event.preventDefault();
+        const email = document.getElementById('forgotEmail').value.trim();
+        const t = translations[AppSettings.currentLang];
+        try {
+          await firebase.auth().sendPasswordResetEmail(email);
+          Modals.close('forgotModal');
+          showToast(t.resetSent);
+        } catch (error) { this.showAuthError(error); }
+      },
+      bindForms() {
+        document.getElementById('googleLogin')?.addEventListener('click', () => this.google('loginModal'));
+        document.getElementById('googleSignup')?.addEventListener('click', () => this.google('signupModal'));
+        document.getElementById('loginForm')?.addEventListener('submit', event => this.login(event));
+        document.getElementById('signupForm')?.addEventListener('submit', event => this.signup(event));
+        document.getElementById('forgotForm')?.addEventListener('submit', event => this.reset(event));
+        document.getElementById('logoutBtn')?.addEventListener('click', () => firebase.auth().signOut());
       }
     };
 
