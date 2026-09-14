@@ -146,8 +146,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // First paint: only fetch the first eight cards so the carousel appears
     // immediately. The full catalog refresh follows in the same request.
     const firstProducts = await fetchProductsViaRest(8);
-    const firstVisible = firstProducts.filter(product => product.showOnHome !== false);
-    const firstToRender = firstVisible.length > 0 ? firstVisible : firstProducts;
+    // Homepage shows the catalog immediately without hiding products behind a showOnHome filter.
+    const firstToRender = firstProducts;
     if (firstToRender.length > 0 && (!cached || cached.length === 0)) {
       setCachedProducts(firstToRender);
       if (loading) loading.style.display = 'none';
@@ -158,8 +158,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Then fetch all products for filters and pagination and replace the
     // initial eight-card view when the complete catalog is ready.
     const products = await fetchProductsViaRest();
-    const visibleProducts = products.filter(product => product.showOnHome !== false);
-    const productsToRender = visibleProducts.length > 0 ? visibleProducts : products;
+    // Keep every product returned by Firebase visible on the homepage.
+    const productsToRender = products;
 
     productsToRender.sort((a, b) => {
       const aTime = a.createdAt ? (a.createdAt.toMillis ? a.createdAt.toMillis() : a.createdAt) : 0;
