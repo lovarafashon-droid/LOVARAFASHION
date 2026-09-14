@@ -2115,6 +2115,25 @@ input, select, textarea {
 }
 .btn-checkout:hover { background: var(--primary-dark); }
 
+.cart-preview-modal { position: fixed; inset: 0; z-index: 2500; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .22s ease; }
+.cart-preview-modal.show { opacity: 1; }
+.cart-preview-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
+.cart-preview-content { position: relative; width: min(680px, calc(100% - 28px)); max-height: min(760px, calc(100vh - 32px)); overflow: auto; background: #fff; border-radius: 16px; padding: 22px; box-shadow: 0 24px 80px rgba(0,0,0,.25); transform: translateY(12px); transition: transform .22s ease; }
+.cart-preview-modal.show .cart-preview-content { transform: translateY(0); }
+.cart-preview-head { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:14px; margin-bottom:10px; }
+.cart-preview-head h3 { margin:0; font-size:1.25rem; }
+.cart-preview-head button { width:36px; height:36px; border-radius:50%; background:#f6f3f0; color:var(--off-black); }
+.cart-preview-list { display:grid; gap:10px; }
+.cart-preview-item { display:grid; grid-template-columns:58px 1fr auto; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid #f0ece9; }
+.cart-preview-item img { width:58px; height:70px; object-fit:cover; border-radius:8px; background:#f6f3f0; }
+.cart-preview-item strong, .cart-preview-item small { display:block; }
+.cart-preview-item small { color:#888; margin-top:4px; font-size:.78rem; }
+.cart-preview-item b { color:var(--primary-dark); white-space:nowrap; }
+.cart-preview-total { display:flex; justify-content:space-between; align-items:center; padding:18px 0; font-size:1.1rem; }
+.cart-preview-total strong { color:var(--primary-dark); }
+.cart-preview-actions { display:flex; gap:10px; }
+.cart-preview-actions button { min-height:48px; }
+
 .btn-clear {
   flex: 1;
   background: transparent;
@@ -3677,4 +3696,12 @@ html[dir="rtl"] .marquee-content {
   .logo {
     font-size: 1rem;
   }
+}
+
+@media (max-width: 520px) {
+  .cart-preview-content { padding: 16px; }
+  .cart-preview-item { grid-template-columns: 48px 1fr; }
+  .cart-preview-item img { width: 48px; height: 60px; }
+  .cart-preview-item b { grid-column: 2; }
+  .cart-preview-actions { flex-direction: column; }
 }
