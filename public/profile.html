@@ -507,7 +507,14 @@
     async function cancelOrder(orderId){
       if(!confirm(currentLang==='ar'?'هل تريدين إلغاء هذا الطلب؟':'Cancel this order?')) return;
       try {
-        await profileDb.collection('orders').doc(orderId).update({ status:'cancelled', cancellationReason:'Cancelled by customer', cancelledAt:firebase.firestore.FieldValue.serverTimestamp() });
+        const orderSnap = await profileDb.collection('orders').doc(orderId).get();
+        const order = orderSnap.data() || {};
+        const promoNotice = order.promoCode ? `تم إلغاء الطلب ${order.orderNumber || orderId} المستخدم به كود الخصم ${order.promoCode}` : '';
+        await profileDb.collection('orders').doc(orderId).update({
+          status:'cancelled', cancellationReason:'Cancelled by customer', cancelledBy:'customer',
+          discountCancellationNotice: promoNotice,
+          cancelledAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
         showToast(currentLang==='ar'?'تم إلغاء الطلب':'Order cancelled');
         loadOrders();
       } catch(err) { console.error(err); showToast(currentLang==='ar'?'لا يمكن إلغاء الطلب الآن':'Unable to cancel this order','error'); }

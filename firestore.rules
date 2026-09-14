@@ -52,7 +52,7 @@ service cloud.firestore {
           && resource.data.userId == request.auth.uid
           && resource.data.status in ['pending', 'confirmed']
           && request.resource.data.status == 'cancelled'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancellationReason', 'cancelledAt']));
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancellationReason', 'cancelledBy', 'discountCancellationNotice', 'cancelledAt']));
       allow delete: if isAdmin();
     }
 
