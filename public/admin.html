@@ -1226,6 +1226,36 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
     }
 
+    // Firestore's browser channel can hang on some networks while the public
+    // REST endpoint remains available. Product reads are public by design, so
+    // use REST only as a read fallback; all admin writes still use Firestore SDK.
+    function firestoreRestValue(value) {
+      if (!value) return null;
+      if ('stringValue' in value) return value.stringValue;
+      if ('integerValue' in value) return Number(value.integerValue);
+      if ('doubleValue' in value) return Number(value.doubleValue);
+      if ('booleanValue' in value) return value.booleanValue;
+      if ('timestampValue' in value) return value.timestampValue;
+      if ('nullValue' in value) return null;
+      if ('arrayValue' in value) return (value.arrayValue.values || []).map(firestoreRestValue);
+      if ('mapValue' in value) return Object.fromEntries(Object.entries(value.mapValue.fields || {})
+        .map(([key, item]) => [key, firestoreRestValue(item)]));
+      return null;
+    }
+
+    async function fetchProductsViaRest() {
+      const projectId = (typeof firebaseConfig !== 'undefined' && firebaseConfig.projectId) || 'lovara-89510';
+      const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/products?pageSize=300`;
+      const response = await fetch(endpoint, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Products REST request failed (' + response.status + ')');
+      const payload = await response.json();
+      return (payload.documents || []).map(document => ({
+        id: document.name.split('/').pop(),
+        ...Object.fromEntries(Object.entries(document.fields || {})
+          .map(([key, value]) => [key, firestoreRestValue(value)]))
+      }));
+    }
+
     // ============================================
     // ADMIN APP - SECURED WITH ROLE CHECK
     // ============================================
@@ -1747,27 +1777,31 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
         try {
           // Use simple get() without orderBy to avoid composite index requirements
-          const snapshot = await withAdminTimeout(
-            AdminApp.db.collection('products').get(),
-            10000,
-            'انتهت مهلة تحميل المنتجات. تحقق من الاتصال ثم أعد المحاولة.'
-          );
-
-          const loadedProducts = snapshot.docs.map(doc => {
-            const data = doc.data();
-            // Normalize createdAt - handle both Timestamp objects and missing values
-            let createdAt = 0;
-            if (data.createdAt) {
-              if (typeof data.createdAt.toMillis === 'function') {
-                createdAt = data.createdAt.toMillis();
-              } else if (data.createdAt.seconds) {
-                createdAt = data.createdAt.seconds * 1000;
-              } else if (typeof data.createdAt === 'number') {
-                createdAt = data.createdAt;
-              }
-            }
-            return { id: doc.id, ...data, _createdAt: createdAt };
-          });
+          let snapshot = null;
+          let loadedProducts;
+          try {
+            snapshot = await withAdminTimeout(
+              AdminApp.db.collection('products').get(),
+              10000,
+              'انتهت مهلة تحميل المنتجات. تحقق من الاتصال ثم أعد المحاولة.'
+            );
+            loadedProducts = snapshot.docs.map(doc => {
+              const data = doc.data();
+              const createdAt = data.createdAt && typeof data.createdAt.toMillis === 'function'
+                ? data.createdAt.toMillis()
+                : (data.createdAt?.seconds ? data.createdAt.seconds * 1000 : (Number(data.createdAt) || 0));
+              return { id: doc.id, ...data, _createdAt: createdAt };
+            });
+          } catch (sdkError) {
+            console.warn('Firestore SDK product read failed; trying REST fallback:', sdkError);
+            const restProducts = await fetchProductsViaRest();
+            loadedProducts = restProducts.map(product => ({
+              ...product,
+              _createdAt: product.createdAt?.seconds
+                ? product.createdAt.seconds * 1000
+                : (Date.parse(product.createdAt) || Number(product.createdAt) || 0)
+            }));
+          }
 
           // Do not erase a visible catalog because a just-written Firestore read
           // temporarily returns no documents.
@@ -1784,7 +1818,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           // Debug info
           if (this.products.length === 0) {
             if (debugEl) {
-              debugEl.textContent = 'Debug: Collection "products" is empty. Total docs: ' + snapshot.size;
+              debugEl.textContent = 'Debug: Collection "products" is empty. Total docs: ' + (snapshot ? snapshot.size : 0);
               debugEl.style.display = 'block';
             }
           }
