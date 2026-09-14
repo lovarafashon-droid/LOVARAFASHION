@@ -876,6 +876,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
                   <option value="accessories" data-i18n="accessories">Accessories</option>
                   <option value="lingerie" data-i18n="lingerie">Lingerie</option>
                   <option value="sets" data-i18n="sets">Sets</option>
+                  <option value="suits" data-i18n="suits">Suits</option>
+                  <option value="pajamas" data-i18n="pajamas">Pajamas</option>
                   <option value="winter" data-i18n="winter">Winter</option>
                   <option value="hijab" data-i18n="hijab">Hijab</option>
                 </select>
@@ -1061,13 +1063,13 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         logout: "Logout", addNewProduct: "Add New Product", productAdded: "Product added to Firebase!",
         error: "Error", productName: "Product Name *", price: "Price (EGP) *", oldPrice: "Old Price (EGP)",
         optional: "(optional)", category: "Category *", selectCategory: "Select Category",
-        dresses: "Dresses", tops: "Tops", pants: "Pants", accessories: "Accessories", lingerie: "Lingerie", sets: "Sets", winter: "Winter",
+        dresses: "Dresses", tops: "Tops", pants: "Pants", accessories: "Accessories", lingerie: "Lingerie", sets: "Sets", suits: "Suits", pajamas: "Pajamas", winter: "Winter",
         hijab: "Hijab",
         subcategory: "Subcategory", selectSubcategory: "Select Subcategory",
         subcatBags: "Bags", subcatCosmetics: "Cosmetics", subcatPersonalCare: "Personal Care",
         subcatShoes: "Shoes", subcatJewelry: "Jewelry",
         subcatBras: "Bras", subcatPanties: "Panties", subcatNightgowns: "Nightgowns",
-        subcatJackets: "Jackets", subcatSweaters: "Sweaters", subcatHoodies: "Hoodies", subcatKnitwear: "Knitwear",
+        subcatJackets: "Jackets", subcatSweaters: "Sweaters", subcatHoodies: "Hoodies", subcatKnitwear: "Knitwear", subcatHalfSleeve: "Half Sleeve", subcatSleeveless: "Sleeveless / Tank", subcatLongSleeve: "Long Sleeve",
         bagSizes: "Bag Sizes",
         sizeSmall: "Small", sizeMedium: "Medium", sizeLarge: "Large", oneSize: "One Size",
         availableSizes: "Available Sizes", availableColors: "Available Colors", selectAll: "(select all that apply)",
@@ -1107,13 +1109,13 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         logout: "تسجيل الخروج", addNewProduct: "إضافة منتج جديد", productAdded: "تم إضافة المنتج إلى Firebase!",
         error: "خطأ", productName: "اسم المنتج *", price: "السعر (ج.م) *", oldPrice: "السعر القديم (ج.م)",
         optional: "(اختياري)", category: "الفئة *", selectCategory: "اختر الفئة",
-        dresses: "فساتين", tops: "بلوزات", pants: "بناطيل", accessories: "إكسسوارات", lingerie: "ملابس داخلية", sets: "طقم",
+        dresses: "فساتين", tops: "توبات", pants: "بناطيل", accessories: "إكسسوارات", lingerie: "ملابس داخلية", sets: "طقم", suits: "سوتات", pajamas: "بيجامات",
         hijab: "محجبات",
         subcategory: "القسم الفرعي", selectSubcategory: "اختار القسم الفرعي",
         subcatBags: "شنط", subcatCosmetics: "مستحضرات تجميل", subcatPersonalCare: "عناية شخصية",
         subcatShoes: "كوتشيات", subcatJewelry: "مجوهرات",
         subcatBras: "برهات", subcatPanties: "اندرات", subcatNightgowns: "قمصان نوم",
-        subcatJackets: "جواكت", subcatSweaters: "سيلبرات", subcatHoodies: "هوديات", subcatKnitwear: "تريكو",
+        subcatJackets: "جواكت", subcatSweaters: "سيلبرات", subcatHoodies: "هوديات", subcatKnitwear: "تريكو", subcatHalfSleeve: "نص كم", subcatSleeveless: "كت", subcatLongSleeve: "كم",
         shoeSizes: "مقاسات الأحذية", bagSizes: "مقاسات الشنط",
         sizeSmall: "صغير", sizeMedium: "وسط", sizeLarge: "كبير", oneSize: "مقاس واحد",
         availableSizes: "المقاسات المتاحة", availableColors: "الألوان المتاحة", selectAll: "(اختر كل ما ينطبق)",
@@ -1396,6 +1398,22 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         };
         reader.readAsDataURL(file);
       },
+      async uploadProductImages(images, productId) {
+        if (!Array.isArray(images) || !images.length) return images;
+        if (!storage) throw new Error('Firebase Storage غير متاح حالياً. أعد تحميل الصفحة وحاول مرة أخرى.');
+        const uploaded = [];
+        for (let index = 0; index < images.length; index++) {
+          const image = images[index];
+          if (!String(image).startsWith('data:image/')) {
+            uploaded.push(image);
+            continue;
+          }
+          const ref = storage.ref().child(`products/${productId}/image-${index + 1}.jpg`);
+          await ref.putString(image, 'data_url', { contentType: 'image/jpeg' });
+          uploaded.push(await ref.getDownloadURL());
+        }
+        return uploaded;
+      },
       removeImage(index) {
         document.getElementById('pImageFile' + index).value = '';
         document.getElementById('pImage' + index).value = '';
@@ -1485,6 +1503,15 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               '<option value="panties">' + (t.subcatPanties || 'Panties') + '</option>' +
               '<option value="nightgowns">' + (t.subcatNightgowns || 'Nightgowns') + '</option>';
           }
+        } else if (category === 'tops') {
+          if (subcatGroup) subcatGroup.classList.remove('hidden');
+          if (subcatSelect) {
+            subcatSelect.innerHTML = '<option value="">' + (t.selectSubcategory || 'Select Subcategory') + '</option>' +
+              '<option value="half-sleeve">' + (t.subcatHalfSleeve || 'Half Sleeve') + '</option>' +
+              '<option value="sleeveless">' + (t.subcatSleeveless || 'Sleeveless / Tank') + '</option>' +
+              '<option value="long-sleeve">' + (t.subcatLongSleeve || 'Long Sleeve') + '</option>';
+          }
+          if (sizeSelector) sizeSelector.classList.remove('hidden');
         } else if (category === 'winter') {
           if (subcatGroup) subcatGroup.classList.remove('hidden');
           if (subcatSelect) {
@@ -1495,7 +1522,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               '<option value="knitwear">' + (t.subcatKnitwear || 'Knitwear') + '</option>';
           }
           if (sizeSelector) sizeSelector.classList.remove('hidden');
-        } else if (['dresses', 'tops', 'pants', 'sets', 'hijab'].includes(category)) {
+        } else if (['dresses', 'pants', 'sets', 'suits', 'pajamas', 'hijab'].includes(category)) {
           if (sizeSelector) sizeSelector.classList.remove('hidden');
         }
       },
@@ -1786,6 +1813,9 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         };
 
         try {
+          const productId = isEdit ? editId : AdminApp.db.collection('products').doc().id;
+          product.images = await AdminApp.uploadProductImages(product.images, productId);
+          product.imageUrl = product.images[0] || 'https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA';
           if (isEdit) {
             // Update existing product — use .set() with merge:false to FULLY REPLACE
             // the document so removed fields/images/sizes/colors are actually deleted
@@ -1800,7 +1830,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             product.colors = product.colors || [];
             product.sizes = product.sizes || [];
             product.images = product.images || [];
-            await AdminApp.db.collection('products').doc(editId).set(product, { merge: false });
+            await AdminApp.db.collection('products').doc(productId).set(product, { merge: false });
             // Show custom success for update
             const successEl = document.getElementById('successMsg');
             const successSpan = successEl.querySelector('span[data-i18n="productAdded"]');
@@ -1825,8 +1855,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             product.colors = product.colors || [];
             product.sizes = product.sizes || [];
             product.images = product.images || [];
-            const addedRef = await AdminApp.db.collection('products').add(product);
-            this.products = [{ id: addedRef.id, ...product, _createdAt: product.createdAt }, ...this.products];
+            await AdminApp.db.collection('products').doc(productId).set(product);
+            this.products = [{ id: productId, ...product, _createdAt: product.createdAt }, ...this.products];
             this.renderProducts();
             AdminApp.showSuccess();
             document.getElementById('productForm').reset();

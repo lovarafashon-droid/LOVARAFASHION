@@ -24,11 +24,11 @@ const CategoryApp = {
   translations: {
     en: {
       pageTitleDresses: "LOVARA – Dresses", pageTitleTops: "LOVARA – Tops", pageTitlePants: "LOVARA – Pants",
-      pageTitleAccessories: "LOVARA – Accessories", pageTitleSets: "LOVARA – Sets", pageTitleLingerie: "LOVARA – Lingerie",
+      pageTitleAccessories: "LOVARA – Accessories", pageTitleSets: "LOVARA – Sets", pageTitleSuits: "LOVARA – Suits", pageTitlePajamas: "LOVARA – Pajamas", pageTitleLingerie: "LOVARA – Lingerie",
       pageTitleHijab: "LOVARA – Hijab", pageTitleWinter: "LOVARA – Winter",
       navHome: "Home", navShop: "Shop", navCategories: "Categories", navAbout: "About", navContact: "Contact",
       navLogin: "Login", navSignup: "Sign Up",
-      catDresses: "Dresses", catTops: "Tops", catPants: "Pants", catAccessories: "Accessories", catSets: "Sets", catLingerie: "Lingerie",
+      catDresses: "Dresses", catTops: "Tops", catPants: "Pants", catAccessories: "Accessories", catSets: "Sets", catSuits: "Suits", catPajamas: "Pajamas", catLingerie: "Lingerie",
       catHijab: "Hijab", catWinter: "Winter", winterCollectionEyebrow: "Winter Collection", winterCollectionTitle: "Warmth & Style", winterCollectionDesc: "Choose your winter look with soft fabrics and refined details.",
       shopEyebrow: "Our Collection", loadingProducts: "Loading products...",
       emptyTitle: "Products Coming Soon", emptyDesc: "We are adding beautiful new items to this category.<br />Check back shortly!",
@@ -43,7 +43,7 @@ const CategoryApp = {
       footerShop: "Shop", footerHelp: "Help", footerNewsletter: "Newsletter",
       footerNewsletterDesc: "Get exclusive deals and style inspiration.",
       footerNewArrivals: "New Arrivals", footerDresses: "Dresses", footerTops: "Tops",
-      footerPants: "Pants", footerAccessories: "Accessories", footerLingerie: "Lingerie", footerSets: "Sets",
+      footerPants: "Pants", footerAccessories: "Accessories", footerLingerie: "Lingerie", footerSets: "Sets", footerSuits: "Suits", footerPajamas: "Pajamas", footerSuits: "Suits", footerPajamas: "Pajamas",
       footerHijab: "Hijab", footerWinter: "Winter",
       footerSizing: "Sizing Guide", footerShipping: "Shipping Info", footerReturns: "Returns",
       footerTrack: "Track Order", footerContact: "Contact",
@@ -71,15 +71,15 @@ const CategoryApp = {
       size: "Size", color: "Color", selectSize: "Select size", selectColor: "Select color",
       subcatAll: "All", subcatBras: "Bras", subcatPanties: "Panties", subcatNightgowns: "Nightgowns",
       subcatBags: "Bags", subcatCosmetics: "Cosmetics", subcatPersonalCare: "Personal Care", subcatJewelry: "Jewelry",
-      subcatShoes: "Shoes", subcatJackets: "Jackets", subcatSweaters: "Sweaters", subcatHoodies: "Hoodies", subcatKnitwear: "Knitwear"
+      subcatHalfSleeve: "Half Sleeve", subcatSleeveless: "Sleeveless / Tank", subcatLongSleeve: "Long Sleeve", subcatShoes: "Shoes", subcatJackets: "Jackets", subcatSweaters: "Sweaters", subcatHoodies: "Hoodies", subcatKnitwear: "Knitwear"
     },
     ar: {
       pageTitleDresses: "LOVARA – فساتين", pageTitleTops: "LOVARA – بلوزات", pageTitlePants: "LOVARA – بناطيل",
-      pageTitleAccessories: "LOVARA – إكسسوارات", pageTitleSets: "LOVARA – اطقم", pageTitleLingerie: "LOVARA – ملابس داخلية",
+      pageTitleAccessories: "LOVARA – إكسسوارات", pageTitleSets: "LOVARA – اطقم", pageTitleSuits: "LOVARA – سوتات", pageTitlePajamas: "LOVARA – بيجامات", pageTitleLingerie: "LOVARA – ملابس داخلية",
       pageTitleHijab: "LOVARA – محجبات", pageTitleWinter: "LOVARA – الشتوي",
       navHome: "الرئيسية", navShop: "المتجر", navCategories: "التصنيفات", navAbout: "من نحن", navContact: "تواصل معنا",
       navLogin: "تسجيل الدخول", navSignup: "إنشاء حساب",
-      catDresses: "فساتين", catTops: "بلوزات", catPants: "بناطيل", catAccessories: "إكسسوارات", catSets: "اطقم", catLingerie: "ملابس داخلية",
+      catDresses: "فساتين", catTops: "توبات", catPants: "بناطيل", catAccessories: "إكسسوارات", catSets: "اطقم", catSuits: "سوتات", catPajamas: "بيجامات", catLingerie: "ملابس داخلية",
       catHijab: "محجبات", catWinter: "الشتوي", winterCollectionEyebrow: "مجموعة الشتوي", winterCollectionTitle: "دفء وأناقة", winterCollectionDesc: "اختاري إطلالتك الشتوية بخامات ناعمة وتفاصيل فاخرة.",
       shopEyebrow: "مجموعتنا", loadingProducts: "جاري تحميل المنتجات...",
       emptyTitle: "المنتجات قريباً", emptyDesc: "نضيف قطعاً جديدة رائعة إلى هذا التصنيف.<br />تفقدي قريباً!",
@@ -94,7 +94,7 @@ const CategoryApp = {
       footerShop: "المتجر", footerHelp: "المساعدة", footerNewsletter: "النشرة البريدية",
       footerNewsletterDesc: "احصلي على عروض حصرية وإلهام للأناقة.",
       footerNewArrivals: "وصل حديثاً", footerDresses: "فساتين", footerTops: "بلوزات",
-      footerPants: "بناطيل", footerAccessories: "إكسسوارات", footerLingerie: "ملابس داخلية", footerSets: "اطقم",
+      footerPants: "بناطيل", footerAccessories: "إكسسوارات", footerLingerie: "ملابس داخلية", footerSets: "اطقم", footerSuits: "سوتات", footerPajamas: "بيجامات", footerSuits: "سوتات", footerPajamas: "بيجامات",
       footerHijab: "محجبات", footerWinter: "الشتوي",
       footerSizing: "دليل المقاسات", footerShipping: "معلومات الشحن", footerReturns: "الإرجاع",
       footerTrack: "تتبع الطلب", footerContact: "تواصل معنا",
@@ -122,7 +122,7 @@ const CategoryApp = {
       size: "المقاس", color: "اللون", selectSize: "اختيار المقاس", selectColor: "اختيار اللون",
       subcatAll: "الكل", subcatBras: "برهات", subcatPanties: "اندرات", subcatNightgowns: "قمصان نوم",
       subcatBags: "شنط", subcatCosmetics: "مستحضرات تجميل", subcatPersonalCare: "عناية شخصية", subcatJewelry: "مجوهرات",
-      subcatShoes: "كوتشيات", subcatJackets: "جواكت", subcatSweaters: "سيلبرات", subcatHoodies: "هوديات", subcatKnitwear: "تريكو"
+      subcatHalfSleeve: "نص كم", subcatSleeveless: "كت", subcatLongSleeve: "كم", subcatShoes: "كوتشيات", subcatJackets: "جواكت", subcatSweaters: "سيلبرات", subcatHoodies: "هوديات", subcatKnitwear: "تريكو"
     }
   },
 
@@ -193,6 +193,8 @@ const CategoryApp = {
     this.setupNewsletterForm();
     this.setupProductCardDelegation();
     this.setupCartDelegation();
+    const requestedSubcategory = new URLSearchParams(window.location.search).get('subcategory');
+    if (requestedSubcategory) this.activeSubcategory = requestedSubcategory;
     this.setupProductFilters();
     // The homepage has a dedicated carousel loader. Running both loaders at
     // once causes duplicate Firestore requests and can leave the UI hanging.
@@ -823,18 +825,18 @@ const CategoryApp = {
     const grid = document.getElementById('productsGrid');
     if (!grid || document.getElementById('productFilters')) return;
     const category = document.body.getAttribute('data-category');
-    if (category === 'winter' && !document.getElementById('winterSubcategoryTabs')) {
+    if (['winter', 'tops', 'suits', 'pajamas'].includes(category) && !document.getElementById('categorySubcategoryTabs')) {
       const tabs = document.createElement('div');
-      tabs.id = 'winterSubcategoryTabs';
+      tabs.id = 'categorySubcategoryTabs';
       tabs.className = 'subcategory-tabs';
-      const labels = [
-        ['all', this.currentLang === 'ar' ? 'الكل' : 'All'],
-        ['jackets', this.translations[this.currentLang].subcatJackets],
-        ['sweaters', this.translations[this.currentLang].subcatSweaters],
-        ['hoodies', this.translations[this.currentLang].subcatHoodies],
-        ['knitwear', this.translations[this.currentLang].subcatKnitwear]
-      ];
-      tabs.innerHTML = labels.map(([value, label]) => `<button type="button" class="subcat-tab${value === 'all' ? ' active' : ''}" data-subcat="${value}">${label}</button>`).join('');
+      const labelsByCategory = {
+        winter: [['all', this.currentLang === 'ar' ? 'الكل' : 'All'], ['jackets', this.translations[this.currentLang].subcatJackets], ['sweaters', this.translations[this.currentLang].subcatSweaters], ['hoodies', this.translations[this.currentLang].subcatHoodies], ['knitwear', this.translations[this.currentLang].subcatKnitwear]],
+        tops: [['all', this.translations[this.currentLang].subcatAll], ['half-sleeve', this.translations[this.currentLang].subcatHalfSleeve], ['sleeveless', this.translations[this.currentLang].subcatSleeveless], ['long-sleeve', this.translations[this.currentLang].subcatLongSleeve]],
+        suits: [['all', this.translations[this.currentLang].subcatAll]],
+        pajamas: [['all', this.translations[this.currentLang].subcatAll]]
+      };
+      const labels = labelsByCategory[category] || [['all', this.currentLang === 'ar' ? 'الكل' : 'All']];
+      tabs.innerHTML = labels.map(([value, label]) => `<button type="button" class="subcat-tab${value === this.activeSubcategory ? ' active' : ''}" data-subcat="${value}">${label}</button>`).join('');
       tabs.addEventListener('click', event => {
         const tab = event.target.closest('.subcat-tab');
         if (tab) this.filterBySubcategory(tab.dataset.subcat);
