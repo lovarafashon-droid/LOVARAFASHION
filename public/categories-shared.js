@@ -797,6 +797,8 @@ const CategoryApp = {
     const grid = document.getElementById('productsGrid');
     if (!grid || document.getElementById('productFilters')) return;
     const category = document.body.getAttribute('data-category');
+    // The homepage has its own product carousel and must not show category filters.
+    if (!category) return;
     if (['winter', 'tops', 'suits', 'pajamas'].includes(category) && !document.getElementById('categorySubcategoryTabs')) {
       const tabs = document.createElement('div');
       tabs.id = 'categorySubcategoryTabs';
