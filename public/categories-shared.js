@@ -832,7 +832,7 @@ const CategoryApp = {
       const labelsByCategory = {
         winter: [['all', this.currentLang === 'ar' ? 'الكل' : 'All'], ['jackets', this.translations[this.currentLang].subcatJackets], ['sweaters', this.translations[this.currentLang].subcatSweaters], ['hoodies', this.translations[this.currentLang].subcatHoodies], ['knitwear', this.translations[this.currentLang].subcatKnitwear]],
         tops: [['all', this.translations[this.currentLang].subcatAll], ['half-sleeve', this.translations[this.currentLang].subcatHalfSleeve], ['sleeveless', this.translations[this.currentLang].subcatSleeveless], ['long-sleeve', this.translations[this.currentLang].subcatLongSleeve]],
-        suits: [['all', this.translations[this.currentLang].subcatAll]],
+        suits: [['all', this.translations[this.currentLang].subcatAll], ['half-sleeve', this.translations[this.currentLang].subcatHalfSleeve], ['sleeveless', this.translations[this.currentLang].subcatSleeveless], ['long-sleeve', this.translations[this.currentLang].subcatLongSleeve]],
         pajamas: [['all', this.translations[this.currentLang].subcatAll]]
       };
       const labels = labelsByCategory[category] || [['all', this.currentLang === 'ar' ? 'الكل' : 'All']];
