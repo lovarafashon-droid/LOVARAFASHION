@@ -1133,7 +1133,7 @@
         agreeTerms: "I agree to the", termsLink: "Terms of Service", and: "and", privacyLink: "Privacy Policy",
         subscribeNews: "Subscribe to our newsletter for exclusive offers", btnCreateAccount: "Create Account",
         haveAccount: "Already have an account?", btnSignInLink: "Sign In",
-        forgotTitle: "Reset Password", forgotSub: "Enter your email to receive a reset link",
+        forgotTitle: "Reset Password", forgotSub: "Enter your email to receive a reset link", resetSent: "Reset link sent to your email!", resetEmailRequired: "Please enter your email", resetNoAccount: "No account found with this email.",
         btnSendReset: "Send Reset Link", rememberPassword: "Remember your password?",
         cartTitle: "Your Cart", cartEmpty: "Your cart is empty", cartContinue: "Continue Shopping",
         cartTotal: "Total:", cartCheckout: "Checkout", cartClear: "Clear Cart",
@@ -1215,7 +1215,7 @@
         agreeTerms: "أوافق على", termsLink: "شروط الخدمة", and: "و", privacyLink: "سياسة الخصوصية",
         subscribeNews: "اشتركي في نشرتنا البريدية للحصول على عروض حصرية", btnCreateAccount: "إنشاء الحساب",
         haveAccount: "لديكِ حساب بالفعل؟", btnSignInLink: "تسجيل الدخول",
-        forgotTitle: "إعادة تعيين كلمة المرور", forgotSub: "أدخلي بريدكِ الإلكتروني لاستلام رابط إعادة التعيين",
+        forgotTitle: "إعادة تعيين كلمة المرور", forgotSub: "أدخلي بريدكِ الإلكتروني لاستلام رابط إعادة التعيين", resetSent: "تم إرسال رابط إعادة التعيين إلى بريدكِ الإلكتروني.", resetEmailRequired: "اكتبي بريدكِ الإلكتروني أولاً", resetNoAccount: "لا يوجد حساب مسجل بهذا البريد.",
         btnSendReset: "إرسال رابط إعادة التعيين", rememberPassword: "تذكرتِ كلمة المرور؟",
         cartTitle: "سلة التسوق", cartEmpty: "سلة التسوق فارغة", cartContinue: "مواصلة التسوق",
         cartTotal: "الإجمالي:", cartCheckout: "إتمام الشراء", cartClear: "إفراغ السلة",
@@ -1466,15 +1466,16 @@
         // Forgot Password
         document.getElementById('forgotForm')?.addEventListener('submit', async (e) => {
           e.preventDefault();
+          const t = translations[AppSettings.currentLang];
           const email = document.getElementById('forgotEmail')?.value.trim();
-          if (!email) { showToast('Please enter your email', 'error'); return; }
+          if (!email) { showToast(t.resetEmailRequired, 'error'); return; }
           try {
             await firebase.auth().sendPasswordResetEmail(email);
-            showToast('Reset link sent to your email!');
+            showToast(t.resetSent);
             Modals.close('forgotModal');
           } catch (err) {
             let msg = err.message;
-            if (err.code === 'auth/user-not-found') msg = 'No account found with this email.';
+            if (err.code === 'auth/user-not-found') msg = t.resetNoAccount;
             showToast(msg, 'error');
           }
         });
