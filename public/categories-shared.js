@@ -817,18 +817,6 @@ const CategoryApp = {
       });
       grid.parentNode.insertBefore(tabs, grid);
     }
-    const toolbar = document.createElement('div');
-    toolbar.id = 'productFilters';
-    toolbar.className = 'product-filters';
-    toolbar.innerHTML = `<label><span>${this.currentLang === 'ar' ? 'السعر من' : 'Price from'}</span><input id="filterMinPrice" type="number" min="0" placeholder="0"></label><label><span>${this.currentLang === 'ar' ? 'إلى' : 'to'}</span><input id="filterMaxPrice" type="number" min="0" placeholder="∞"></label><label><span>${this.currentLang === 'ar' ? 'المقاس' : 'Size'}</span><select id="filterSize"><option value="">${this.currentLang === 'ar' ? 'كل المقاسات' : 'All sizes'}</option></select></label><button type="button" id="clearProductFilters">${this.currentLang === 'ar' ? 'مسح الفلاتر' : 'Clear filters'}</button>`;
-    grid.parentNode.insertBefore(toolbar, grid);
-    ['filterMinPrice', 'filterMaxPrice', 'filterSize'].forEach(id => document.getElementById(id)?.addEventListener('input', () => this.applyProductFilters()));
-    document.getElementById('clearProductFilters')?.addEventListener('click', () => {
-      document.getElementById('filterMinPrice').value = '';
-      document.getElementById('filterMaxPrice').value = '';
-      document.getElementById('filterSize').value = '';
-      this.applyProductFilters();
-    });
   },
 
   refreshProductFilterOptions() {
