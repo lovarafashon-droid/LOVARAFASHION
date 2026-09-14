@@ -1344,13 +1344,7 @@
       if (button) { button.disabled = true; button.dataset.originalText = button.textContent; button.textContent = 'Connecting...'; }
       try {
         await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-        const result = await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
-        const user = result.user;
-        const ref = firebase.firestore().collection('users').doc(user.uid);
-        const doc = await ref.get();
-        if (!doc.exists) await ref.set({ email: user.email || '', role: 'user', provider: 'google', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-        showToast(t.googleSignIn + ' ✓');
-        Modals.close(modalId);
+        await firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider());
       } catch (err) {
         let msg = t.googlePopupError;
         if (err.code === 'auth/operation-not-allowed') msg = t.googleDisabled;
@@ -1375,6 +1369,20 @@
             this.db = firebase.firestore();
             this.setupAuthState();
             this.setupForms();
+            firebase.auth().getRedirectResult().then(async (result) => {
+              if (!result || !result.user) return;
+              const user = result.user;
+              const ref = this.db.collection('users').doc(user.uid);
+              const doc = await ref.get();
+              if (!doc.exists) await ref.set({ email: user.email || '', role: 'user', provider: 'google', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+              showToast((translations[AppSettings.currentLang].googleSignIn || 'Google sign-in') + ' ✓');
+            }).catch((err) => {
+              const t = translations[AppSettings.currentLang];
+              let msg = t.googlePopupError;
+              if (err.code === 'auth/operation-not-allowed') msg = t.googleDisabled;
+              else if (err.code === 'auth/unauthorized-domain') msg = t.googleDomain;
+              showToast(msg, 'error');
+            });
             console.log('[LOVARA] Firebase Auth ready');
           } else if (attempts < 30) {
             setTimeout(check, 300);
