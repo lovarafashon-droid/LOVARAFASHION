@@ -608,8 +608,8 @@
         const rejected = [];
         const active = [];
         this.orders.forEach((order, index) => {
-          if (order.confirmationStatus === 'confirmed') completed.push({ order, index });
-          else if (order.confirmationStatus === 'rejected' || order.status === 'cancelled') rejected.push({ order, index });
+          if (order.status === 'cancelled' || order.confirmationStatus === 'rejected') rejected.push({ order, index });
+          else if (order.confirmationStatus === 'confirmed') completed.push({ order, index });
           else active.push({ order, index });
         });
         const group = (name, icon, className, entries, emptyText) => `
@@ -619,7 +619,7 @@
           </section>`;
         container.innerHTML =
           group('Completed / Confirmed Orders', 'fa-circle-check', 'completed', completed, 'No completed orders yet.') +
-          group('Rejected Orders', 'fa-circle-xmark', 'rejected', rejected, 'No rejected orders.') +
+          group('Rejected / Cancelled Orders', 'fa-circle-xmark', 'rejected', rejected, 'No rejected or cancelled orders.') +
           group('Active Orders', 'fa-clock', 'active', active, 'No active orders.');
       },
 
@@ -633,6 +633,7 @@
         const orderStatus = allowedStatuses.includes(order.status) ? order.status : 'pending';
         const statusClass = `status-${orderStatus}`;
         const statusText = orderStatus.toUpperCase();
+        const isCancelled = orderStatus === 'cancelled';
         const confirmStatus = ['pending', 'confirmed', 'rejected'].includes(order.confirmationStatus) ? order.confirmationStatus : 'pending';
         const rejectionReason = order.rejectionReason || '';
         const esc = this.escapeHTML.bind(this);
@@ -767,8 +768,8 @@
               </div>
               <div style="display:flex;align-items:center;gap:8px;">
                 <div class="order-status ${statusClass}">${statusText}</div>
-                <div class="confirmation-status ${confirmStatus === 'confirmed' ? 'status-confirmed-ok' : confirmStatus === 'rejected' ? 'status-rejected' : 'status-pending-confirm'}">
-                  ${confirmStatus === 'confirmed' ? '✓ Confirmed' : confirmStatus === 'rejected' ? '✗ Rejected' : '⏳ Pending'}
+                <div class="confirmation-status ${isCancelled || confirmStatus === 'rejected' ? 'status-rejected' : confirmStatus === 'confirmed' ? 'status-confirmed-ok' : 'status-pending-confirm'}">
+                  ${isCancelled ? '✗ Cancelled by customer' : confirmStatus === 'confirmed' ? '✓ Confirmed' : confirmStatus === 'rejected' ? '✗ Rejected' : '⏳ Pending'}
                 </div>
               </div>
             </div>
@@ -813,7 +814,11 @@
             </div>
 
             <div class="order-actions">
-              ${confirmStatus === 'pending' ? `
+              ${isCancelled ? `
+              <button type="button" class="btn btn-reject" disabled style="opacity:0.7;cursor:default;">
+                <i class="fas fa-ban"></i> Cancelled by Customer
+              </button>
+              ` : confirmStatus === 'pending' ? `
               <button type="button" class="btn btn-confirm" onclick="OrdersApp.confirmOrder(${index})">
                 <i class="fas fa-user-check"></i> تم تأكيد الأوردر من العميل
               </button>
@@ -851,7 +856,12 @@
                 <i class="fab fa-whatsapp"></i> WhatsApp
               </a>
             </div>
-            ${confirmStatus !== 'pending' ? `
+            ${isCancelled ? `
+            <div class="confirmation-box rejected">
+              <i class="fas fa-ban"></i>
+              <span>Order Cancelled by Customer${order.cancellationReason ? ' — ' + esc(order.cancellationReason) : ''}</span>
+            </div>
+            ` : confirmStatus !== 'pending' ? `
             <div class="confirmation-box ${confirmStatus === 'rejected' ? 'rejected' : ''}">
               <i class="fas ${confirmStatus === 'confirmed' ? 'fa-check-circle' : 'fa-times-circle'}"></i>
               <span>${confirmStatus === 'confirmed' ? 'Order Confirmed ✓' : 'Order Rejected ✗' + (rejectionReason ? ' — Reason: ' + rejectionReason : '')}</span>
