@@ -133,30 +133,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   const cached = getCachedProducts();
-  if (cached && cached.length > 0) {
-    if (loading) loading.style.display = 'none';
-    if (emptyState) emptyState.style.display = 'none';
-    // Paint the last successful catalog immediately while refreshing it.
-    initProductCarousel(grid, cached);
-  } else {
-    showSkeletonLoading(grid, 4);
-  }
+  // Keep one consistent catalog on first paint; do not show a partial cached catalog.
+  showSkeletonLoading(grid, 4);
 
   try {
-    // First paint: only fetch the first eight cards so the carousel appears
-    // immediately. The full catalog refresh follows in the same request.
-    const firstProducts = await fetchProductsViaRest(8);
-    // Homepage shows the catalog immediately without hiding products behind a showOnHome filter.
-    const firstToRender = firstProducts;
-    if (firstToRender.length > 0 && (!cached || cached.length === 0)) {
-      setCachedProducts(firstToRender);
-      if (loading) loading.style.display = 'none';
-      if (emptyState) emptyState.style.display = 'none';
-      initProductCarousel(grid, firstToRender);
-    }
-
-    // Then fetch all products for filters and pagination and replace the
-    // initial eight-card view when the complete catalog is ready.
+    // Fetch the full catalog once so products do not appear in two delayed batches.
     const products = await fetchProductsViaRest();
     // Keep every product returned by Firebase visible on the homepage.
     const productsToRender = products;
