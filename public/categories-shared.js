@@ -444,6 +444,43 @@ const CategoryApp = {
     }
   },
 
+  async handleGoogleAuth(modalId) {
+    if (!this.firebaseReady || typeof firebase === 'undefined' || !firebase.auth) {
+      this.showToast('Authentication service not ready. Please wait.', 'error');
+      return;
+    }
+    try {
+      await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      const provider = new firebase.auth.GoogleAuthProvider();
+      const result = await firebase.auth().signInWithPopup(provider);
+      const user = result.user;
+      const userRef = firebase.firestore().collection('users').doc(user.uid);
+      const userDoc = await userRef.get();
+      const nameParts = (user.displayName || '').trim().split(/\s+/).filter(Boolean);
+      if (!userDoc.exists) {
+        await userRef.set({
+          email: user.email || '', firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' '), role: 'user', provider: 'google',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+      const userData = { uid: user.uid, email: user.email, displayName: user.displayName || user.email.split('@')[0], photoURL: user.photoURL };
+      localStorage.setItem('lovara_user', JSON.stringify(userData));
+      this.currentUser = userData;
+      this.updateAuthUI(userData);
+      if (userDoc.exists && userDoc.data().role === 'admin') { window.location.href = 'admin.html'; return; }
+      this.closeModal(modalId);
+      this.showToast(this.t('welcome') + '!');
+    } catch (error) {
+      let msg = error.message;
+      if (error.code === 'auth/operation-not-allowed') msg = 'Google sign-in is not enabled in Firebase.';
+      else if (error.code === 'auth/unauthorized-domain') msg = 'This website is not authorized for Google sign-in yet.';
+      else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') msg = 'Google sign-in was cancelled.';
+      else if (error.code === 'auth/network-request-failed') msg = 'Network error. Please check your connection.';
+      this.showToast(msg, 'error');
+    }
+  },
+
   async handleForgot(e) {
     e.preventDefault();
     const emailInput = document.getElementById('forgotEmail');

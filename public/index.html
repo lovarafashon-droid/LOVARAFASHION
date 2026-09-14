@@ -1124,7 +1124,7 @@
         footerCopyright: "© 2027 LOVARA. All rights reserved.",
         footerPrivacy: "Privacy Policy", footerTerms: "Terms of Service", footerCookies: "Cookie Policy",
         loginTitle: "Welcome Back", loginSub: "Sign in to your account",
-        googleSignIn: "Continue with Google", orSignIn: "or sign in with email",
+        googleSignIn: "Continue with Google", orSignIn: "or sign in with email", googlePopupError: "Google sign-in failed. Please try again.", googleDisabled: "Google sign-in is not enabled in Firebase.", googleDomain: "This website is not authorized for Google sign-in yet.", googleCancelled: "Google sign-in was cancelled.",
         labelPassword: "Password", placeholderPassword: "••••••••", placeholderPasswordMin: "Minimum 8 characters",
         rememberMe: "Remember me", forgotPassword: "Forgot password?", btnSignIn: "Sign In",
         noAccount: "Don't have an account?", btnSignUpLink: "Sign Up",
@@ -1206,7 +1206,7 @@
         footerCopyright: "© 2027 لوڤارا. جميع الحقوق محفوظة.",
         footerPrivacy: "سياسة الخصوصية", footerTerms: "شروط الخدمة", footerCookies: "سياسة الكوكيز",
         loginTitle: "أهلاً بعودتكِ", loginSub: "سجلي دخولكِ إلى حسابكِ",
-        googleSignIn: "المتابعة مع Google", orSignIn: "أو سجلي الدخول بالبريد",
+        googleSignIn: "المتابعة مع Google", orSignIn: "أو سجلي الدخول بالبريد", googlePopupError: "فشل تسجيل الدخول بجوجل. حاولي مرة أخرى.", googleDisabled: "تسجيل الدخول بجوجل غير مفعّل في Firebase.", googleDomain: "هذا النطاق غير مصرح له بتسجيل الدخول بجوجل بعد.", googleCancelled: "تم إلغاء تسجيل الدخول بجوجل.",
         labelPassword: "كلمة المرور", placeholderPassword: "••••••••", placeholderPasswordMin: "8 أحرف على الأقل",
         rememberMe: "تذكرني", forgotPassword: "نسيتِ كلمة المرور؟", btnSignIn: "تسجيل الدخول",
         noAccount: "ليس لديكِ حساب؟", btnSignUpLink: "إنشاء حساب",
@@ -1432,6 +1432,43 @@
             showToast(msg, 'error');
           }
         });
+
+        const signInWithGoogle = async (modalId) => {
+          const t = translations[AppSettings.currentLang];
+          const button = document.getElementById(modalId === 'loginModal' ? 'googleLogin' : 'googleSignup');
+          if (button) { button.disabled = true; button.dataset.originalText = button.textContent; button.textContent = 'Connecting...'; }
+          try {
+            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            const provider = new firebase.auth.GoogleAuthProvider();
+            const result = await firebase.auth().signInWithPopup(provider);
+            const user = result.user;
+            const userRef = this.db.collection('users').doc(user.uid);
+            const userDoc = await userRef.get();
+            if (!userDoc.exists) {
+              const nameParts = (user.displayName || '').trim().split(/\s+/).filter(Boolean);
+              await userRef.set({
+                email: user.email || '',
+                firstName: nameParts[0] || '',
+                lastName: nameParts.slice(1).join(' '),
+                role: 'user',
+                provider: 'google',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            }
+            showToast(t.googleSignIn + ' ✓');
+            Modals.close(modalId);
+          } catch (err) {
+            let msg = t.googlePopupError;
+            if (err.code === 'auth/operation-not-allowed') msg = t.googleDisabled;
+            else if (err.code === 'auth/unauthorized-domain') msg = t.googleDomain;
+            else if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') msg = t.googleCancelled;
+            showToast(msg, 'error');
+          } finally {
+            if (button) { button.disabled = false; button.textContent = button.dataset.originalText || t.googleSignIn; }
+          }
+        };
+        document.getElementById('googleLogin')?.addEventListener('click', () => signInWithGoogle('loginModal'));
+        document.getElementById('googleSignup')?.addEventListener('click', () => signInWithGoogle('signupModal'));
 
         // Signup
         document.getElementById('signupForm')?.addEventListener('submit', async (e) => {
