@@ -301,13 +301,14 @@ const CategoryApp = {
       if (userDisplay) { userDisplay.style.cursor = 'pointer'; userDisplay.onclick = () => { window.location.href = 'profile.html'; }; }
       if (userDisplay) {
         userDisplay.style.display = 'flex';
-        if (userName) userName.textContent = user.displayName || user.email.split('@')[0];
-        if (userEmail) userEmail.textContent = user.email;
+        if (userName) userName.textContent = this.currentLang === 'ar' ? 'حسابي' : 'My Account';
+        if (userEmail) { userEmail.textContent = ''; userEmail.style.display = 'none'; }
       }
       if (logoutBtn) logoutBtn.style.display = 'inline-flex';
     } else {
       if (authButtons) authButtons.style.display = 'flex';
       if (userDisplay) userDisplay.style.display = 'none';
+      if (userEmail) userEmail.style.display = '';
       if (userDisplay) userDisplay.onclick = null;
       if (logoutBtn) logoutBtn.style.display = 'none';
     }
@@ -372,7 +373,9 @@ const CategoryApp = {
   async saveAuthUser(user, provider = 'password') {
     const ref = firebase.firestore().collection('users').doc(user.uid);
     const snap = await ref.get();
-    if (!snap.exists) await ref.set({ email: user.email || '', role: 'user', provider, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    const payload = { email: user.email || '', provider, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if (!snap.exists) Object.assign(payload, { role: 'user', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    await ref.set(payload, { merge: true });
   },
 
   async handleLogin(e) {
