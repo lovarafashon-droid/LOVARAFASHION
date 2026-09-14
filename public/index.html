@@ -155,6 +155,9 @@
   </style>
 
 <style>
+    .tops-home-subcats { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 4px; position:relative; z-index:2; }
+    .tops-home-subcats a { display:inline-block; padding:5px 9px; border:1px solid rgba(0,0,0,.14); border-radius:999px; color:inherit; text-decoration:none; font-size:11px; line-height:1.2; background:rgba(255,255,255,.72); }
+    .tops-home-subcats a:hover { background:#111; color:#fff; border-color:#111; }
     /* ===== PRODUCT DETAIL MODAL (Amazon-style) ===== */
     .product-modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -566,7 +569,12 @@
           </div>
           <div class="category-info">
             <h3 data-i18n="catTops">Tops</h3>
-            <p data-i18n="catTopsSub">Chic & Modern</p>
+            <p data-i18n="catTopsSub">Half Sleeve • Sleeveless • Long Sleeve</p>
+            <div class="tops-home-subcats" onclick="event.stopPropagation()">
+              <a href="tops.html?subcategory=half-sleeve" data-i18n="subcatHalfSleeve">Half Sleeve</a>
+              <a href="tops.html?subcategory=sleeveless" data-i18n="subcatSleeveless">Sleeveless / Tank</a>
+              <a href="tops.html?subcategory=long-sleeve" data-i18n="subcatLongSleeve">Long Sleeve</a>
+            </div>
             <span class="cat-link"><span data-i18n="catExplore">Explore</span> <i class="fas fa-arrow-right"></i></span>
           </div>
         </div>
@@ -1054,7 +1062,7 @@
         heroScroll: "Scroll",
         catEyebrow: "Browse by", catTitle: "Categories",
         catDresses: "Dresses", catDressesSub: "Elegant & Casual",
-        catTops: "Tops", catTopsSub: "Half Sleeve • Sleeveless • Long Sleeve", catPajamas: "Pajamas", catPajamasSub: "Soft & Comfortable", catSuits: "Suits", catSuitsSub: "Polished & Coordinated",
+        catTops: "Tops", catTopsSub: "Half Sleeve • Sleeveless • Long Sleeve", subcatHalfSleeve: "Half Sleeve", subcatSleeveless: "Sleeveless / Tank", subcatLongSleeve: "Long Sleeve", catPajamas: "Pajamas", catPajamasSub: "Soft & Comfortable", catSuits: "Suits", catSuitsSub: "Polished & Coordinated",
         catPants: "Pants", catPantsSub: "Tailored & Trendy",
         catAccessories: "Accessories", catAccessoriesSub: "Bags, Jewellery & More",
         catLingerie: "Lingerie", catLingerieSub: "Elegant & Comfortable",
@@ -1136,7 +1144,7 @@
         heroScroll: "اسحبي للأسفل",
         catEyebrow: "تصفحي حسب", catTitle: "التصنيفات",
         catDresses: "فساتين", catDressesSub: "أنيقة وعصرية",
-        catTops: "توبات", catTopsSub: "نص كم • كت • كم", catPajamas: "بيجامات", catPajamasSub: "ناعمة ومريحة", catSuits: "سوتات", catSuitsSub: "متناسقة وأنيقة",
+        catTops: "توبات", catTopsSub: "نص كم • كت • كم", subcatHalfSleeve: "نص كم", subcatSleeveless: "كت", subcatLongSleeve: "كم", catPajamas: "بيجامات", catPajamasSub: "ناعمة ومريحة", catSuits: "سوتات", catSuitsSub: "متناسقة وأنيقة",
         catPants: "بناطيل", catPantsSub: "مصممة وعصرية",
         catAccessories: "إكسسوارات", catAccessoriesSub: "حقائب، مجوهرات وأكثر",
         catLingerie: "ملابس داخلية", catLingerieSub: "أنيقة ومريحة",
@@ -1559,14 +1567,6 @@
 
     // ---- Navbar scroll ----
     window.addEventListener('scroll', () => document.getElementById('navbar')?.classList.toggle('scrolled', window.scrollY > 20));
-
-    // ---- Filter buttons ----
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      });
-    });
 
     // ---- Cart (delegates to CategoryApp) ----
     const CartApp = {
