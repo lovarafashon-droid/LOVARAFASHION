@@ -1,7 +1,7 @@
 /* LOVARA visitor analytics: group registered users by email and exclude admin/order dashboards. */
 (function () {
-  const page = location.pathname.split('/').pop() || 'index.html';
-  const excluded = new Set(['admin.html', 'orders.html', 'other.html', 'checkout.html']);
+  const page = location.pathname.split('/').pop() || 'index';
+  const excluded = new Set(['admin', 'orders', 'other', 'checkout']);
   if (excluded.has(page)) return;
 
   const sessionKey = 'lovara_visitor_session';

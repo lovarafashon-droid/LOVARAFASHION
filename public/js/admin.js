@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
       logoutBtn.addEventListener('click', async function() {
         try {
           await auth.signOut();
-          window.location.href = 'index.html'; // ← أحسن من reload
+          window.location.href = '/'; // ← أحسن من reload
         } catch (err) {
           console.error('Logout error:', err);
         }

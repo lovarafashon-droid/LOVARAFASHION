@@ -1,10 +1,8 @@
 User-agent: *
 Allow: /
-Disallow: /admin.html
-Disallow: /orders.html
 Disallow: /admin
 Disallow: /orders
-Disallow: /checkout.html
-Disallow: /profile.html
+Disallow: /checkout
+Disallow: /profile
 Disallow: /api/
 Sitemap: https://lovarafashion.vercel.app/sitemap.xml

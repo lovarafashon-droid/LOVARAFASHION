@@ -298,7 +298,7 @@ const CategoryApp = {
     const logoutBtn = document.getElementById('logoutBtn');
     if (user) {
       if (authButtons) authButtons.style.display = 'none';
-      if (userDisplay) { userDisplay.style.cursor = 'pointer'; userDisplay.onclick = () => { window.location.href = 'profile.html'; }; }
+      if (userDisplay) { userDisplay.style.cursor = 'pointer'; userDisplay.onclick = () => { window.location.href = '/profile'; }; }
       if (userDisplay) {
         userDisplay.style.display = 'flex';
         if (userName) userName.textContent = this.currentLang === 'ar' ? 'حسابي' : 'My Account';
@@ -657,7 +657,7 @@ const CategoryApp = {
       this.showToast(this.currentLang === 'ar' ? 'السلة فارغة!' : 'Your cart is empty!');
       return;
     }
-    window.location.href = 'checkout.html';
+    window.location.href = '/checkout';
   },
 
   setupWishlist() { this.cleanupWishlist(); },
@@ -1040,7 +1040,7 @@ const CategoryApp = {
     if (modal) { modal.classList.remove('show'); setTimeout(() => modal.remove(), 300); }
   },
 
-  startDirectCheckout(product, size, color, quantity = 1) { localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, size: size || null, color: color || null, quantity, qty: quantity })); window.location.href = 'checkout.html'; },
+  startDirectCheckout(product, size, color, quantity = 1) { localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, size: size || null, color: color || null, quantity, qty: quantity })); window.location.href = '/checkout'; },
   confirmBuyNow(productId, isDirectBuy) {
     const product = this.products.find(p => p.id === productId);
     if (!product) return;

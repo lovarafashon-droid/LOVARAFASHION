@@ -10,13 +10,13 @@
   <meta name="author" content="LOVARA">
   <meta name="theme-color" content="#1a1a1a">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <link rel="canonical" href="https://lovarafashion.vercel.app/profile.html">
+  <link rel="canonical" href="https://lovarafashion.vercel.app/profile">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="LOVARA">
   <meta property="og:locale" content="ar_EG">
   <meta property="og:title" content="حسابي | LOVARA">
   <meta property="og:description" content="إدارة حسابك وطلباتك في متجر LOVARA للملابس النسائية.">
-  <meta property="og:url" content="https://lovarafashion.vercel.app/profile.html">
+  <meta property="og:url" content="https://lovarafashion.vercel.app/profile">
   <meta property="og:image" content="https://lovarafashion.vercel.app/images/og-image.jpg">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="حسابي | LOVARA">
@@ -177,9 +177,9 @@
   <!-- Navbar -->
   <header class="navbar">
     <div class="nav-container">
-      <a href="index.html" class="logo">LOVARA</a>
+      <a href="/" class="logo">LOVARA</a>
       <div class="nav-actions">
-        <a href="index.html" class="nav-btn" title="Home"><i class="fas fa-home"></i></a>
+        <a href="/" class="nav-btn" title="Home"><i class="fas fa-home"></i></a>
         <button class="nav-btn" onclick="toggleLang()" title="Language"><i class="fas fa-globe"></i></button>
         <button class="nav-btn logout-btn" onclick="logout()" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
       </div>
@@ -409,10 +409,10 @@
 
     function logout(){
       if(profileAuth && profileAuth.signOut){
-        profileAuth.signOut().then(()=>{ localStorage.removeItem('lovara_user'); window.location.href='index.html'; });
+        profileAuth.signOut().then(()=>{ localStorage.removeItem('lovara_user'); window.location.href='/'; });
       } else {
         localStorage.removeItem('lovara_user');
-        window.location.href='index.html';
+        window.location.href='/';
       }
     }
 
@@ -615,7 +615,7 @@
       initFirebase().then(ok=>{
         if(ok && profileAuth){
           profileAuth.onAuthStateChanged(user=>{
-            if(!user){ window.location.href='index.html'; return; }
+            if(!user){ window.location.href='/'; return; }
             currentUser=user;
             loadProfile();
             loadOrders();

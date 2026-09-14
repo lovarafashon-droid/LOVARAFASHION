@@ -1360,7 +1360,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('adminPanel').classList.remove('hidden');
         document.getElementById('adminEmail').textContent = this.currentUser?.email || 'Admin';
-        // Clear any back-button redirect flags from index.html
+        // Clear any back-button redirect flags from /
         sessionStorage.removeItem('skipAdminRedirect');
 
         // Show financial dashboard toggle for admin
@@ -1987,7 +1987,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             </div>
             <div class="product-item-price">EGP ${p.price}</div>
             <div class="product-item-actions">
-              <a href="${p.category}.html" class="btn-view">${viewText}</a>
+              <a href="/${p.category}" class="btn-view">${viewText}</a>
               <button class="btn-edit" onclick="ProductManager.editProduct('${p.id}')" title="${t.edit || 'Edit'}">
                 <i class="fas fa-pen"></i>
               </button>

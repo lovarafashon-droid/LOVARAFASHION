@@ -470,14 +470,14 @@ function createProductCard(id, product) {
 
 function getCategoryPage(category) {
   const pages = {
-    'dresses': 'dresses.html',
-    'tops': 'tops.html',
-    'pants': 'pants.html',
-    'accessories': 'accessories.html',
-    'lingerie': 'lingerie.html',
-    'sets': 'sets.html'
+    'dresses': '/dresses',
+    'tops': '/tops',
+    'pants': '/pants',
+    'accessories': '/accessories',
+    'lingerie': '/lingerie',
+    'sets': '/sets'
   };
-  return pages[category] || 'index.html#shop';
+  return pages[category] || '/#shop';
 }
 
 // ============================================
@@ -547,7 +547,7 @@ function buyNow(id, name, price, image, category, badge, comingSoon) {
     localStorage.setItem('lovara_cart', JSON.stringify(cart));
   }
   // Go to checkout
-  window.location.href = 'checkout.html';
+  window.location.href = '/checkout';
 }
 
 // ============================================

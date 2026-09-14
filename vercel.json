@@ -1,7 +1,9 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
   "headers": [
     {
-      "source": "/(admin|orders).html",
+      "source": "/(admin|orders)",
       "headers": [
         {
           "key": "X-Robots-Tag",

@@ -411,16 +411,16 @@
 <body>
   <header class="navbar" id="navbar">
     <div class="nav-container">
-      <a href="index.html" class="logo">LOVARA</a>
+      <a href="/" class="logo">LOVARA</a>
       <nav class="nav-links" id="navLinks">
-        <a href="index.html" class="nav-link" data-i18n="navHome">Home</a>
-        <a href="index.html#shop" class="nav-link" data-i18n="navShop">Shop</a>
-        <a href="index.html#categories" class="nav-link" data-i18n="navCategories">Categories</a>
-        <a href="index.html#about" class="nav-link" data-i18n="navAbout">About</a>
-        <a href="index.html#contact" class="nav-link" data-i18n="navContact">Contact</a>
+        <a href="/" class="nav-link" data-i18n="navHome">Home</a>
+        <a href="/#shop" class="nav-link" data-i18n="navShop">Shop</a>
+        <a href="/#categories" class="nav-link" data-i18n="navCategories">Categories</a>
+        <a href="/#about" class="nav-link" data-i18n="navAbout">About</a>
+        <a href="/#contact" class="nav-link" data-i18n="navContact">Contact</a>
       </nav>
       <div class="nav-actions">
-        <button type="button" class="cart-btn" onclick="window.location.href='index.html'" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
+        <button type="button" class="cart-btn" onclick="window.location.href='/'" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
       </div>
     </div>
   </header>
@@ -592,7 +592,7 @@
     <div class="container">
       <div class="footer-bottom"><p data-i18n="footerCopyright">&copy; 2027 LOVARA. All rights reserved. | Women's Luxury Fashion</p></div>
     </div>
-  <div style="text-align:center;padding:8px"><a href="returns.html">Returns & Exchanges</a> · <a href="returns.html#privacy-policy">Privacy Policy</a></div></footer>
+  <div style="text-align:center;padding:8px"><a href="/returns">Returns & Exchanges</a> · <a href="/returns#privacy-policy">Privacy Policy</a></div></footer>
 
   <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg">Action completed!</span></div>
 
@@ -721,7 +721,7 @@
               <i class="fas fa-shopping-bag"></i>
               <h3 data-i18n="cartEmpty">Your cart is empty</h3>
               <p data-i18n="cartEmptyDesc">Add some products to your cart first!</p>
-              <a href="index.html" class="btn-continue-shopping">
+              <a href="/" class="btn-continue-shopping">
                 <i class="fas fa-arrow-left"></i> <span data-i18n="continueShopping">Continue Shopping</span>
               </a>
             </div>
@@ -1291,7 +1291,7 @@
           if (countdown <= 0) {
             clearInterval(timer);
             localStorage.setItem('lovara_order_success', JSON.stringify({ message: t.orderSuccessMessage, orderNumber: orderNumber, timestamp: Date.now() }));
-            window.location.href = 'index.html';
+            window.location.href = '/';
           }
         }, 1000);
       },
