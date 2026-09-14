@@ -1133,7 +1133,7 @@
         agreeTerms: "I agree to the", termsLink: "Terms of Service", and: "and", privacyLink: "Privacy Policy",
         subscribeNews: "Subscribe to our newsletter for exclusive offers", btnCreateAccount: "Create Account",
         haveAccount: "Already have an account?", btnSignInLink: "Sign In",
-        forgotTitle: "Reset Password", forgotSub: "Enter your email to receive a reset link", resetSent: "Reset link sent to your email!", resetEmailRequired: "Please enter your email", resetNoAccount: "No account found with this email.",
+        forgotTitle: "Reset Password", forgotSub: "Enter your email to receive a reset link", resetSent: "Reset link sent to your email!", resetEmailRequired: "Please enter your email", resetNoAccount: "No account found with this email.", resetSending: "Sending...", resetDisabled: "Password reset is not enabled for this project.", resetInvalidEmail: "Please enter a valid email.", resetNetworkError: "Network error. Check your connection and try again.", resetTooManyRequests: "Too many requests. Try again later.",
         btnSendReset: "Send Reset Link", rememberPassword: "Remember your password?",
         cartTitle: "Your Cart", cartEmpty: "Your cart is empty", cartContinue: "Continue Shopping",
         cartTotal: "Total:", cartCheckout: "Checkout", cartClear: "Clear Cart",
@@ -1215,7 +1215,7 @@
         agreeTerms: "أوافق على", termsLink: "شروط الخدمة", and: "و", privacyLink: "سياسة الخصوصية",
         subscribeNews: "اشتركي في نشرتنا البريدية للحصول على عروض حصرية", btnCreateAccount: "إنشاء الحساب",
         haveAccount: "لديكِ حساب بالفعل؟", btnSignInLink: "تسجيل الدخول",
-        forgotTitle: "إعادة تعيين كلمة المرور", forgotSub: "أدخلي بريدكِ الإلكتروني لاستلام رابط إعادة التعيين", resetSent: "تم إرسال رابط إعادة التعيين إلى بريدكِ الإلكتروني.", resetEmailRequired: "اكتبي بريدكِ الإلكتروني أولاً", resetNoAccount: "لا يوجد حساب مسجل بهذا البريد.",
+        forgotTitle: "إعادة تعيين كلمة المرور", forgotSub: "أدخلي بريدكِ الإلكتروني لاستلام رابط إعادة التعيين", resetSent: "تم إرسال رابط إعادة التعيين إلى بريدكِ الإلكتروني.", resetEmailRequired: "اكتبي بريدكِ الإلكتروني أولاً", resetNoAccount: "لا يوجد حساب مسجل بهذا البريد.", resetSending: "جاري الإرسال...", resetDisabled: "إعادة تعيين كلمة المرور غير مفعلة في Firebase.", resetInvalidEmail: "اكتبي بريدًا إلكترونيًا صحيحًا.", resetNetworkError: "خطأ في الاتصال. تحققي من الإنترنت وحاولي مرة أخرى.", resetTooManyRequests: "محاولات كثيرة. حاولي مرة أخرى لاحقًا.",
         btnSendReset: "إرسال رابط إعادة التعيين", rememberPassword: "تذكرتِ كلمة المرور؟",
         cartTitle: "سلة التسوق", cartEmpty: "سلة التسوق فارغة", cartContinue: "مواصلة التسوق",
         cartTotal: "الإجمالي:", cartCheckout: "إتمام الشراء", cartClear: "إفراغ السلة",
@@ -1468,7 +1468,9 @@
           e.preventDefault();
           const t = translations[AppSettings.currentLang];
           const email = document.getElementById('forgotEmail')?.value.trim();
+          const submitBtn = e.currentTarget.querySelector('button[type="submit"]');
           if (!email) { showToast(t.resetEmailRequired, 'error'); return; }
+          if (submitBtn) { submitBtn.disabled = true; submitBtn.dataset.originalText = submitBtn.textContent; submitBtn.textContent = t.resetSending; }
           try {
             await firebase.auth().sendPasswordResetEmail(email);
             showToast(t.resetSent);
@@ -1476,7 +1478,13 @@
           } catch (err) {
             let msg = err.message;
             if (err.code === 'auth/user-not-found') msg = t.resetNoAccount;
+            else if (err.code === 'auth/operation-not-allowed') msg = t.resetDisabled;
+            else if (err.code === 'auth/invalid-email') msg = t.resetInvalidEmail;
+            else if (err.code === 'auth/network-request-failed') msg = t.resetNetworkError;
+            else if (err.code === 'auth/too-many-requests') msg = t.resetTooManyRequests;
             showToast(msg, 'error');
+          } finally {
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.originalText || t.btnSendReset; }
           }
         });
 
