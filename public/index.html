@@ -1350,7 +1350,6 @@
           else localStorage.removeItem('lovara_user');
           this.updateUI(this.currentUser);
         });
-        firebase.auth().getRedirectResult().catch(error => this.showAuthError(error));
         this.bindForms();
       },
       updateUI(user) {
@@ -1388,7 +1387,13 @@
       async google(modalId) {
         try {
           await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-          await firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+          const result = await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+          await this.saveUser(result.user, 'google');
+          this.currentUser = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL };
+          localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
+          this.updateUI(this.currentUser);
+          Modals.close(modalId);
+          showToast('تم تسجيل الدخول بنجاح');
         } catch (error) { this.showAuthError(error); }
       },
       async login(event) {

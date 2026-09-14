@@ -414,7 +414,14 @@ const CategoryApp = {
   async handleGoogleAuth(modalId) {
     try {
       await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-      await firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+      const result = await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+      await this.saveAuthUser(result.user, 'google');
+      const userData = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL };
+      this.currentUser = userData;
+      localStorage.setItem('lovara_user', JSON.stringify(userData));
+      this.updateAuthUI(userData);
+      this.closeModal(modalId);
+      this.showToast(this.t('welcome') + '!');
     } catch (error) { this.showToast(error.message, 'error'); }
   },
 
