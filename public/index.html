@@ -417,6 +417,10 @@
             <span id="userEmail" class="user-email"></span>
           </div>
         </div>
+        <button class="btn btn-sm btn-primary" id="adminPortalBtn" type="button" style="display:none;" onclick="Modals.open('adminPortalModal')" aria-label="Open admin portal">
+          <i class="fas fa-shield-halved"></i>
+          <span data-i18n="adminPortal">Admin Portal</span>
+        </button>
         <button class="wishlist-btn" onclick="CategoryApp.openWishlistModal()" aria-label="Wishlist">
           <i class="fas fa-heart"></i>
           <span class="wishlist-count" id="wishlistCount">0</span>
@@ -1087,7 +1091,7 @@
         statStyles: "Styles", statClients: "Happy Clients", statRating: "Rating",
         heroBadge: "Bestseller",
         heroCard1Title: "Premium Quality", heroCard1Sub: "Luxury fabrics",
-        heroCard2Title: "Free Shipping", heroCard2Sub: "Orders over EGP 2500",
+        heroCard2Title: "Free Shipping", heroCard2Sub: "Orders over EGP 2500", adminPortal: "Admin Portal",
         heroScroll: "Scroll",
         catEyebrow: "Browse by", catTitle: "Categories",
         catDresses: "Dresses", catDressesSub: "Elegant & Casual",
@@ -1169,7 +1173,7 @@
         statStyles: "تصميم", statClients: "عميلة سعيدة", statRating: "تقييم",
         heroBadge: "الأكثر مبيعاً",
         heroCard1Title: "جودة ممتازة", heroCard1Sub: "أقمشة فاخرة",
-        heroCard2Title: "شحن مجاني", heroCard2Sub: "للطلبات فوق 2500 جنيه",
+        heroCard2Title: "شحن مجاني", heroCard2Sub: "للطلبات فوق 2500 جنيه", adminPortal: "بوابة الأدمن",
         heroScroll: "اسحبي للأسفل",
         catEyebrow: "تصفحي حسب", catTitle: "التصنيفات",
         catDresses: "فساتين", catDressesSub: "أنيقة وعصرية",
@@ -1356,8 +1360,17 @@
           return;
         }
         this.db = firebase.firestore();
-        firebase.auth().onAuthStateChanged(user => {
-          this.currentUser = user ? { uid: user.uid, email: user.email, displayName: user.displayName || user.email.split('@')[0], photoURL: user.photoURL } : null;
+        firebase.auth().onAuthStateChanged(async user => {
+          let isAdmin = false;
+          if (user) {
+            try {
+              const userDoc = await this.db.collection('users').doc(user.uid).get();
+              isAdmin = userDoc.exists && userDoc.data().role === 'admin';
+            } catch (error) {
+              console.warn('Could not check admin role:', error);
+            }
+          }
+          this.currentUser = user ? { uid: user.uid, email: user.email, displayName: user.displayName || user.email.split('@')[0], photoURL: user.photoURL, role: isAdmin ? 'admin' : 'user' } : null;
           if (user) localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
           else localStorage.removeItem('lovara_user');
           this.updateUI(this.currentUser);
@@ -1368,6 +1381,7 @@
         const authButtons = document.getElementById('authButtons');
         const userDisplay = document.getElementById('userDisplay');
         const logoutBtn = document.getElementById('logoutBtn');
+        const adminPortalBtn = document.getElementById('adminPortalBtn');
         const userName = document.getElementById('userName');
         const userEmail = document.getElementById('userEmail');
         if (user) {
@@ -1377,12 +1391,14 @@
           if (userName) userName.textContent = AppSettings.currentLang === 'ar' ? 'حسابي' : 'My Account';
           if (userEmail) { userEmail.textContent = ''; userEmail.style.display = 'none'; }
           if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+          if (adminPortalBtn) adminPortalBtn.style.display = user.role === 'admin' ? 'inline-flex' : 'none';
         } else {
           if (authButtons) authButtons.style.display = 'flex';
           if (userDisplay) userDisplay.style.display = 'none';
           if (userEmail) userEmail.style.display = '';
           if (userDisplay) userDisplay.onclick = null;
           if (logoutBtn) logoutBtn.style.display = 'none';
+          if (adminPortalBtn) adminPortalBtn.style.display = 'none';
         }
       },
       async saveUser(user, provider = 'password') {
@@ -2254,7 +2270,7 @@
           <h3>Orders Dashboard</h3>
           <p>View & manage customer orders</p>
         </a>
-        <a href="/other" class="admin-portal-card">
+        <a href="/other" class="admin-portal-card" onclick="sessionStorage.setItem('otherAdminPending', 'true')">
           <div class="admin-portal-icon"><i class="fas fa-layer-group"></i></div>
           <h3>Other Dashboard</h3>
           <p>Visitors, employees & promo codes</p>

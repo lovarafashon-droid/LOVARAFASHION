@@ -1736,10 +1736,14 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         const debugEl = document.getElementById('debugInfo');
         const t = translations[AppSettings.currentLang];
         const previousProducts = Array.isArray(this.products) ? [...this.products] : [];
+        if (!container) {
+          console.error('Products container is missing from the admin page.');
+          return;
+        }
         if (!options.silent) {
           container.innerHTML = '<div class="empty-products"><i class="fas fa-spinner fa-spin"></i><p>' + t.loading + '</p></div>';
         }
-        debugEl.style.display = 'none';
+        if (debugEl) debugEl.style.display = 'none';
 
         try {
           // Use simple get() without orderBy to avoid composite index requirements
@@ -1779,8 +1783,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
           // Debug info
           if (this.products.length === 0) {
-            debugEl.textContent = 'Debug: Collection "products" is empty. Total docs: ' + snapshot.size;
-            debugEl.style.display = 'block';
+            if (debugEl) {
+              debugEl.textContent = 'Debug: Collection "products" is empty. Total docs: ' + snapshot.size;
+              debugEl.style.display = 'block';
+            }
           }
 
           this.renderProducts();
@@ -1792,8 +1798,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             return;
           }
           container.innerHTML = '<div class="empty-products"><i class="fas fa-exclamation-circle"></i><p>' + t.errorLoading + ': ' + error.message + '</p></div>';
-          debugEl.textContent = 'Debug Error: ' + error.message;
-          debugEl.style.display = 'block';
+          if (debugEl) {
+            debugEl.textContent = 'Debug Error: ' + error.message;
+            debugEl.style.display = 'block';
+          }
         }
       },
 
