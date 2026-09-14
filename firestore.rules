@@ -49,7 +49,7 @@ service cloud.firestore {
       allow read: if isAdmin() || (request.auth != null && (resource.data.userId == request.auth.uid || resource.data.customer.email == request.auth.token.email));
       allow update: if isAdmin()
         || (request.auth != null
-          && resource.data.userId == request.auth.uid
+          && (resource.data.userId == request.auth.uid || resource.data.customer.email == request.auth.token.email)
           && resource.data.status in ['pending', 'confirmed']
           && request.resource.data.status == 'cancelled'
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancellationReason', 'cancelledBy', 'discountCancellationNotice', 'cancelledAt']));
