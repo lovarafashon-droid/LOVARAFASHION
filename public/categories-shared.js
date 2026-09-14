@@ -298,6 +298,7 @@ const CategoryApp = {
     const logoutBtn = document.getElementById('logoutBtn');
     if (user) {
       if (authButtons) authButtons.style.display = 'none';
+      if (userDisplay) { userDisplay.style.cursor = 'pointer'; userDisplay.onclick = () => { window.location.href = 'profile.html'; }; }
       if (userDisplay) {
         userDisplay.style.display = 'flex';
         if (userName) userName.textContent = user.displayName || user.email.split('@')[0];
@@ -307,6 +308,7 @@ const CategoryApp = {
     } else {
       if (authButtons) authButtons.style.display = 'flex';
       if (userDisplay) userDisplay.style.display = 'none';
+      if (userDisplay) userDisplay.onclick = null;
       if (logoutBtn) logoutBtn.style.display = 'none';
     }
     this.updateAuthRequiredDots();

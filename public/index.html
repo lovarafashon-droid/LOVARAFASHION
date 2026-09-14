@@ -1361,12 +1361,14 @@
         if (user) {
           if (authButtons) authButtons.style.display = 'none';
           if (userDisplay) userDisplay.style.display = 'flex';
+          if (userDisplay) { userDisplay.style.cursor = 'pointer'; userDisplay.onclick = () => { window.location.href = 'profile.html'; }; }
           if (userName) userName.textContent = user.displayName;
           if (userEmail) userEmail.textContent = user.email;
           if (logoutBtn) logoutBtn.style.display = 'inline-flex';
         } else {
           if (authButtons) authButtons.style.display = 'flex';
           if (userDisplay) userDisplay.style.display = 'none';
+          if (userDisplay) userDisplay.onclick = null;
           if (logoutBtn) logoutBtn.style.display = 'none';
         }
       },

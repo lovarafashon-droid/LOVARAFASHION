@@ -43,10 +43,17 @@ service cloud.firestore {
     }
 
     // ORDERS COLLECTION
-    // Customers create orders; only admins can review, update, or delete them.
+    // Customers can read their own orders and cancel pending/confirmed orders.
     match /orders/{orderId} {
       allow create: if request.resource.data.keys().hasAll(['customer', 'items', 'totals', 'date']);
-      allow read, update, delete: if isAdmin();
+      allow read: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin()
+        || (request.auth != null
+          && resource.data.userId == request.auth.uid
+          && resource.data.status in ['pending', 'confirmed']
+          && request.resource.data.status == 'cancelled'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancellationReason', 'cancelledAt']));
+      allow delete: if isAdmin();
     }
 
     // RETURN REQUESTS
