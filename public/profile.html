@@ -154,6 +154,18 @@
     .loading-skeleton { background:linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size:200% 100%; animation:shimmer 1.2s infinite; border-radius:8px; height:20px; }
     @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
 
+
+    @media (max-width: 640px) {
+      .profile-layout { padding: 0 14px; margin-top: 76px; gap: 14px; }
+      .sidebar, .content-area { padding: 20px 16px; border-radius: 14px; }
+      .nav-container { padding: 12px 14px; }
+      .orders-table { min-width: 680px; }
+      .orders-table-wrap { margin: 0 -4px; padding-bottom: 8px; }
+      .form-actions, .button, .btn-primary, .btn-outline { min-height: 44px; }
+      .form-actions { flex-wrap: wrap; }
+      .form-actions > * { flex: 1 1 140px; }
+    }
+
     /* RTL */
     body.lang-ar { direction:rtl; }
     body.lang-ar .sidebar-menu li button, body.lang-ar .sidebar-menu li a { text-align:right; flex-direction:row-reverse; }
@@ -354,14 +366,14 @@
     applyLang();
 
     /* ========== GLOBALS ========== */
-    let db, auth, currentUser, userData={};
+    let profileDb, profileAuth, currentUser, userData={};
 
     /* ========== FIREBASE INIT ========== */
     function initFirebase(){
       return new Promise((resolve)=>{
         let tries=0; const iv=setInterval(()=>{
           if(typeof firebase!=='undefined' && firebase.apps && firebase.apps.length){
-            db=firebase.firestore(); auth=firebase.auth(); clearInterval(iv); resolve(true);
+            profileDb=firebase.firestore(); profileAuth=firebase.auth(); clearInterval(iv); resolve(true);
           } else if(++tries>30){ clearInterval(iv); resolve(false); }
         },200);
       });
@@ -376,25 +388,25 @@
       if(panel) panel.classList.add('active');
       if(menuLi) menuLi.classList.add('active');
       if(tab==='wishlist') renderWishlist();
-      if(tab==='orders' && db) loadOrders();
+      if(tab==='orders' && profileDb) loadOrders();
     }
 
     function showToast(msg, type='success'){
-      const toast=document.getElementById('toast'); 
-      const txt=document.getElementById('toastMsg'); 
+      const toast=document.getElementById('toast');
+      const txt=document.getElementById('toastMsg');
       const icon=toast.querySelector('i');
-      txt.textContent=msg; 
-      icon.className=type==='error'?'fas fa-exclamation-circle':'fas fa-check-circle'; 
+      txt.textContent=msg;
+      icon.className=type==='error'?'fas fa-exclamation-circle':'fas fa-check-circle';
       icon.style.color=type==='error'?'#e74c3c':'#4CAF50';
-      toast.classList.add('show'); 
+      toast.classList.add('show');
       setTimeout(()=>toast.classList.remove('show'),3000);
     }
 
     function logout(){
-      if(auth && auth.signOut){
-        auth.signOut().then(()=>{ localStorage.removeItem('lovara_user'); window.location.href='index.html'; });
+      if(profileAuth && profileAuth.signOut){
+        profileAuth.signOut().then(()=>{ localStorage.removeItem('lovara_user'); window.location.href='index.html'; });
       } else {
-        localStorage.removeItem('lovara_user'); 
+        localStorage.removeItem('lovara_user');
         window.location.href='index.html';
       }
     }
@@ -405,11 +417,11 @@
         let name = currentUser.displayName || 'User';
         let email = currentUser.email || 'user@email.com';
         let first = '', last = '';
-        if(db){
-          const snap = await db.collection('users').doc(currentUser.uid).get();
-          if(snap.exists){ 
-            userData = snap.data(); 
-            first = userData.firstName || ''; 
+        if(profileDb){
+          const snap = await profileDb.collection('users').doc(currentUser.uid).get();
+          if(snap.exists){
+            userData = snap.data();
+            first = userData.firstName || '';
             last = userData.lastName || '';
           }
         }
@@ -430,12 +442,12 @@
     /* ========== ORDERS ========== */
     async function loadOrders(){
       const container = document.getElementById('ordersTableWrap');
-      if(!db || !currentUser){
+      if(!profileDb || !currentUser){
         container.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>${t('noOrdersYet')}</p></div>`;
         return;
       }
       try {
-        const snap = await db.collection('orders').where('userId','==',currentUser.uid).get();
+        const snap = await profileDb.collection('orders').where('userId','==',currentUser.uid).get();
         const orders = snap.docs.map(d=>({id:d.id, ...d.data()}));
         orders.sort((a,b)=>((b.date?.seconds||0)-(a.date?.seconds||0)));
         document.getElementById('statOrders').textContent = orders.length;
@@ -485,21 +497,21 @@
     async function cancelOrder(orderId){
       if(!confirm(currentLang==='ar'?'هل تريدين إلغاء هذا الطلب؟':'Cancel this order?')) return;
       try {
-        await db.collection('orders').doc(orderId).update({ status:'cancelled', cancellationReason:'Cancelled by customer', cancelledAt:firebase.firestore.FieldValue.serverTimestamp() });
+        await profileDb.collection('orders').doc(orderId).update({ status:'cancelled', cancellationReason:'Cancelled by customer', cancelledAt:firebase.firestore.FieldValue.serverTimestamp() });
         showToast(currentLang==='ar'?'تم إلغاء الطلب':'Order cancelled');
         loadOrders();
       } catch(err) { console.error(err); showToast(currentLang==='ar'?'لا يمكن إلغاء الطلب الآن':'Unable to cancel this order','error'); }
     }
 
     async function handleProfilePhoto(event){
-      const file=event.target.files?.[0]; if(!file || !db || !currentUser) return;
+      const file=event.target.files?.[0]; if(!file || !profileDb || !currentUser) return;
       if(file.size>5*1024*1024){ showToast(currentLang==='ar'?'الصورة يجب أن تكون أقل من 5 ميجابايت':'Image must be under 5 MB','error'); return; }
       const reader=new FileReader();
       reader.onload=()=>{ const image=new Image(); image.onload=async()=>{
         const canvas=document.createElement('canvas'), max=320, scale=Math.min(1,max/Math.max(image.width,image.height));
         canvas.width=Math.round(image.width*scale); canvas.height=Math.round(image.height*scale); canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
         const photoData=canvas.toDataURL('image/jpeg',.78);
-        try { await db.collection('users').doc(currentUser.uid).set({photoData},{merge:true}); loadProfile(); showToast(currentLang==='ar'?'تم تحديث الصورة':'Profile photo updated'); }
+        try { await profileDb.collection('users').doc(currentUser.uid).set({photoData},{merge:true}); loadProfile(); showToast(currentLang==='ar'?'تم تحديث الصورة':'Profile photo updated'); }
         catch(err){ showToast(currentLang==='ar'?'تعذر حفظ الصورة':'Unable to save photo','error'); }
       }; image.src=reader.result; };
       reader.readAsDataURL(file);
@@ -524,9 +536,9 @@
     }
     function removeWishlist(idx){
       let list = JSON.parse(localStorage.getItem('lovara_wishlist')||'[]');
-      list.splice(idx,1); 
+      list.splice(idx,1);
       localStorage.setItem('lovara_wishlist',JSON.stringify(list));
-      renderWishlist(); 
+      renderWishlist();
       showToast('Removed from wishlist');
     }
 
@@ -536,7 +548,7 @@
       if(!form) return;
       form.addEventListener('submit', async e=>{
         e.preventDefault();
-        if(!auth || !currentUser){ showToast(t('toastReauth'),'error'); return; }
+        if(!profileAuth || !currentUser){ showToast(t('toastReauth'),'error'); return; }
         const curr = document.getElementById('currPassword').value;
         const neu = document.getElementById('newPassword').value;
         const conf = document.getElementById('confirmPassword').value;
@@ -561,7 +573,7 @@
       if(!form) return;
       form.addEventListener('submit', async e=>{
         e.preventDefault();
-        if(!db || !currentUser){ showToast(t('toastError'),'error'); return; }
+        if(!profileDb || !currentUser){ showToast(t('toastError'),'error'); return; }
         const payload = {
           firstName: document.getElementById('accFirstName').value.trim(),
           lastName: document.getElementById('accLastName').value.trim(),
@@ -571,7 +583,7 @@
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         try {
-          await db.collection('users').doc(currentUser.uid).set(payload, {merge:true});
+          await profileDb.collection('users').doc(currentUser.uid).set(payload, {merge:true});
           showToast(t('toastSaved'));
           loadProfile();
         } catch(err){ showToast(err.message, 'error'); }
@@ -584,19 +596,19 @@
       setupSecurityForm();
       document.getElementById('profilePhotoInput')?.addEventListener('change', handleProfilePhoto);
       initFirebase().then(ok=>{
-        if(ok && auth){
-          auth.onAuthStateChanged(user=>{
+        if(ok && profileAuth){
+          profileAuth.onAuthStateChanged(user=>{
             if(!user){ window.location.href='index.html'; return; }
-            currentUser=user; 
-            loadProfile(); 
-            loadOrders(); 
+            currentUser=user;
+            loadProfile();
+            loadOrders();
             renderWishlist();
           });
         } else {
           // Fallback: demo mode if Firebase not loaded
           console.warn('Firebase not available - running in demo mode');
           currentUser = { uid:'demo123', email:'demo@lovara.com', displayName:'Demo User' };
-          loadProfile(); 
+          loadProfile();
           renderWishlist();
           document.getElementById('ordersTableWrap').innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>${t('noOrdersYet')}</p></div>`;
           document.getElementById('recentOrderContainer').innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>${t('noOrdersYet')}</p></div>`;
