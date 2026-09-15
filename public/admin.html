@@ -1449,25 +1449,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       },
       async uploadProductImages(images, productId) {
         if (!Array.isArray(images) || !images.length) return images;
-        if (!storage) throw new Error('Firebase Storage غير متاح حالياً. أعد تحميل الصفحة وحاول مرة أخرى.');
-
-        // Upload all selected images at once. The old sequential upload could
-        // leave the form spinning indefinitely when one Storage request stalled.
-        const uploadOne = async (image, index) => {
-          if (!String(image).startsWith('data:image/')) return image;
-          const ref = storage.ref().child(`products/${productId}/image-${index + 1}.jpg`);
-          const uploadAndGetUrl = (async () => {
-            await ref.putString(image, 'data_url', { contentType: 'image/jpeg' });
-            return ref.getDownloadURL();
-          })();
-          return withAdminTimeout(
-            uploadAndGetUrl,
-            30000,
-            'انتهت مهلة رفع الصورة رقم ' + (index + 1) + '. تحقق من Firebase Storage والاتصال وحاول مرة أخرى.'
-          );
-        };
-
-        return Promise.all(images.map((image, index) => uploadOne(image, index)));
+        // Firebase Storage requires the Blaze billing plan. Images are already
+        // resized/compressed by handleImageUpload, so keep them in Firestore
+        // and avoid a paid Storage dependency.
+        return images;
       },
       removeImage(index) {
         document.getElementById('pImageFile' + index).value = '';
@@ -1889,12 +1874,13 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           try {
             product.images = await AdminApp.uploadProductImages(product.images, productId);
           } catch (uploadError) {
-            // Storage must not block creating the catalog record. Keep the
-            // product visible with the placeholder and report the upload issue.
+            // Storage requires Blaze on this Firebase project. Keep the
+            // compressed data URLs so the real uploaded images are still
+            // stored in the product document and displayed without Storage.
             imageUploadError = uploadError;
-            product.images = ['https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'];
+            product.images = images;
             product.imageUrl = product.images[0];
-            console.error('Product image upload failed; saving product without uploaded image:', uploadError);
+            console.warn('Storage unavailable; saving compressed images in Firestore instead:', uploadError);
           }
           product.imageUrl = product.images[0] || 'https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA';
           if (isEdit) {
@@ -1949,7 +1935,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             this.renderProducts();
             AdminApp.showSuccess();
             if (imageUploadError) {
-              setTimeout(() => AdminApp.showError('تمت إضافة المنتج، لكن تعذر رفع الصورة: ' + imageUploadError.message), 350);
+              setTimeout(() => AdminApp.showError('تمت إضافة المنتج بالصور المرفوعة بدون Firebase Storage (خطة Blaze غير مفعلة).'), 350);
             }
             document.getElementById('productForm').reset();
             document.getElementById('pCost').value = '';
