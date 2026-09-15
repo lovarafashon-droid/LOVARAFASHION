@@ -1450,18 +1450,19 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       async uploadProductImages(images, productId) {
         if (!Array.isArray(images) || !images.length) return images;
         if (!storage) throw new Error('Firebase Storage غير متاح حالياً. أعد تحميل الصفحة وحاول مرة أخرى.');
-        const uploaded = [];
-        for (let index = 0; index < images.length; index++) {
-          const image = images[index];
-          if (!String(image).startsWith('data:image/')) {
-            uploaded.push(image);
-            continue;
-          }
+
+        // Upload all selected images at once. The old sequential upload could
+        // leave the form spinning indefinitely when one Storage request stalled.
+        const uploadOne = async (image, index) => {
+          if (!String(image).startsWith('data:image/')) return image;
           const ref = storage.ref().child(`products/${productId}/image-${index + 1}.jpg`);
-          await ref.putString(image, 'data_url', { contentType: 'image/jpeg' });
-          uploaded.push(await ref.getDownloadURL());
-        }
-        return uploaded;
+          const upload = ref.putString(image, 'data_url', { contentType: 'image/jpeg' });
+          const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('انتهت مهلة رفع الصورة رقم ' + (index + 1) + '. تحقق من الاتصال وحاول مرة أخرى.')), 30000));
+          await Promise.race([upload, timeout]);
+          return ref.getDownloadURL();
+        };
+
+        return Promise.all(images.map((image, index) => uploadOne(image, index)));
       },
       removeImage(index) {
         document.getElementById('pImageFile' + index).value = '';
@@ -1895,7 +1896,11 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             product.colors = product.colors || [];
             product.sizes = product.sizes || [];
             product.images = product.images || [];
-            await AdminApp.db.collection('products').doc(productId).set(product, { merge: false });
+            await withAdminTimeout(
+              AdminApp.db.collection('products').doc(productId).set(product, { merge: false }),
+              20000,
+              'انتهت مهلة حفظ المنتج. تحقق من صلاحيات الأدمن والاتصال ثم حاول مرة أخرى.'
+            );
             // Show custom success for update
             const successEl = document.getElementById('successMsg');
             const successSpan = successEl.querySelector('span[data-i18n="productAdded"]');
@@ -1920,7 +1925,11 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             product.colors = product.colors || [];
             product.sizes = product.sizes || [];
             product.images = product.images || [];
-            await AdminApp.db.collection('products').doc(productId).set(product);
+            await withAdminTimeout(
+              AdminApp.db.collection('products').doc(productId).set(product),
+              20000,
+              'انتهت مهلة حفظ المنتج. تحقق من صلاحيات الأدمن والاتصال ثم حاول مرة أخرى.'
+            );
             this.products = [{ id: productId, ...product, _createdAt: product.createdAt }, ...this.products];
             this.renderProducts();
             AdminApp.showSuccess();
