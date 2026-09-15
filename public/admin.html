@@ -1245,15 +1245,23 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
     async function fetchProductsViaRest() {
       const projectId = (typeof firebaseConfig !== 'undefined' && firebaseConfig.projectId) || 'lovara-89510';
-      const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/products?pageSize=300`;
-      const response = await fetch(endpoint, { cache: 'no-store' });
-      if (!response.ok) throw new Error('Products REST request failed (' + response.status + ')');
-      const payload = await response.json();
-      return (payload.documents || []).map(document => ({
-        id: document.name.split('/').pop(),
-        ...Object.fromEntries(Object.entries(document.fields || {})
-          .map(([key, value]) => [key, firestoreRestValue(value)]))
-      }));
+      const products = [];
+      let pageToken = '';
+      do {
+        const query = new URLSearchParams({ pageSize: '300' });
+        if (pageToken) query.set('pageToken', pageToken);
+        const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/products?${query}`;
+        const response = await fetch(endpoint, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Products REST request failed (' + response.status + ')');
+        const payload = await response.json();
+        products.push(...(payload.documents || []).map(document => ({
+          id: document.name.split('/').pop(),
+          ...Object.fromEntries(Object.entries(document.fields || {})
+            .map(([key, value]) => [key, firestoreRestValue(value)]))
+        })));
+        pageToken = payload.nextPageToken || '';
+      } while (pageToken);
+      return products;
     }
 
     // ============================================
@@ -1767,13 +1775,27 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         if (debugEl) debugEl.style.display = 'none';
 
         try {
-          // Use simple get() without orderBy to avoid composite index requirements
+          // Read through the paginated public REST endpoint so large embedded
+          // image documents do not make the SDK return only the first page.
           let snapshot = null;
           let loadedProducts;
           try {
+            const restProducts = await withAdminTimeout(
+              fetchProductsViaRest(),
+              20000,
+              'انتهت مهلة تحميل كل المنتجات. تحقق من الاتصال ثم أعد المحاولة.'
+            );
+            loadedProducts = restProducts.map(product => ({
+              ...product,
+              _createdAt: product.createdAt?.seconds
+                ? product.createdAt.seconds * 1000
+                : (Date.parse(product.createdAt) || Number(product.createdAt) || 0)
+            }));
+          } catch (sdkError) {
+            console.warn('Paginated REST product read failed; trying Firestore SDK:', sdkError);
             snapshot = await withAdminTimeout(
               AdminApp.db.collection('products').get(),
-              10000,
+              20000,
               'انتهت مهلة تحميل المنتجات. تحقق من الاتصال ثم أعد المحاولة.'
             );
             loadedProducts = snapshot.docs.map(doc => {
@@ -1783,15 +1805,6 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
                 : (data.createdAt?.seconds ? data.createdAt.seconds * 1000 : (Number(data.createdAt) || 0));
               return { id: doc.id, ...data, _createdAt: createdAt };
             });
-          } catch (sdkError) {
-            console.warn('Firestore SDK product read failed; trying REST fallback:', sdkError);
-            const restProducts = await fetchProductsViaRest();
-            loadedProducts = restProducts.map(product => ({
-              ...product,
-              _createdAt: product.createdAt?.seconds
-                ? product.createdAt.seconds * 1000
-                : (Date.parse(product.createdAt) || Number(product.createdAt) || 0)
-            }));
           }
 
           // Do not erase a visible catalog because a just-written Firestore read
