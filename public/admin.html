@@ -1885,7 +1885,17 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
         try {
           const productId = isEdit ? editId : AdminApp.db.collection('products').doc().id;
-          product.images = await AdminApp.uploadProductImages(product.images, productId);
+          let imageUploadError = null;
+          try {
+            product.images = await AdminApp.uploadProductImages(product.images, productId);
+          } catch (uploadError) {
+            // Storage must not block creating the catalog record. Keep the
+            // product visible with the placeholder and report the upload issue.
+            imageUploadError = uploadError;
+            product.images = ['https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'];
+            product.imageUrl = product.images[0];
+            console.error('Product image upload failed; saving product without uploaded image:', uploadError);
+          }
           product.imageUrl = product.images[0] || 'https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA';
           if (isEdit) {
             // Update existing product — use .set() with merge:false to FULLY REPLACE
@@ -1938,6 +1948,9 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             this.products = [{ id: productId, ...product, _createdAt: product.createdAt }, ...this.products];
             this.renderProducts();
             AdminApp.showSuccess();
+            if (imageUploadError) {
+              setTimeout(() => AdminApp.showError('تمت إضافة المنتج، لكن تعذر رفع الصورة: ' + imageUploadError.message), 350);
+            }
             document.getElementById('productForm').reset();
             document.getElementById('pCost').value = '';
             document.getElementById('pStock').value = '1';
