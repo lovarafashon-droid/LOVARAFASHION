@@ -1456,10 +1456,15 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         const uploadOne = async (image, index) => {
           if (!String(image).startsWith('data:image/')) return image;
           const ref = storage.ref().child(`products/${productId}/image-${index + 1}.jpg`);
-          const upload = ref.putString(image, 'data_url', { contentType: 'image/jpeg' });
-          const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('انتهت مهلة رفع الصورة رقم ' + (index + 1) + '. تحقق من الاتصال وحاول مرة أخرى.')), 30000));
-          await Promise.race([upload, timeout]);
-          return ref.getDownloadURL();
+          const uploadAndGetUrl = (async () => {
+            await ref.putString(image, 'data_url', { contentType: 'image/jpeg' });
+            return ref.getDownloadURL();
+          })();
+          return withAdminTimeout(
+            uploadAndGetUrl,
+            30000,
+            'انتهت مهلة رفع الصورة رقم ' + (index + 1) + '. تحقق من Firebase Storage والاتصال وحاول مرة أخرى.'
+          );
         };
 
         return Promise.all(images.map((image, index) => uploadOne(image, index)));
@@ -1946,7 +1951,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           this.loadProducts({ silent: true });
         } catch (error) {
           console.error('Error ' + (isEdit ? 'updating' : 'adding') + ' product:', error);
-          AdminApp.showError((isEdit ? 'Failed to update: ' : t.failedAdd) + error.message);
+          const code = error && error.code ? ' [' + error.code + ']' : '';
+          AdminApp.showError((isEdit ? 'Failed to update: ' : t.failedAdd) + error.message + code);
         } finally {
           btn.innerHTML = originalHtml;
           btn.disabled = false;
