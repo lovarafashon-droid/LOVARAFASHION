@@ -1551,7 +1551,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               '<option value="panties">' + (t.subcatPanties || 'Panties') + '</option>' +
               '<option value="nightgowns">' + (t.subcatNightgowns || 'Nightgowns') + '</option>';
           }
-        } else if (category === 'tops' || category === 'suits') {
+        } else if (category === 'tops' || category === 'suits' || category === 'sets') {
           if (subcatGroup) subcatGroup.classList.remove('hidden');
           if (subcatSelect) {
             subcatSelect.innerHTML = '<option value="">' + (t.selectSubcategory || 'Select Subcategory') + '</option>' +

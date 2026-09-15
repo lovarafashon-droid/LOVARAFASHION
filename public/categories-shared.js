@@ -804,7 +804,7 @@ const CategoryApp = {
     const category = document.body.getAttribute('data-category');
     // The homepage has its own product carousel and must not show category filters.
     if (!category) return;
-    if (['winter', 'tops', 'suits', 'pajamas'].includes(category) && !document.getElementById('categorySubcategoryTabs')) {
+    if (['winter', 'tops', 'suits', 'sets', 'pajamas'].includes(category) && !document.getElementById('categorySubcategoryTabs')) {
       const tabs = document.createElement('div');
       tabs.id = 'categorySubcategoryTabs';
       tabs.className = 'subcategory-tabs';
@@ -812,6 +812,7 @@ const CategoryApp = {
         winter: [['all', this.currentLang === 'ar' ? 'الكل' : 'All'], ['jackets', this.translations[this.currentLang].subcatJackets], ['sweaters', this.translations[this.currentLang].subcatSweaters], ['hoodies', this.translations[this.currentLang].subcatHoodies], ['knitwear', this.translations[this.currentLang].subcatKnitwear]],
         tops: [['all', this.translations[this.currentLang].subcatAll], ['half-sleeve', this.translations[this.currentLang].subcatHalfSleeve], ['sleeveless', this.translations[this.currentLang].subcatSleeveless], ['long-sleeve', this.translations[this.currentLang].subcatLongSleeve]],
         suits: [['all', this.translations[this.currentLang].subcatAll], ['half-sleeve', this.translations[this.currentLang].subcatHalfSleeve], ['sleeveless', this.translations[this.currentLang].subcatSleeveless], ['long-sleeve', this.translations[this.currentLang].subcatLongSleeve]],
+        sets: [['all', this.translations[this.currentLang].subcatAll], ['half-sleeve', this.translations[this.currentLang].subcatHalfSleeve], ['long-sleeve', this.translations[this.currentLang].subcatLongSleeve]],
         pajamas: [['all', this.translations[this.currentLang].subcatAll]]
       };
       const labels = labelsByCategory[category] || [['all', this.currentLang === 'ar' ? 'الكل' : 'All']];
