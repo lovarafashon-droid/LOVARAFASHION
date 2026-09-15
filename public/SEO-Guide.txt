@@ -28,11 +28,11 @@
 📌 5. Google Search Console:
 ----------------------------------------
 1. ادخل: https://search.google.com/search-console
-2. أضف الموقع: https://lovarafashion-jh7v.vercel.app/
+2. أضف الموقع: https://lovarafashion.com/
 3. اختار طريقة التحقق: HTML Tag
 4. ضيف الـ Meta Tag في <head>
 5. بعد التحقق، ابعت Sitemap:
-   https://lovarafashion-jh7v.vercel.app/sitemap.xml
+   https://lovarafashion.com/sitemap.xml
 
 📌 6. Google Analytics 4:
 ----------------------------------------
@@ -64,6 +64,8 @@
   لانجري حريمي, برا, طقم داخلي, قمصان نوم
   شنط حريمي, شنط يد, مجوهرات, شباشب
   عطور نسائية, مكياج, فاونديشن, احمر شفاه
+
+ملاحظة: استخدم الكلمات ذات الصلة داخل العناوين والوصف والنصوص بشكل طبيعي، وتجنب تكرار الكلمات المفتاحية بشكل مبالغ فيه.
 
 📌 8. نصائح للصور (Alt Text):
 ----------------------------------------

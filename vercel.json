@@ -1,6 +1,20 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "lovarafashion.vercel.app" }],
+      "destination": "https://lovarafashion.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "lovarafashion-jh7v.vercel.app" }],
+      "destination": "https://lovarafashion.com/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(admin|orders)",
