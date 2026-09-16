@@ -1457,10 +1457,42 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       },
       async uploadProductImages(images, productId) {
         if (!Array.isArray(images) || !images.length) return images;
-        // Firebase Storage requires the Blaze billing plan. Images are already
-        // resized/compressed by handleImageUpload, so keep them in Firestore
-        // and avoid a paid Storage dependency.
-        return images;
+        const currentUser = firebase.auth().currentUser;
+        if (!currentUser) throw new Error('يجب تسجيل الدخول كأدمن قبل رفع الصور.');
+        const idToken = await currentUser.getIdToken();
+        const authResponse = await fetch('/api/imagekit-auth', {
+          cache: 'no-store',
+          headers: { Authorization: `Bearer ${idToken}` }
+        });
+        if (!authResponse.ok) throw new Error('ImageKit authorization failed.');
+        const auth = await authResponse.json();
+        const publicKey = 'public_SgOeLUR2FYzQgnGT+Au4Jaol7eY=';
+        const uploadEndpoint = 'https://upload.imagekit.io/api/v1/files/upload';
+        const uploaded = [];
+
+        for (let index = 0; index < images.length; index++) {
+          if (!String(images[index]).startsWith('data:')) {
+            uploaded.push(images[index]);
+            continue;
+          }
+          const form = new FormData();
+          form.append('file', images[index]);
+          form.append('fileName', `product-${productId}-${index + 1}.jpg`);
+          form.append('folder', '/lovara/products');
+          form.append('useUniqueFileName', 'true');
+          form.append('publicKey', publicKey);
+          form.append('token', auth.token);
+          form.append('signature', auth.signature);
+          form.append('expire', String(auth.expire));
+
+          const response = await fetch(uploadEndpoint, { method: 'POST', body: form });
+          const result = await response.json();
+          if (!response.ok || !result.url) {
+            throw new Error(result.message || 'ImageKit upload failed.');
+          }
+          uploaded.push(result.url);
+        }
+        return uploaded;
       },
       removeImage(index) {
         document.getElementById('pImageFile' + index).value = '';
@@ -1883,17 +1915,12 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
         try {
           const productId = isEdit ? editId : AdminApp.db.collection('products').doc().id;
-          let imageUploadError = null;
           try {
             product.images = await AdminApp.uploadProductImages(product.images, productId);
           } catch (uploadError) {
-            // Storage requires Blaze on this Firebase project. Keep the
-            // compressed data URLs so the real uploaded images are still
-            // stored in the product document and displayed without Storage.
-            imageUploadError = uploadError;
-            product.images = images;
-            product.imageUrl = product.images[0];
-            console.warn('Storage unavailable; saving compressed images in Firestore instead:', uploadError);
+            // Never save Base64 images in Firestore. Abort the save until the
+            // image has been uploaded to ImageKit successfully.
+            throw new Error('لم يتم رفع الصور إلى ImageKit: ' + uploadError.message);
           }
           product.imageUrl = product.images[0] || 'https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA';
           if (isEdit) {
@@ -1947,9 +1974,6 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             this.products = [{ id: productId, ...product, _createdAt: product.createdAt }, ...this.products];
             this.renderProducts();
             AdminApp.showSuccess();
-            if (imageUploadError) {
-              setTimeout(() => AdminApp.showError('تمت إضافة المنتج بالصور المرفوعة بدون Firebase Storage (خطة Blaze غير مفعلة).'), 350);
-            }
             document.getElementById('productForm').reset();
             document.getElementById('pCost').value = '';
             document.getElementById('pStock').value = '1';
