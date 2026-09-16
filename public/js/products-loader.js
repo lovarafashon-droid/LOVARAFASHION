@@ -150,6 +150,12 @@ const badgeTranslations = {
   ar: { 'New': 'جديد', 'Sale': 'تخفيض', 'Bestseller': 'الأكثر مبيعاً', 'Limited': 'محدود', 'Coming Soon': 'قريباً' }
 };
 
+function optimizeHomepageImageUrl(url, width = 600) {
+  if (typeof url !== 'string' || !url.includes('ik.imagekit.io')) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}tr=w-${width},q-75,f-auto`;
+}
+
 
 
 function initProductCarousel(grid, products) {
@@ -216,6 +222,11 @@ function renderCarouselPage() {
   const pagination = document.getElementById('carouselPagination');
   if (!container) return;
 
+  // Keep the carousel's vertical footprint while cards are replaced. Product
+  // metadata differs between pages, so without this reservation the page jumps.
+  const reservedHeight = container.offsetHeight;
+  if (reservedHeight > 0) container.style.minHeight = `${reservedHeight}px`;
+
   const start = carouselState.currentPage * carouselState.itemsPerPage;
   const end = start + carouselState.itemsPerPage;
   const pageProducts = carouselState.filteredProducts.slice(start, end);
@@ -235,6 +246,7 @@ function renderCarouselPage() {
       const card = createProductCard(product.id, product);
       container.appendChild(card);
     });
+    container.style.minHeight = `${Math.max(reservedHeight, container.scrollHeight)}px`;
     container.style.opacity = '1';
     container.style.transform = 'translateX(0)';
   }, 150);
@@ -348,7 +360,7 @@ function createProductCard(id, product) {
   const price = parseFloat(product.price) || 0;
   const oldPrice = parseFloat(product.oldPrice) || 0;
   const imageUrl = product.imageUrl || product.image || product.imageURL || product.photo || product.img || product.thumbnail || '';
-  const finalImage = imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA';
+  const finalImage = optimizeHomepageImageUrl(imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA', 600);
 
   const lang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : (localStorage.getItem('lovara_lang') || 'en');
   const badgeText = badgeTranslations[lang]?.[product.badge] || product.badge;
@@ -378,7 +390,7 @@ function createProductCard(id, product) {
 
   div.innerHTML = `
     <div class="product-img-wrap">
-      <img src="${finalImage}" alt="${safeName}" class="product-img" loading="lazy" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">
+      <img src="${finalImage}" alt="${safeName}" class="product-img" loading="lazy" decoding="async" fetchpriority="low" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">
       ${badgeHtml}
       <button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="event.stopPropagation(); window.toggleHomepageWishlist('${id}')">
         <i class="fas fa-heart"></i>
