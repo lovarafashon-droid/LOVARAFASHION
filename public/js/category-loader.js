@@ -7,7 +7,33 @@ const currentCategory = document.body.dataset.category ||
                         window.location.pathname.split('/').pop().replace('.html', '') ||
                         'dresses';
 
-document.addEventListener('DOMContentLoaded', async function() {
+const CATEGORY_CACHE_PREFIX = 'lovara_category_products_';
+
+function readCategoryCache(category) {
+  try {
+    const cached = JSON.parse(localStorage.getItem(CATEGORY_CACHE_PREFIX + category) || 'null');
+    if (cached && Array.isArray(cached.data) && cached.data.length > 0) return cached.data;
+    // The homepage cache can seed a category's first visit without another
+    // network round trip; Firebase still refreshes the result below.
+    const allCached = JSON.parse(localStorage.getItem('lovara_products_cache') || 'null');
+    if (allCached && Array.isArray(allCached.data)) {
+      return allCached.data.filter(product => product.category === category && product.showOnCategory !== false);
+    }
+  } catch (error) {
+    console.warn('Category cache read error:', error);
+  }
+  return [];
+}
+
+function writeCategoryCache(category, products) {
+  try {
+    localStorage.setItem(CATEGORY_CACHE_PREFIX + category, JSON.stringify({ data: products, timestamp: Date.now() }));
+  } catch (error) {
+    console.warn('Category cache write error:', error);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
   const grid = document.getElementById('productsGrid');
   const emptyState = document.getElementById('emptyState');
   const loading = document.getElementById('productsLoading');
@@ -19,89 +45,52 @@ document.addEventListener('DOMContentLoaded', async function() {
     categoryTitle.textContent = currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1);
   }
 
-  // ✅ انتظر Firebase
-  let attempts = 0;
-  while (typeof firebase === 'undefined' || !firebase.firestore) {
-    await new Promise(r => setTimeout(r, 100));
-    attempts++;
-    if (attempts > 20) break;
-  }
-
-  if (typeof firebase === 'undefined' || !firebase.firestore) {
-    console.error('❌ Firebase not loaded');
-    if (loading) loading.style.display = 'none';
-    if (emptyState) {
-      emptyState.querySelector('h3').textContent = 'Connection Error';
-      emptyState.querySelector('p').innerHTML = 'Please check your internet connection.<br>Refresh the page to try again.';
-      emptyState.style.display = 'flex';
-    }
-    return;
-  }
-
-  const db = firebase.firestore();
-
-  try {
-    console.log('🔄 Loading ' + currentCategory + ' products from Firebase...');
-
-    // Load products for this category
-    // Use simple get() without orderBy to avoid index issues
-    const snapshot = await db.collection('products')
-      .where('category', '==', currentCategory)
-      .get();
-
-    console.log('📦 Products loaded:', snapshot.size);
-
-    if (snapshot.empty) {
-      console.log('No products found for category:', currentCategory);
-      if (loading) loading.style.display = 'none';
-      if (emptyState) emptyState.style.display = 'flex';
-      if (categoryCount) categoryCount.textContent = '(0)';
-      return;
-    }
-
-    // Convert to array and filter for category page
-    const products = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      // Only show products that have showOnCategory = true (or undefined for backward compat)
-      if (data.showOnCategory !== false) {
-        products.push({ id: doc.id, ...data });
-      }
-    });
-
-    // Sort by createdAt (newest first)
-    products.sort((a, b) => {
-      const aTime = a.createdAt || 0;
-      const bTime = b.createdAt || 0;
-      return bTime - aTime;
-    });
-
-    console.log('📁 Products for category page:', products.length);
-
-    // Update count
-    if (categoryCount) categoryCount.textContent = '(' + products.length + ')';
-
-    // Hide loading & empty state
+  // Paint the last successful catalog immediately; Firebase refreshes it below.
+  const cachedProducts = readCategoryCache(currentCategory);
+  if (cachedProducts.length > 0) {
     if (loading) loading.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
+    if (categoryCount) categoryCount.textContent = '(' + cachedProducts.length + ')';
+    renderCategoryProducts(grid, cachedProducts);
+  }
 
-    if (products.length === 0) {
-      if (emptyState) emptyState.style.display = 'flex';
+  // Do not block first paint while waiting for the Firebase CDN/connection.
+  (async function refreshFromFirebase() {
+    let attempts = 0;
+    while ((typeof firebase === 'undefined' || !firebase.firestore) && attempts++ < 30) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    if (typeof firebase === 'undefined' || !firebase.firestore) {
+      if (!cachedProducts.length && loading) loading.style.display = 'none';
+      if (!cachedProducts.length && emptyState) emptyState.style.display = 'flex';
       return;
     }
 
-    // Render products in grid (not carousel for category pages)
-    renderCategoryProducts(grid, products);
-
-  } catch (error) {
-    console.error('❌ Error loading products:', error);
-    if (loading) loading.style.display = 'none';
-    if (emptyState) {
-      emptyState.querySelector('h3').textContent = 'Error Loading Products';
-      emptyState.querySelector('p').textContent = 'Please refresh the page. Error: ' + error.message;
-      emptyState.style.display = 'flex';
+    try {
+      console.log('🔄 Refreshing ' + currentCategory + ' products from Firebase...');
+      const snapshot = await firebase.firestore().collection('products')
+        .where('category', '==', currentCategory).get();
+      const products = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.showOnCategory !== false) products.push({ id: doc.id, ...data });
+      });
+      products.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      writeCategoryCache(currentCategory, products);
+      if (loading) loading.style.display = 'none';
+      if (categoryCount) categoryCount.textContent = '(' + products.length + ')';
+      if (products.length > 0) {
+        if (emptyState) emptyState.style.display = 'none';
+        renderCategoryProducts(grid, products);
+      } else if (!cachedProducts.length && emptyState) {
+        emptyState.style.display = 'flex';
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing products:', error);
+      if (!cachedProducts.length && loading) loading.style.display = 'none';
+      if (!cachedProducts.length && emptyState) emptyState.style.display = 'flex';
     }
-  }
+  })();
 });
 
 // ============================================

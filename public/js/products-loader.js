@@ -133,8 +133,14 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   const cached = getCachedProducts();
-  // Keep one consistent catalog on first paint; do not show a partial cached catalog.
-  showSkeletonLoading(grid, 4);
+  // Paint the last successful catalog immediately while the cloud refresh runs.
+  if (cached && cached.length > 0) {
+    if (loading) loading.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
+    initProductCarousel(grid, cached);
+  } else {
+    showSkeletonLoading(grid, 4);
+  }
 
   try {
     // Fetch the full catalog once so products do not appear in two delayed batches.
