@@ -1034,7 +1034,7 @@
               // XPay is created only after the shipping form is valid and the
               // customer explicitly presses the order button.
               document.getElementById('xpay-loading').style.display = 'none';
-              placeOrderBtn.innerHTML = '<i class="fas fa-check-circle"></i> إتمام الطلب ثم الدفع بأمان';
+              placeOrderBtn.innerHTML = '<i class="fas fa-credit-card"></i> الانتقال للدفع بالبطاقة';
             }
           });
         });
@@ -1256,22 +1256,44 @@
       async confirmXPay() {
         const errorEl = document.getElementById('xpay-payment-error');
         errorEl.textContent = '';
-        if (!this.xpayCheckout || !this.xpayPaymentReady) return;
-        const customer = this.xpayOrderData?.customer || {};
-        const result = await this.xpayCheckout.confirm({
-          customerDetails: {
-            name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
-            email: customer.email || '',
-            phone: customer.phone || ''
-          },
-          redirect: 'if_required'
-        });
-        if (result?.type === 'error') {
-          errorEl.textContent = result.error?.message || 'تعذر إتمام الدفع.';
+        if (!this.xpayCheckout || !this.xpayPaymentReady) {
+          errorEl.textContent = 'من فضلك أدخل بيانات البطاقة كاملة، أو اختر الدفع عند الاستلام.';
           errorEl.classList.add('show');
           return;
         }
-        this.showSuccess(this.xpayOrderData.orderNumber);
+        try {
+          const customer = this.xpayOrderData?.customer || {};
+          const result = await this.xpayCheckout.confirm({
+            customerDetails: {
+              name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
+              email: customer.email || '',
+              phone: customer.phone || ''
+            },
+            redirect: 'if_required'
+          });
+          if (result?.type === 'error') {
+            errorEl.textContent = result.error?.message || 'تعذر إتمام الدفع. تحقق من بيانات البطاقة.';
+            errorEl.classList.add('show');
+            return;
+          }
+
+          // Only now, after XPay confirms the payment, create the order that
+          // appears in the admin orders dashboard.
+          const db = this.db || await this.firebaseReady;
+          if (!db) throw new Error('Cloud database is unavailable.');
+          const transactionId = result?.paymentIntent?.id || result?.id || '';
+          await db.collection('orders').add({
+            ...this.xpayOrderData,
+            payment: { ...(this.xpayOrderData.payment || {}), method: 'visa', status: 'paid', transactionId }
+          });
+          this.showSuccess(this.xpayOrderData.orderNumber);
+        } catch (err) {
+          console.error('[LOVARA Checkout] XPay confirmation error:', err);
+          errorEl.textContent = err?.message || 'تعذر حفظ الطلب بعد الدفع. تواصل معنا قبل إعادة المحاولة.';
+          errorEl.classList.add('show');
+          const button = document.getElementById('placeOrderBtn');
+          if (button) button.disabled = false;
+        }
       },
 
       showSuccess(orderNumber) {

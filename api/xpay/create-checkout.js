@@ -1,4 +1,4 @@
-const { findOrderByNumber, orderTotal, admin } = require('../_lib/firestore');
+const { orderTotal } = require('../_lib/firestore');
 
 const required = ['XPAY_CHECKOUT_URL', 'XPAY_API_KEY', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
 
@@ -13,8 +13,7 @@ module.exports = async (req, res) => {
   if (!orderNumber) return res.status(400).json({ error: 'orderNumber is required.' });
 
   try {
-    let order = await findOrderByNumber(orderNumber);
-    const orderData = order ? order.data : submittedOrder;
+    const orderData = submittedOrder;
     if (!orderData) return res.status(404).json({ error: 'Order not found.' });
     const amount = orderTotal(orderData);
     if (!amount) return res.status(422).json({ error: 'Order total is invalid.' });
@@ -50,25 +49,10 @@ module.exports = async (req, res) => {
     }
     if (!data.clientSecret) return res.status(502).json({ error: 'XPay response did not include a client secret.' });
 
+    // Do not create an order here. This endpoint only creates a temporary
+    // XPay checkout session. The client saves the order after XPay confirms
+    // the payment, so unpaid/abandoned checkouts never appear as orders.
     const reference = String(data.reference || orderNumber);
-    const paymentUpdate = {
-      payment: { ...(orderData.payment || {}), method: 'visa', status: 'awaiting_payment', checkoutReference: reference },
-      xpaySessionId: data.id || null,
-      updatedAt: admin().firestore.FieldValue.serverTimestamp()
-    };
-    if (order) {
-      await order.ref.update(paymentUpdate);
-    } else {
-      // Keep initiated Visa orders in the same collection used by the admin
-      // dashboard. This makes awaiting/failed payments visible to the owner
-      // and lets the webhook update the same order after payment.
-      const db = admin().firestore();
-      await db.collection('orders').doc(orderNumber).set({
-        ...orderData,
-        ...paymentUpdate,
-        createdAt: admin().firestore.FieldValue.serverTimestamp()
-      });
-    }
     return res.status(200).json({ clientSecret: data.clientSecret, sessionId: data.id || null, reference });
   } catch (error) {
     console.error('[XPay create-checkout]', error);
