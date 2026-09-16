@@ -3,6 +3,12 @@
 // Auth, Cart, Wishlist, i18n, Products for ALL category pages
 // ============================================
 
+function optimizeImageKitUrl(url, width = 600) {
+  if (typeof url !== 'string' || !url.includes('ik.imagekit.io')) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}tr=w-${width},q-75,f-auto`;
+}
+
 const CategoryApp = {
   badgeTranslations: {
     en: { 'New': 'New', 'Sale': 'Sale', 'Bestseller': 'Bestseller', 'Limited': 'Limited', 'Coming Soon': 'Coming Soon' },
@@ -755,6 +761,9 @@ const CategoryApp = {
       if (typeof firebase !== 'undefined' && firebase.firestore) {
         const db = firebase.firestore();
         let query = category ? db.collection('products').where('category', '==', category) : db.collection('products');
+        // Load a bounded catalog page so the first visible products are not
+        // blocked by downloading an unnecessarily large collection snapshot.
+        query = query.limit(40);
         const snapshot = await query.get();
         this.products = snapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
@@ -927,7 +936,8 @@ const CategoryApp = {
     const sizesHtml = product.sizes ? product.sizes.map(s => `<span class="product-size-tag">${s}</span>`).join('') : '';
     const colorsHtml = product.colors ? product.colors.map(c => `<span class="product-color-tag" style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span>`).join('') : '';
     const isWished = this.isInWishlist(product.id);
-    card.innerHTML = `<div class="product-img-wrap" onclick="CategoryApp.openProductDetail('${product.id}')" style="cursor:pointer;"><img src="${product.imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA'}" alt="${product.name}" class="product-img" loading="lazy" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">${badgeHtml}<button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="event.stopPropagation(); CategoryApp.handleWishlistClick('${product.id}')"><i class="fas fa-heart"></i></button></div><div class="product-info"><h4 class="product-name">${product.name}</h4><p class="product-price">EGP ${product.price ? (parseFloat(product.price) || 0).toFixed(2) : '0.00'} ${oldPriceHtml}</p>${sizesHtml ? `<div class="product-sizes"><span class="product-meta-label">${this.t('size')}:</span>${sizesHtml}</div>` : ''}${colorsHtml ? `<div class="product-colors"><span class="product-meta-label">${this.t('color')}:</span>${colorsHtml}</div>` : ''}${product.badge === 'Coming Soon' || product.comingSoon === true ? `<div class="product-actions coming-soon-actions"><span class="coming-soon-label" style="flex:1;text-align:center;padding:10px 14px;background:#f5f5f5;border-radius:8px;color:#888;font-size:13px;font-weight:500;"><i class="fas fa-clock" style="margin-right:6px;"></i>${this.badgeTranslations[this.currentLang]?.['Coming Soon'] || 'Coming Soon'}</span><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share" style="width:40px;height:40px;border-radius:8px;border:1px solid #e8e4e0;background:#fff;color:#666;cursor:pointer;"><i class="fas fa-share-nodes"></i></button></div>` : `<div class="product-actions"><button class="add-to-cart" onclick="CategoryApp.handleAddToCart('${product.id}')"><i class="fas fa-bag-shopping"></i> ${this.t('addToCart')}</button><button class="btn-buy-now homepage-preview-buy" type="button" onclick="CategoryApp.handleBuyNow('${product.id}')"><i class="fas fa-eye"></i> ${this.t('buyNow')}</button><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share"><i class="fas fa-share-nodes"></i></button></div>`}</div>`;
+    const cardImage = optimizeImageKitUrl(product.imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA', 600);
+    card.innerHTML = `<div class="product-img-wrap" onclick="CategoryApp.openProductDetail('${product.id}')" style="cursor:pointer;"><img src="${cardImage}" alt="${product.name}" class="product-img" loading="lazy" decoding="async" fetchpriority="low" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">${badgeHtml}<button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="event.stopPropagation(); CategoryApp.handleWishlistClick('${product.id}')"><i class="fas fa-heart"></i></button></div><div class="product-info"><h4 class="product-name">${product.name}</h4><p class="product-price">EGP ${product.price ? (parseFloat(product.price) || 0).toFixed(2) : '0.00'} ${oldPriceHtml}</p>${sizesHtml ? `<div class="product-sizes"><span class="product-meta-label">${this.t('size')}:</span>${sizesHtml}</div>` : ''}${colorsHtml ? `<div class="product-colors"><span class="product-meta-label">${this.t('color')}:</span>${colorsHtml}</div>` : ''}${product.badge === 'Coming Soon' || product.comingSoon === true ? `<div class="product-actions coming-soon-actions"><span class="coming-soon-label" style="flex:1;text-align:center;padding:10px 14px;background:#f5f5f5;border-radius:8px;color:#888;font-size:13px;font-weight:500;"><i class="fas fa-clock" style="margin-right:6px;"></i>${this.badgeTranslations[this.currentLang]?.['Coming Soon'] || 'Coming Soon'}</span><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share" style="width:40px;height:40px;border-radius:8px;border:1px solid #e8e4e0;background:#fff;color:#666;cursor:pointer;"><i class="fas fa-share-nodes"></i></button></div>` : `<div class="product-actions"><button class="add-to-cart" onclick="CategoryApp.handleAddToCart('${product.id}')"><i class="fas fa-bag-shopping"></i> ${this.t('addToCart')}</button><button class="btn-buy-now homepage-preview-buy" type="button" onclick="CategoryApp.handleBuyNow('${product.id}')"><i class="fas fa-eye"></i> ${this.t('buyNow')}</button><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share"><i class="fas fa-share-nodes"></i></button></div>`}</div>`;
     return card;
   },
 
