@@ -553,8 +553,9 @@
               </div>
               <div class="form-section" style="animation-delay:0.4s">
                 <div class="form-group">
-                  <label data-i18n="orderNotes">Order Notes (Optional)</label>
-                  <textarea id="orderNotes" rows="3" placeholder="Any special instructions..." data-field="orderNotes"></textarea>
+                  <label data-i18n="orderNotes">Order Notes *</label>
+                  <textarea id="orderNotes" rows="3" required placeholder="اكتب أي ملاحظات مهمة للطلب" data-field="orderNotes"></textarea>
+                  <span class="error-msg" id="orderNotesError"><i class="fas fa-exclamation-circle"></i> هذا الحقل مطلوب</span>
                 </div>
               </div>
             </form>
@@ -1086,7 +1087,7 @@
       },
 
       setupValidation() {
-        document.querySelectorAll('#checkoutForm input[required], #checkoutForm select[required]').forEach(input => {
+        document.querySelectorAll('#checkoutForm input[required], #checkoutForm select[required], #checkoutForm textarea[required]').forEach(input => {
           input.addEventListener('blur', () => this.validateField(input));
           input.addEventListener('input', () => { if (input.classList.contains('error')) this.validateField(input); });
         });
@@ -1106,7 +1107,7 @@
 
       validateForm() {
         let valid = true;
-        document.querySelectorAll('#checkoutForm input[required], #checkoutForm select[required]').forEach(input => {
+        document.querySelectorAll('#checkoutForm input[required], #checkoutForm select[required], #checkoutForm textarea[required]').forEach(input => {
           if (!this.validateField(input)) valid = false;
         });
         return valid;
