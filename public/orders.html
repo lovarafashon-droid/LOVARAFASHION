@@ -744,7 +744,26 @@
         }).join('');
 
         const payment = order.payment || {};
-        const paymentExtra = payment.method !== 'cod' 
+        const paymentMethod = String(payment.method || '').toLowerCase();
+        const paymentLabel = paymentMethod === 'cod'
+          ? 'الدفع عند الاستلام'
+          : paymentMethod === 'visa' || paymentMethod === 'card'
+            ? 'الدفع بالفيزا / Mastercard'
+            : (payment.methodName || payment.method || 'غير محدد');
+        const paymentStatus = String(payment.status || '').toLowerCase();
+        const paymentStatusLabel = paymentMethod === 'cod'
+          ? 'لم يتم الدفع — تحصيل عند الاستلام'
+          : ['paid', 'succeeded', 'success', 'completed', 'approved'].includes(paymentStatus)
+            ? 'تم الدفع بالفيزا'
+            : paymentStatus === 'failed' || paymentStatus === 'cancelled' || paymentStatus === 'declined'
+              ? 'فشل دفع الفيزا'
+              : 'في انتظار دفع الفيزا';
+        const paymentStatusClass = paymentMethod === 'cod'
+          ? 'status-pending-confirm'
+          : ['paid', 'succeeded', 'success', 'completed', 'approved'].includes(paymentStatus)
+            ? 'status-confirmed-ok'
+            : 'status-pending-confirm';
+        const paymentExtra = paymentMethod !== 'cod'
           ? `<div class="info-item"><div class="info-label">Transaction ID</div><div class="info-value">${esc(payment.transactionId || '-')}</div></div>`
           : '';
 
@@ -795,8 +814,12 @@
 
               <div class="info-grid" style="margin-bottom:20px;">
                 <div class="info-item">
-                  <div class="info-label">Payment Method</div>
-                  <div class="info-value">${payment.methodName || payment.method || 'N/A'}</div>
+                  <div class="info-label">طريقة الدفع</div>
+                  <div class="info-value">${esc(paymentLabel)}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">حالة الدفع</div>
+                  <div class="info-value"><span class="confirmation-status ${paymentStatusClass}" style="margin-left:0;display:inline-block;">${esc(paymentStatusLabel)}</span></div>
                 </div>
                 ${paymentExtra}
               </div>
