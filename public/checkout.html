@@ -1014,14 +1014,27 @@
           input.addEventListener('change', (e) => {
             document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
             e.target.closest('.payment-method').classList.add('selected');
+            // Selecting a method must not submit the order. The customer still
+            // needs to complete the shipping form and press the order button.
             placeOrderBtn.disabled = false;
             paymentError.classList.remove('show');
             transactionError.classList.remove('show');
             visaDetails.style.display = e.target.value === 'visa' ? 'block' : 'none';
             this.updateSteps(2);
-            if (e.target.value === 'visa' && !this.xpayCheckout) {
-              document.getElementById('xpay-loading').style.display = 'flex';
-              this.placeOrder();
+            if (e.target.value === 'cod') {
+              // If the customer switched away from Visa, discard the old
+              // client-side checkout instance and restore the COD button.
+              this.xpayCheckout = null;
+              this.xpayPaymentReady = false;
+              this.xpayOrderData = null;
+              document.getElementById('xpay-payment-element').innerHTML = '';
+              document.getElementById('xpay-loading').style.display = 'none';
+              placeOrderBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span data-i18n="placeOrder">' + (this.t('placeOrder') || 'Place Order') + '</span>';
+            } else if (e.target.value === 'visa') {
+              // XPay is created only after the shipping form is valid and the
+              // customer explicitly presses the order button.
+              document.getElementById('xpay-loading').style.display = 'none';
+              placeOrderBtn.innerHTML = '<i class="fas fa-check-circle"></i> إتمام الطلب ثم الدفع بأمان';
             }
           });
         });

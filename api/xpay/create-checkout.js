@@ -51,16 +51,22 @@ module.exports = async (req, res) => {
     if (!data.clientSecret) return res.status(502).json({ error: 'XPay response did not include a client secret.' });
 
     const reference = String(data.reference || orderNumber);
+    const paymentUpdate = {
+      payment: { ...(orderData.payment || {}), method: 'visa', status: 'awaiting_payment', checkoutReference: reference },
+      xpaySessionId: data.id || null,
+      updatedAt: admin().firestore.FieldValue.serverTimestamp()
+    };
     if (order) {
-      await order.ref.update({ payment: { ...(order.data.payment || {}), method: 'visa', status: 'awaiting_payment', checkoutReference: reference }, updatedAt: new Date() });
+      await order.ref.update(paymentUpdate);
     } else {
+      // Keep initiated Visa orders in the same collection used by the admin
+      // dashboard. This makes awaiting/failed payments visible to the owner
+      // and lets the webhook update the same order after payment.
       const db = admin().firestore();
-      await db.collection('pendingOrders').doc(orderNumber).set({
+      await db.collection('orders').doc(orderNumber).set({
         ...orderData,
-        payment: { ...(orderData.payment || {}), method: 'visa', status: 'awaiting_payment', checkoutReference: reference },
-        xpaySessionId: data.id || null,
-        createdAt: admin().firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin().firestore.FieldValue.serverTimestamp()
+        ...paymentUpdate,
+        createdAt: admin().firestore.FieldValue.serverTimestamp()
       });
     }
     return res.status(200).json({ clientSecret: data.clientSecret, sessionId: data.id || null, reference });
