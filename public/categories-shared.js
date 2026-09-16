@@ -758,7 +758,9 @@ const CategoryApp = {
         const db = firebase.firestore();
         let query = category ? db.collection('products').where('category', '==', category) : db.collection('products');
         const snapshot = await query.get();
-        this.products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        this.products = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(product => product.showOnCategory !== false);
       } else { this.products = []; }
       this.refreshProductFilterOptions();
       this.setupProductPagination();

@@ -8,6 +8,10 @@ const currentCategory = document.body.dataset.category ||
                         'dresses';
 
 document.addEventListener('DOMContentLoaded', async function() {
+  // categories-shared.js is the single source of truth for category products.
+  // Do not start a second Firebase request or overwrite its rendered catalog.
+  if (typeof CategoryApp !== 'undefined') return;
+
   const grid = document.getElementById('productsGrid');
   const emptyState = document.getElementById('emptyState');
   const loading = document.getElementById('productsLoading');
