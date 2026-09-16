@@ -1031,10 +1031,12 @@
               document.getElementById('xpay-loading').style.display = 'none';
               placeOrderBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span data-i18n="placeOrder">' + (this.t('placeOrder') || 'Place Order') + '</span>';
             } else if (e.target.value === 'visa') {
-              // XPay is created only after the shipping form is valid and the
-              // customer explicitly presses the order button.
-              document.getElementById('xpay-loading').style.display = 'none';
-              placeOrderBtn.innerHTML = '<i class="fas fa-credit-card"></i> الانتقال للدفع بالبطاقة';
+              // Prepare and mount the hosted card form immediately. This only
+              // creates a temporary payment session; no order is saved yet.
+              document.getElementById('xpay-loading').style.display = 'flex';
+              placeOrderBtn.disabled = true;
+              placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تجهيز الدفع...';
+              this.prepareXPayCheckout();
             }
           });
         });
@@ -1122,8 +1124,75 @@
         connectors.forEach((c, i) => c.classList.toggle('completed', i < step - 1));
       },
 
+      buildXPayOrderData() {
+        const totalText = document.getElementById('total').textContent;
+        return {
+          orderNumber: 'LOV-' + Date.now().toString(36).toUpperCase(),
+          userId: (this.currentUser ? this.currentUser.uid : 'guest'),
+          status: 'pending',
+          customer: {
+            firstName: document.getElementById('firstName').value.trim(),
+            lastName: document.getElementById('lastName').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            address: document.getElementById('address').value.trim(),
+            city: document.getElementById('city').value.trim(),
+            governorate: document.getElementById('governorate').value,
+            notes: document.getElementById('orderNotes').value.trim()
+          },
+          payment: { method: 'visa', transactionId: '', methodName: this.getPaymentMethodName('visa'), status: 'awaiting_payment' },
+          items: this.cart.map(item => ({ name: item.name || 'Product', price: parseFloat(item.price) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
+          totals: { subtotal: document.getElementById('subtotal').textContent, shipping: document.getElementById('shipping').textContent, discount: this.promo ? ('EGP ' + this.getPromoDiscountTotal().toFixed(2)) : 'EGP 0.00', total: totalText },
+          promoCode: this.promo ? this.promo.code : '',
+          promoId: this.promo ? this.promo.id : '',
+          employeeId: this.promo ? (this.promo.employeeId || '') : '',
+          employeeDiscount: this.getPromoDiscountTotal(),
+          employeeCommission: this.getPromoCommissionTotal(),
+          profit: this.calculateProfit(),
+          confirmationStatus: 'pending',
+          rejectionReason: ''
+        };
+      },
+
+      async prepareXPayCheckout() {
+        if (this.xpayCheckout || !this.cart.length) return;
+        const orderData = this.buildXPayOrderData();
+        const amount = Number(String(orderData.totals.total).replace(/[^0-9.]/g, '')) || 0;
+        try {
+          const payResponse = await fetch('/api/xpay/create-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderNumber: orderData.orderNumber, amount, orderData }) });
+          const payData = await payResponse.json().catch(() => ({}));
+          if (!payResponse.ok || !payData.clientSecret) throw new Error(payData.detail || payData.error || 'تعذر تجهيز الدفع بالفيزا.');
+          await this.mountXPay(payData.clientSecret, orderData);
+        } catch (err) {
+          console.error('[LOVARA Checkout] XPay setup error:', err);
+          const loading = document.getElementById('xpay-loading');
+          loading.style.display = 'none';
+          const errorEl = document.getElementById('xpay-payment-error');
+          errorEl.textContent = err.message || 'تعذر تحميل بيانات البطاقة. اختر الدفع عند الاستلام أو أعد المحاولة.';
+          errorEl.classList.add('show');
+          const button = document.getElementById('placeOrderBtn');
+          button.disabled = false;
+          button.innerHTML = '<i class="fas fa-credit-card"></i> إعادة محاولة الدفع بالفيزا';
+        }
+      },
+
       async placeOrder() {
         if (this.xpayCheckout) {
+          if (!this.validateForm()) {
+            const firstError = document.querySelector('.error');
+            if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            this.showToast(this.t('fixErrors') || 'Please fix the errors above', 'error');
+            return;
+          }
+          const customer = this.xpayOrderData.customer;
+          customer.firstName = document.getElementById('firstName').value.trim();
+          customer.lastName = document.getElementById('lastName').value.trim();
+          customer.email = document.getElementById('email').value.trim();
+          customer.phone = document.getElementById('phone').value.trim();
+          customer.address = document.getElementById('address').value.trim();
+          customer.city = document.getElementById('city').value.trim();
+          customer.governorate = document.getElementById('governorate').value;
+          customer.notes = document.getElementById('orderNotes').value.trim();
           await this.confirmXPay();
           return;
         }
