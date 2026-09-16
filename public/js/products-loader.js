@@ -2,36 +2,6 @@
 // LOVARA - Products Loader (Homepage) - FIXED v2
 // ============================================
 
-const CACHE_KEY = 'lovara_products_cache';
-const CACHE_DURATION = 10 * 60 * 1000;
-
-function getCachedProducts() {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_DURATION) {
-        console.log('Using cached products');
-        return data;
-      }
-    }
-  } catch (e) {
-    console.warn('Cache read error:', e);
-  }
-  return null;
-}
-
-function setCachedProducts(products) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
-      data: products,
-      timestamp: Date.now()
-    }));
-  } catch (e) {
-    console.warn('Cache write error:', e);
-  }
-}
-
 async function waitForFirebase(maxRetries = 30, baseDelay = 300) {
   for (let i = 0; i < maxRetries; i++) {
     if (typeof firebase !== 'undefined' && firebase.firestore) {
@@ -114,26 +84,21 @@ document.addEventListener('DOMContentLoaded', async function() {
   const emptyState = document.getElementById('emptyState');
   const loading = document.getElementById('productsLoading');
 
+  // Remove catalogs created by older versions so stale products cannot be reused.
+  localStorage.removeItem('lovara_products_cache');
+
   if (!grid) {
     console.error('productsGrid not found');
     return;
   }
 
   if (!isOnline()) {
-    const cached = getCachedProducts();
-    if (cached && cached.length > 0) {
-      if (loading) loading.style.display = 'none';
-      if (emptyState) emptyState.style.display = 'none';
-      initProductCarousel(grid, cached);
-      return;
-    }
     if (loading) loading.style.display = 'none';
     showOfflineState(grid);
     return;
   }
 
-  const cached = getCachedProducts();
-  // Keep one consistent catalog on first paint; do not show a partial cached catalog.
+  // Always load the current catalog from Firebase; never render stale local data.
   showSkeletonLoading(grid, 4);
 
   try {
@@ -148,20 +113,6 @@ document.addEventListener('DOMContentLoaded', async function() {
       return bTime - aTime;
     });
 
-    // Never replace a previously successful catalog with a transient empty response.
-    // Firestore can briefly return no rows while a new admin write propagates.
-    if (productsToRender.length === 0) {
-      const currentProducts = carouselState.products || cached || [];
-      if (currentProducts.length > 0) {
-        if (loading) loading.style.display = 'none';
-        if (emptyState) emptyState.style.display = 'none';
-        initProductCarousel(grid, currentProducts);
-        return;
-      }
-    }
-
-    setCachedProducts(productsToRender);
-
     if (loading) loading.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
 
@@ -174,13 +125,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   } catch (error) {
     console.error('Error loading products:', error);
-    const fallbackCached = getCachedProducts();
-    if (fallbackCached && fallbackCached.length > 0) {
-      if (!carouselState.products || carouselState.products.length === 0) {
-        initProductCarousel(grid, fallbackCached);
-      }
-      return;
-    }
     if (loading) loading.style.display = 'none';
     if (emptyState) {
       emptyState.querySelector('h3').textContent = 'Error Loading Products';
