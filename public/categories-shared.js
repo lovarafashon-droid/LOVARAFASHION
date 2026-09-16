@@ -184,6 +184,13 @@ const CategoryApp = {
     this._initialized = true;
     console.log('[LOVARA] CategoryApp.init() started');
     this.setupI18n();
+    // Start the Firebase catalog request before auth and secondary UI setup
+    // so products can appear as soon as the live response arrives.
+    const requestedSubcategory = new URLSearchParams(window.location.search).get('subcategory');
+    if (requestedSubcategory) this.activeSubcategory = requestedSubcategory;
+    this.setupProductFilters();
+    const hasHomepageLoader = document.querySelector('script[src*="products-loader.js"]');
+    if (!hasHomepageLoader) this.loadProducts();
     this.setupAuth();
     this.setupCart();
     this.setupWishlist();
@@ -193,15 +200,6 @@ const CategoryApp = {
     this.setupNewsletterForm();
     this.setupProductCardDelegation();
     this.setupCartDelegation();
-    const requestedSubcategory = new URLSearchParams(window.location.search).get('subcategory');
-    if (requestedSubcategory) this.activeSubcategory = requestedSubcategory;
-    this.setupProductFilters();
-    // The homepage has a dedicated carousel loader. Running both loaders at
-    // once causes duplicate Firestore requests and can leave the UI hanging.
-    // The homepage script has a cache-busting query string, so an exact
-    // suffix selector misses it and starts a second Firestore loader.
-    const hasHomepageLoader = document.querySelector('script[src*="products-loader.js"]');
-    if (!hasHomepageLoader) this.loadProducts();
     this.cart = JSON.parse(localStorage.getItem('lovara_cart') || '[]');
     this.wishlist = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]');
     this.updateCartCount();
