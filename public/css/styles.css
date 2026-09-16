@@ -3365,7 +3365,22 @@ html[dir="rtl"] .product-card .btn-buy-now {
 }
 
 html[dir="rtl"] .category-info {
-  padding: 16px 20px 16px 56px;
+  padding: 16px 56px 16px 20px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+html[dir="rtl"] .category-info h3,
+html[dir="rtl"] .category-info p,
+html[dir="rtl"] .category-info .cat-link {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+html[dir="rtl"] .categories-grid,
+html[dir="rtl"] .category-card {
+  min-width: 0;
 }
 
 html[dir="rtl"] .cat-icon-wrap {
