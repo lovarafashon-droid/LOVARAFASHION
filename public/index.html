@@ -1420,8 +1420,22 @@
       },
       async google(modalId) {
         try {
-          await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-          const result = await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+          const auth = firebase.auth();
+          await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+          auth.useDeviceLanguage();
+          const provider = new firebase.auth.GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: 'select_account' });
+          let result;
+          try {
+            result = await auth.signInWithPopup(provider);
+          } catch (firstError) {
+            const message = String(firstError?.message || '').toLowerCase();
+            if (!message.includes('missing initial state')) throw firstError;
+            try {
+              Object.keys(sessionStorage).filter(key => /firebase|auth|redirect/i.test(key)).forEach(key => sessionStorage.removeItem(key));
+            } catch (_) {}
+            result = await auth.signInWithPopup(provider);
+          }
           await this.saveUser(result.user, 'google');
           this.currentUser = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL };
           localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
