@@ -1004,7 +1004,7 @@ const CategoryApp = {
       this.showToast(this.currentLang === 'ar' ? 'هذا المنتج سيتوفر قريباً!' : 'This product is coming soon!');
       return;
     }
-    this.openBuyNowModal(product, true);
+    this.openProductDetail(product.id);
   },
 
   openProductDetail(productId) {
