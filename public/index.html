@@ -1419,8 +1419,13 @@
         }
       },
       openAdminPortal() {
-        if (window.Modals) Modals.open('adminPortalModal');
-        else document.getElementById('adminPortalModal')?.classList.add('show');
+        const modal = document.getElementById('adminPortalModal');
+        if (!modal) return;
+        // Open after the login modal has finished closing so both overlays cannot compete.
+        requestAnimationFrame(() => {
+          modal.classList.add('show', 'active');
+          document.body.style.overflow = 'hidden';
+        });
       },
       showAuthError(error) {
         const t = translations[AppSettings.currentLang];
@@ -1450,11 +1455,12 @@
             result = await auth.signInWithPopup(provider);
           }
           this.saveUser(result.user, 'google').catch(error => console.warn('[LOVARA] User profile sync failed:', error));
-          this.currentUser = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL };
+          const admin = await this.isAdmin(result.user);
+          this.currentUser = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL, role: admin ? 'admin' : 'user' };
           localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
           this.updateUI(this.currentUser);
           Modals.close(modalId);
-          if (await this.isAdmin(result.user)) this.openAdminPortal();
+          if (admin) this.openAdminPortal();
           showToast('تم تسجيل الدخول بنجاح');
         } catch (error) { this.showAuthError(error); }
       },
@@ -1466,7 +1472,11 @@
           const result = await firebase.auth().signInWithEmailAndPassword(email, password);
           this.saveUser(result.user).catch(error => console.warn('[LOVARA] User profile sync failed:', error));
           Modals.close('loginModal');
-          if (await this.isAdmin(result.user)) this.openAdminPortal();
+          const admin = await this.isAdmin(result.user);
+          this.currentUser = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL, role: admin ? 'admin' : 'user' };
+          localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
+          this.updateUI(this.currentUser);
+          if (admin) this.openAdminPortal();
           showToast('تم تسجيل الدخول بنجاح');
         } catch (error) { this.showAuthError(error); }
       },
@@ -2294,20 +2304,20 @@
         <p>اختر الصفحة التي تريد فتحها</p>
       </div>
       <div class="admin-portal-grid">
-        <a href="/profile" class="admin-portal-card">
-          <div class="admin-portal-icon"><i class="fas fa-user"></i></div>
-          <h3>صفحة المستخدم</h3>
-          <p>الملف الشخصي والطلبات الخاصة بالحساب</p>
+        <a href="/orders" class="admin-portal-card">
+          <div class="admin-portal-icon"><i class="fas fa-clipboard-list"></i></div>
+          <h3>صفحة الطلبات</h3>
+          <p>عرض وإدارة طلبات العملاء</p>
         </a>
         <a href="/admin" class="admin-portal-card">
           <div class="admin-portal-icon"><i class="fas fa-user-shield"></i></div>
           <h3>لوحة الأدمن</h3>
           <p>إدارة المنتجات والأقسام والمخزون</p>
         </a>
-        <a href="/orders" class="admin-portal-card">
-          <div class="admin-portal-icon"><i class="fas fa-clipboard-list"></i></div>
-          <h3>صفحة الطلبات</h3>
-          <p>عرض وإدارة طلبات العملاء</p>
+        <a href="/profile" class="admin-portal-card">
+          <div class="admin-portal-icon"><i class="fas fa-user"></i></div>
+          <h3>صفحة المستخدم</h3>
+          <p>الملف الشخصي والطلبات الخاصة بالحساب</p>
         </a>
       </div>
       <button type="button" class="admin-portal-close" onclick="Modals.close('adminPortalModal')">
