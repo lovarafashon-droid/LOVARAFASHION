@@ -3873,3 +3873,141 @@ html[dir="rtl"] .marquee-content {
   .cart-preview-item b { grid-column: 2; }
   .cart-preview-actions { flex-direction: column; }
 }
+
+/* Clean compact mobile header */
+@media (max-width: 768px) {
+  .nav-container {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 60px;
+    padding: 9px 12px;
+    gap: 8px;
+  }
+
+  .hamburger {
+    display: flex;
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    font-size: clamp(21px, 6vw, 28px);
+    letter-spacing: 2px;
+    white-space: nowrap;
+  }
+
+  .nav-actions {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .nav-actions .lang-btn,
+  .nav-actions .wishlist-btn,
+  .nav-actions .cart-btn,
+  .nav-actions #logoutBtn,
+  .nav-actions #adminPortalBtn,
+  .nav-actions .user-info,
+  .nav-actions .auth-buttons .btn {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0;
+  }
+
+  .nav-actions .lang-btn i,
+  .nav-actions .wishlist-btn i,
+  .nav-actions .cart-btn i,
+  .nav-actions #adminPortalBtn i,
+  .nav-actions .user-info > i {
+    font-size: 14px;
+  }
+
+  .nav-actions .lang-btn #langLabel {
+    display: none;
+  }
+
+  .nav-actions .user-info .user-details,
+  .nav-actions .auth-buttons,
+  .nav-actions #adminPortalBtn span {
+    display: none !important;
+  }
+
+  .nav-actions #logoutBtn::before {
+    content: '\f2f5';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 14px;
+  }
+
+  .nav-actions .wishlist-count,
+  .nav-actions .cart-count {
+    width: 14px;
+    height: 14px;
+    top: -2px;
+    right: -2px;
+    font-size: 8px;
+  }
+
+  .nav-links {
+    top: 0;
+    width: min(280px, 82vw);
+    height: 100dvh;
+    padding-top: 76px;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav-container {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    padding-left: 9px;
+    padding-right: 9px;
+    gap: 4px;
+  }
+
+  .nav-actions {
+    gap: 0;
+  }
+
+  .nav-actions .lang-btn,
+  .nav-actions .wishlist-btn,
+  .nav-actions .cart-btn,
+  .nav-actions #logoutBtn,
+  .nav-actions #adminPortalBtn,
+  .nav-actions .user-info,
+  .nav-actions .auth-buttons .btn {
+    width: 29px;
+    min-width: 29px;
+    height: 29px;
+  }
+
+  .nav-actions .lang-btn i,
+  .nav-actions .wishlist-btn i,
+  .nav-actions .cart-btn i,
+  .nav-actions #logoutBtn::before,
+  .nav-actions #adminPortalBtn i,
+  .nav-actions .user-info > i {
+    font-size: 12px;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+}
