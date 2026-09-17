@@ -633,6 +633,8 @@
         this.setupAutoSave();
         this.setupPromoAutoApply();
         this.loadDraft();
+        // Re-render after restoring the saved governorate so shipping is not left at 0.
+        this.renderCartItems();
         this.setupValidation();
         this.applyLang(this.currentLang);
         this.updateSteps(1);
