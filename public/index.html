@@ -1365,8 +1365,9 @@
           let isAdmin = false;
           if (user) {
             try {
+              const configuredAdmin = String(user.email || '').trim().toLowerCase() === 'admin@lovara.com';
               const userDoc = await this.db.collection('users').doc(user.uid).get({ source: 'server' });
-              isAdmin = userDoc.exists && String(userDoc.data().role || '').trim().toLowerCase() === 'admin';
+              isAdmin = configuredAdmin || (userDoc.exists && String(userDoc.data().role || '').trim().toLowerCase() === 'admin');
             } catch (error) {
               console.warn('Could not check admin role:', error);
             }
@@ -1386,6 +1387,7 @@
         const adminPortalBtn = document.getElementById('adminPortalBtn');
         const userName = document.getElementById('userName');
         const userEmail = document.getElementById('userEmail');
+        const isConfiguredAdmin = String(user?.email || '').trim().toLowerCase() === 'admin@lovara.com';
         if (user) {
           if (authButtons) authButtons.style.display = 'none';
           if (userDisplay) userDisplay.style.display = 'flex';
@@ -1393,7 +1395,7 @@
           if (userName) userName.textContent = AppSettings.currentLang === 'ar' ? 'حسابي' : 'My Account';
           if (userEmail) { userEmail.textContent = ''; userEmail.style.display = 'none'; }
           if (logoutBtn) logoutBtn.style.display = 'inline-flex';
-          if (adminPortalBtn) adminPortalBtn.style.display = user.role === 'admin' ? 'inline-flex' : 'none';
+          if (adminPortalBtn) adminPortalBtn.style.display = (user.role === 'admin' || isConfiguredAdmin) ? 'inline-flex' : 'none';
         } else {
           if (authButtons) authButtons.style.display = 'flex';
           if (userDisplay) userDisplay.style.display = 'none';
