@@ -418,7 +418,7 @@
             <span id="userEmail" class="user-email"></span>
           </div>
         </div>
-        <button class="btn btn-sm btn-primary" id="adminPortalBtn" type="button" style="display:none;" onclick="Modals.open('adminPortalModal')" aria-label="Open admin portal">
+        <button class="btn btn-sm btn-primary" id="adminPortalBtn" type="button" style="display:none;" onclick="AuthApp.openAdminPortal()" aria-label="Open admin portal">
           <i class="fas fa-shield-halved"></i>
           <span data-i18n="adminPortal">Admin Portal</span>
         </button>
@@ -1419,6 +1419,10 @@
         }
       },
       openAdminPortal() {
+        if (!this.currentUser || this.currentUser.role !== 'admin') {
+          console.warn('[LOVARA] Admin portal blocked for non-admin user.');
+          return;
+        }
         const modal = document.getElementById('adminPortalModal');
         if (!modal) return;
         // Open after the login modal has finished closing so both overlays cannot compete.
