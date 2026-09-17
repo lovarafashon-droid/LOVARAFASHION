@@ -2146,19 +2146,6 @@
           });
         });
 
-        // Attach wishlist button handlers
-        grid.querySelectorAll('.product-wishlist').forEach(btn => {
-          if (btn.dataset.wlAttached) return;
-          btn.dataset.wlAttached = 'true';
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const card = btn.closest('[data-product-id]');
-            if (!card) return;
-            const pid = card.dataset.productId;
-            if (!pid) return;
-            CartApp.handleWishlistClick(pid);
-          });
-        });
       };
 
       const observer = new MutationObserver(attachClicks);
