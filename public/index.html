@@ -1403,11 +1403,24 @@
         }
       },
       async saveUser(user, provider = 'password') {
-        const ref = this.db.collection('users').doc(user.uid);
+        const ref = firebase.firestore().collection('users').doc(user.uid);
         const snap = await ref.get();
         const payload = { email: user.email || '', provider, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
         if (!snap.exists) Object.assign(payload, { role: 'user', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
         await ref.set(payload, { merge: true });
+      },
+      async isAdmin(user) {
+        try {
+          const snap = await firebase.firestore().collection('users').doc(user.uid).get();
+          return snap.exists && snap.data().role === 'admin';
+        } catch (error) {
+          console.warn('[LOVARA] Could not check admin role:', error);
+          return false;
+        }
+      },
+      openAdminPortal() {
+        if (window.Modals) Modals.open('adminPortalModal');
+        else document.getElementById('adminPortalModal')?.classList.add('show');
       },
       showAuthError(error) {
         const t = translations[AppSettings.currentLang];
@@ -1441,6 +1454,7 @@
           localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
           this.updateUI(this.currentUser);
           Modals.close(modalId);
+          if (await this.isAdmin(result.user)) this.openAdminPortal();
           showToast('تم تسجيل الدخول بنجاح');
         } catch (error) { this.showAuthError(error); }
       },
@@ -1452,7 +1466,8 @@
           const result = await firebase.auth().signInWithEmailAndPassword(email, password);
           this.saveUser(result.user).catch(error => console.warn('[LOVARA] User profile sync failed:', error));
           Modals.close('loginModal');
-          showToast('Welcome back!');
+          if (await this.isAdmin(result.user)) this.openAdminPortal();
+          showToast('تم تسجيل الدخول بنجاح');
         } catch (error) { this.showAuthError(error); }
       },
       async signup(event) {
@@ -2270,28 +2285,28 @@
     <div class="modal admin-portal-modal" role="dialog" aria-modal="true" aria-label="Admin Portal">
       <div class="modal-header" style="margin-bottom: 30px;">
         <div class="modal-logo">LOVARA</div>
-        <h2>Admin Portal</h2>
-        <p>Choose your dashboard</p>
+        <h2>بوابة LOVARA</h2>
+        <p>اختر الصفحة التي تريد فتحها</p>
       </div>
       <div class="admin-portal-grid">
+        <a href="/profile" class="admin-portal-card">
+          <div class="admin-portal-icon"><i class="fas fa-user"></i></div>
+          <h3>صفحة المستخدم</h3>
+          <p>الملف الشخصي والطلبات الخاصة بالحساب</p>
+        </a>
         <a href="/admin" class="admin-portal-card">
-          <div class="admin-portal-icon"><i class="fas fa-cube"></i></div>
-          <h3>Products Dashboard</h3>
-          <p>Manage products, inventory & categories</p>
+          <div class="admin-portal-icon"><i class="fas fa-user-shield"></i></div>
+          <h3>لوحة الأدمن</h3>
+          <p>إدارة المنتجات والأقسام والمخزون</p>
         </a>
         <a href="/orders" class="admin-portal-card">
           <div class="admin-portal-icon"><i class="fas fa-clipboard-list"></i></div>
-          <h3>Orders Dashboard</h3>
-          <p>View & manage customer orders</p>
-        </a>
-        <a href="/other" class="admin-portal-card" onclick="sessionStorage.setItem('otherAdminPending', 'true')">
-          <div class="admin-portal-icon"><i class="fas fa-layer-group"></i></div>
-          <h3>Other Dashboard</h3>
-          <p>Visitors, employees & promo codes</p>
+          <h3>صفحة الطلبات</h3>
+          <p>عرض وإدارة طلبات العملاء</p>
         </a>
       </div>
       <button type="button" class="admin-portal-close" onclick="Modals.close('adminPortalModal')">
-        <i class="fas fa-times"></i> Close
+        <i class="fas fa-times"></i> إغلاق
       </button>
     </div>
   </div>
