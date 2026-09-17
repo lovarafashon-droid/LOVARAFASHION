@@ -1419,16 +1419,22 @@
         }
       },
       openAdminPortal() {
-        if (!this.currentUser || this.currentUser.role !== 'admin') {
-          console.warn('[LOVARA] Admin portal blocked for non-admin user.');
-          return;
-        }
+        const firebaseUser = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth().currentUser : null;
+        if (!firebaseUser) return;
         const modal = document.getElementById('adminPortalModal');
         if (!modal) return;
-        // Open after the login modal has finished closing so both overlays cannot compete.
-        requestAnimationFrame(() => {
-          modal.classList.add('show', 'active');
-          document.body.style.overflow = 'hidden';
+        this.isAdmin(firebaseUser).then(isAdmin => {
+          if (!isAdmin) {
+            console.warn('[LOVARA] Admin portal blocked for non-admin user.');
+            return;
+          }
+          this.currentUser = { ...(this.currentUser || {}), uid: firebaseUser.uid, email: firebaseUser.email, role: 'admin' };
+          this.updateUI(this.currentUser);
+          // Open after the login modal has finished closing so both overlays cannot compete.
+          requestAnimationFrame(() => {
+            modal.classList.add('show', 'active');
+            document.body.style.overflow = 'hidden';
+          });
         });
       },
       showAuthError(error) {
