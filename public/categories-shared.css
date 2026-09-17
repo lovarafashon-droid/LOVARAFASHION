@@ -2779,14 +2779,15 @@ body.lang-ar .toggle-pw {
 
 /* Stable two-row category navigation on desktop, tablet, and mobile */
 .category-nav {
-  overflow: visible;
+  overflow: visible !important;
 }
 
 .category-nav .container {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   gap: 10px;
   width: 100%;
+  overflow: visible !important;
 }
 
 .category-nav .cat-nav-link {
@@ -2817,16 +2818,17 @@ body.lang-ar .toggle-pw {
 
 @media (max-width: 768px) {
   .category-nav {
-    overflow: visible;
+    overflow: visible !important;
     padding: 14px 0;
   }
 
   .category-nav .container {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     gap: 7px;
     padding-left: 12px;
     padding-right: 12px;
-    overflow: visible;
+    overflow: visible !important;
   }
 
   .category-nav .cat-nav-link {
