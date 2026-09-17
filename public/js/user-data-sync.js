@@ -22,12 +22,16 @@
 
   function mergeById(local, remote) {
     const result = [];
+    const itemKey = item => `${item.id}::${item.size || ''}::${item.color || ''}`;
     const add = item => {
-      if (!item || !item.id || result.some(existing => existing.id === item.id)) return;
+      if (!item || !item.id || result.some(existing => itemKey(existing) === itemKey(item))) return;
       result.push(item);
     };
-    (remote || []).forEach(add);
+    // Prefer the current device copy when the same item exists locally.
+    // This preserves the price captured when it was added to the cart;
+    // account data is still added for items missing on this device.
     (local || []).forEach(add);
+    (remote || []).forEach(add);
     return result;
   }
 
