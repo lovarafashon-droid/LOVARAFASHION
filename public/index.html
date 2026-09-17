@@ -1472,7 +1472,9 @@
           localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
           this.updateUI(this.currentUser);
           Modals.close(modalId);
-          if (admin) setTimeout(() => this.openAdminPortal(), 350);
+          if (admin || String(result.user.email || '').trim().toLowerCase() === 'admin@lovara.com') {
+            setTimeout(() => this.openAdminPortal(), 600);
+          }
           showToast('تم تسجيل الدخول بنجاح');
         } catch (error) { this.showAuthError(error); }
       },
@@ -1488,7 +1490,9 @@
           this.currentUser = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL, role: admin ? 'admin' : 'user' };
           localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
           this.updateUI(this.currentUser);
-          if (admin) setTimeout(() => this.openAdminPortal(), 350);
+          if (admin || String(result.user.email || '').trim().toLowerCase() === 'admin@lovara.com') {
+            setTimeout(() => this.openAdminPortal(), 600);
+          }
           showToast('تم تسجيل الدخول بنجاح');
         } catch (error) { this.showAuthError(error); }
       },
