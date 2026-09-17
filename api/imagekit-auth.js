@@ -42,7 +42,8 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Invalid authentication.' });
   }
 
-  const token = crypto.randomBytes(24).toString('hex');
+  // Tokens are single-use; a V4 UUID provides the entropy ImageKit expects.
+  const token = crypto.randomUUID();
   const expire = Math.floor(Date.now() / 1000) + 600;
   // ImageKit requires HMAC-SHA1(token + expire, privateKey), not plain SHA1.
   const signature = crypto.createHmac('sha1', privateKey).update(token + expire).digest('hex');

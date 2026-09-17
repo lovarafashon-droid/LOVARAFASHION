@@ -1460,12 +1460,6 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         const currentUser = firebase.auth().currentUser;
         if (!currentUser) throw new Error('يجب تسجيل الدخول كأدمن قبل رفع الصور.');
         const idToken = await currentUser.getIdToken();
-        const authResponse = await fetch('/api/imagekit-auth', {
-          cache: 'no-store',
-          headers: { Authorization: `Bearer ${idToken}` }
-        });
-        if (!authResponse.ok) throw new Error('ImageKit authorization failed.');
-        const auth = await authResponse.json();
         const publicKey = 'public_SgOeLUR2FYzQgnGT+Au4Jaol7eY=';
         const uploadEndpoint = 'https://upload.imagekit.io/api/v1/files/upload';
         const uploaded = [];
@@ -1475,6 +1469,13 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             uploaded.push(images[index]);
             continue;
           }
+          // ImageKit tokens are single-use; obtain a fresh token for each file.
+          const authResponse = await fetch('/api/imagekit-auth', {
+            cache: 'no-store',
+            headers: { Authorization: `Bearer ${idToken}` }
+          });
+          if (!authResponse.ok) throw new Error('ImageKit authorization failed.');
+          const auth = await authResponse.json();
           const form = new FormData();
           form.append('file', images[index]);
           form.append('fileName', `product-${productId}-${index + 1}.jpg`);
