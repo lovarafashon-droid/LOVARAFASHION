@@ -4124,3 +4124,57 @@ html[dir="rtl"] .marquee-content {
   #navbar #authButtons #openLogin { width: 54px; min-width: 54px; height: 29px; }
   #navbar .logo { font-size: 20px; }
 }
+
+/* Final homepage-only override: keep every visible header control on one row. */
+@media (max-width: 768px) {
+  #navbar {
+    height: 60px !important;
+    min-height: 60px !important;
+    overflow: visible;
+  }
+
+  #navbar .nav-container {
+    display: flex !important;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    min-height: 60px;
+    padding: 9px 12px;
+    gap: 8px;
+  }
+
+  #navbar .hamburger {
+    order: 1;
+    flex: 0 0 34px;
+  }
+
+  #navbar .logo {
+    order: 2;
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+  }
+
+  #navbar .nav-links {
+    position: fixed !important;
+    top: 0;
+    right: -280px;
+    left: auto;
+    width: min(280px, 82vw);
+    height: 100dvh;
+    flex: none;
+  }
+
+  #navbar .nav-actions {
+    order: 3;
+    flex: 0 0 auto;
+    max-width: none;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 420px) {
+  #navbar .nav-container { padding-left: 9px; padding-right: 9px; gap: 4px; }
+}
