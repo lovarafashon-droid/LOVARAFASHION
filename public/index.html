@@ -2395,6 +2395,23 @@
   </div>
 
 
+  <!-- Open the admin portal automatically when an admin session is restored. -->
+  <script>
+    (function openRestoredAdminPortal() {
+      const open = () => {
+        const user = window.firebase?.auth?.().currentUser;
+        const isAdminEmail = String(user?.email || '').trim().toLowerCase() === 'admin@lovara.com';
+        const modal = document.getElementById('adminPortalModal');
+        if (isAdminEmail && modal) {
+          modal.classList.add('show', 'active');
+          document.body.style.overflow = 'hidden';
+        }
+      };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(open, 900));
+      else setTimeout(open, 900);
+    })();
+  </script>
+
 <!-- ========== LOVARA Structured Data (JSON-LD) ========== -->
 <!-- ضيف الكود ده قبل إغلاق </body> في الصفحة الرئيسية -->
 
