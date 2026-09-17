@@ -1436,7 +1436,7 @@
             } catch (_) {}
             result = await auth.signInWithPopup(provider);
           }
-          await this.saveUser(result.user, 'google');
+          this.saveUser(result.user, 'google').catch(error => console.warn('[LOVARA] User profile sync failed:', error));
           this.currentUser = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL };
           localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
           this.updateUI(this.currentUser);
@@ -1450,7 +1450,7 @@
         const password = document.getElementById('loginPassword').value;
         try {
           const result = await firebase.auth().signInWithEmailAndPassword(email, password);
-          await this.saveUser(result.user);
+          this.saveUser(result.user).catch(error => console.warn('[LOVARA] User profile sync failed:', error));
           Modals.close('loginModal');
           showToast('Welcome back!');
         } catch (error) { this.showAuthError(error); }
@@ -1461,7 +1461,7 @@
         const password = document.getElementById('signupPassword').value;
         try {
           const result = await firebase.auth().createUserWithEmailAndPassword(email, password);
-          await this.saveUser(result.user);
+          this.saveUser(result.user).catch(error => console.warn('[LOVARA] User profile sync failed:', error));
           Modals.close('signupModal');
           showToast('Account created successfully!');
         } catch (error) { this.showAuthError(error); }
