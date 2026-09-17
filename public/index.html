@@ -2321,10 +2321,10 @@
           <h3>لوحة الأدمن</h3>
           <p>إدارة المنتجات والأقسام والمخزون</p>
         </a>
-        <a href="/profile" class="admin-portal-card">
-          <div class="admin-portal-icon"><i class="fas fa-user"></i></div>
-          <h3>صفحة المستخدم</h3>
-          <p>الملف الشخصي والطلبات الخاصة بالحساب</p>
+        <a href="/other" class="admin-portal-card" onclick="sessionStorage.setItem('otherAdminPending', 'true')">
+          <div class="admin-portal-icon"><i class="fas fa-chart-line"></i></div>
+          <h3>صفحة Other</h3>
+          <p>الزوار والموظفون والأكواد والتقارير</p>
         </a>
       </div>
       <button type="button" class="admin-portal-close" onclick="Modals.close('adminPortalModal')">
