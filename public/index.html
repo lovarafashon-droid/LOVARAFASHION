@@ -2127,9 +2127,14 @@
         qty: pmQty,
         quantity: pmQty
       };
-      localStorage.setItem('lovara_direct_buy', JSON.stringify(item));
+      try {
+        localStorage.setItem('lovara_direct_buy', JSON.stringify(item));
+      } catch (error) {
+        console.error('[LOVARA] Could not save direct purchase:', error);
+      }
       closeProductModal();
-      window.location.href = '/checkout';
+      // Use the physical file so this also works when clean URL rewrites are unavailable.
+      window.location.assign('/checkout.html');
     }
 
     function pmToggleWishlist() {
