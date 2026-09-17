@@ -1358,15 +1358,24 @@
         }
         this.db = firebase.firestore();
         firebase.auth().onAuthStateChanged(async user => {
+          if (!user) {
+            // LOCAL persistence can emit a transient null while Google auth
+            // restores the session; do not log the user out during that gap.
+            setTimeout(() => {
+              if (firebase.auth().currentUser) return;
+              this.currentUser = null;
+              localStorage.removeItem('lovara_user');
+              this.updateUI(null);
+            }, 1500);
+            return;
+          }
           let isAdmin = false;
-          if (user) {
-            try {
-              const configuredAdmin = String(user.email || '').trim().toLowerCase() === 'admin@lovara.com';
-              const userDoc = await this.db.collection('users').doc(user.uid).get({ source: 'server' });
-              isAdmin = configuredAdmin || (userDoc.exists && String(userDoc.data().role || '').trim().toLowerCase() === 'admin');
-            } catch (error) {
-              console.warn('Could not check admin role:', error);
-            }
+          try {
+            const configuredAdmin = String(user.email || '').trim().toLowerCase() === 'admin@lovara.com';
+            const userDoc = await this.db.collection('users').doc(user.uid).get({ source: 'server' });
+            isAdmin = configuredAdmin || (userDoc.exists && String(userDoc.data().role || '').trim().toLowerCase() === 'admin');
+          } catch (error) {
+            console.warn('Could not check admin role:', error);
           }
           this.currentUser = user ? { uid: user.uid, email: user.email, displayName: user.displayName || user.email.split('@')[0], photoURL: user.photoURL, role: isAdmin ? 'admin' : 'user' } : null;
           if (user) localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
