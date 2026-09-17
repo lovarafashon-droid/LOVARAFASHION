@@ -2398,8 +2398,7 @@
   <!-- Open the admin portal automatically when an admin session is restored. -->
   <script>
     (function openRestoredAdminPortal() {
-      const open = () => {
-        const user = window.firebase?.auth?.().currentUser;
+      const open = (user) => {
         const isAdminEmail = String(user?.email || '').trim().toLowerCase() === 'admin@lovara.com';
         const modal = document.getElementById('adminPortalModal');
         if (isAdminEmail && modal) {
@@ -2407,8 +2406,14 @@
           document.body.style.overflow = 'hidden';
         }
       };
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(open, 900));
-      else setTimeout(open, 900);
+      const bind = () => {
+        if (window.firebase?.auth) {
+          window.firebase.auth().onAuthStateChanged(open);
+          open(window.firebase.auth().currentUser);
+        }
+      };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+      else bind();
     })();
   </script>
 
