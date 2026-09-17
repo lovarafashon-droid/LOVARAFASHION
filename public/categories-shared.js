@@ -993,8 +993,7 @@ const CategoryApp = {
       this.showToast(this.currentLang === 'ar' ? 'هذا المنتج سيتوفر قريباً!' : 'This product is coming soon!');
       return;
     }
-    if ((product.sizes && product.sizes.length > 0) || (product.colors && product.colors.length > 0)) this.openBuyNowModal(product);
-    else this.addToCart(product, null, null);
+    this.openProductDetail(product.id);
   },
 
   handleBuyNow(productId) {

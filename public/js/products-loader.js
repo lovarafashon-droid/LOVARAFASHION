@@ -325,11 +325,7 @@ window.addHomepageProductToCart = function(productId) {
     showProductToast('This product is coming soon!');
     return;
   }
-  if ((Array.isArray(product.sizes) && product.sizes.length) || (Array.isArray(product.colors) && product.colors.length)) {
-    window.CartApp.openBuyNowModal(product, false);
-  } else {
-    window.CartApp.add({ ...product, qty: 1, quantity: 1 });
-  }
+  if (typeof window.openProductModal === 'function') window.openProductModal(product);
 };
 
 window.openHomepageProductPreview = function(productId) {
