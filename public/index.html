@@ -1457,6 +1457,11 @@
             } catch (_) {}
             result = await auth.signInWithPopup(provider);
           }
+          ['loginModal', 'signupModal', 'forgotModal'].forEach(id => {
+            const authModal = document.getElementById(id);
+            if (authModal) authModal.classList.remove('show', 'active');
+          });
+          document.body.style.overflow = '';
           this.saveUser(result.user, 'google').catch(error => console.warn('[LOVARA] User profile sync failed:', error));
           const admin = await this.isAdmin(result.user);
           this.currentUser = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL, role: admin ? 'admin' : 'user' };
