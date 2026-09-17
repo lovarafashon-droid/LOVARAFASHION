@@ -3945,7 +3945,6 @@ html[dir="rtl"] .marquee-content {
   }
 
   .nav-actions .user-info .user-details,
-  .nav-actions .auth-buttons,
   .nav-actions #adminPortalBtn span {
     display: none !important;
   }
@@ -4015,7 +4014,7 @@ html[dir="rtl"] .marquee-content {
 /* Keep the logged-out header stable: one compact account action, not two text buttons. */
 @media (max-width: 768px) {
   .nav-actions .auth-buttons {
-    display: flex !important;
+    display: flex;
     align-items: center;
     gap: 2px;
   }

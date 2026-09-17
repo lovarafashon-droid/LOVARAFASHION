@@ -3145,7 +3145,6 @@ body.lang-ar .toggle-pw {
 
   .nav-actions .lang-btn #langLabel,
   .nav-actions .user-info .user-details,
-  .nav-actions .auth-buttons,
   .nav-actions #adminPortalBtn span {
     display: none !important;
   }
@@ -3215,7 +3214,7 @@ body.lang-ar .toggle-pw {
 /* Keep the logged-out category header stable on narrow screens. */
 @media (max-width: 768px) {
   .nav-actions .auth-buttons {
-    display: flex !important;
+    display: flex;
     align-items: center;
     gap: 2px;
   }
