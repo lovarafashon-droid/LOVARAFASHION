@@ -205,6 +205,7 @@ const CategoryApp = {
     this.setupSupportForm();
     this.setupNewsletterForm();
     this.setupProductCardDelegation();
+    this.setupPreviewHistory();
     this.setupCartDelegation();
     this.cart = JSON.parse(localStorage.getItem('lovara_cart') || '[]');
     this.wishlist = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]');
@@ -979,7 +980,12 @@ const CategoryApp = {
   openProductDetail(productId) {
     const product = this.products.find(item => item.id === productId);
     if (!product) return;
-    this.closeProductDetail();
+    const existingModal = document.getElementById('categoryProductModal');
+    if (existingModal) existingModal.remove();
+    document.body.style.overflow = '';
+    if (!history.state?.lovaraProductPreview) {
+      history.pushState({ lovaraProductPreview: true }, '', window.location.href);
+    }
     this.previewProduct = product;
     this.previewImages = [...new Set([product.imageUrl, ...(Array.isArray(product.images) ? product.images : [])].filter(Boolean))];
     this.previewImageIndex = 0;
@@ -1025,6 +1031,17 @@ const CategoryApp = {
     const modal = document.getElementById('categoryProductModal');
     if (modal) modal.remove();
     document.body.style.overflow = '';
+    if (history.state?.lovaraProductPreview) history.back();
+  },
+
+  setupPreviewHistory() {
+    window.addEventListener('popstate', event => {
+      if (document.getElementById('categoryProductModal')) {
+        const modal = document.getElementById('categoryProductModal');
+        modal.remove();
+        document.body.style.overflow = '';
+      }
+    });
   },
 
   openBuyNowModal(product, isDirectBuy = false) {
