@@ -23,7 +23,8 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+  // Environment managers can preserve accidental surrounding whitespace.
+  const privateKey = String(process.env.IMAGEKIT_PRIVATE_KEY || '').trim();
   if (!privateKey) return res.status(500).json({ error: 'ImageKit is not configured on the server.' });
 
   const authorization = String(req.headers.authorization || '');
@@ -43,6 +44,8 @@ module.exports = async function handler(req, res) {
 
   const token = crypto.randomBytes(24).toString('hex');
   const expire = Math.floor(Date.now() / 1000) + 600;
-  const signature = crypto.createHash('sha1').update(token + expire + privateKey).digest('hex');
+  // ImageKit requires HMAC-SHA1(token + expire, privateKey), not plain SHA1.
+  const signature = crypto.createHmac('sha1', privateKey).update(token + expire).digest('hex');
+  res.setHeader('Cache-Control', 'no-store');
   return res.status(200).json({ token, expire, signature });
 };
