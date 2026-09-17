@@ -37,7 +37,7 @@
 
   
 
-  <link rel="stylesheet" href="css/styles.css?v=filters-mobile3">
+  <link rel="stylesheet" href="css/styles.css?v=filters-mobile4">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -1629,7 +1629,7 @@
         container.innerHTML = items.map((item, idx) => {
           const image = item.imageUrl || item.image || '';
           const qty = item.qty || item.quantity || 1;
-          return `<div class="cart-item"><img src="${image}" alt="${item.name}" class="cart-item-img" onerror="this.style.display='none'"><div class="cart-item-info"><p class="cart-item-name">${item.name}</p><p class="cart-item-price">EGP ${(parseFloat(item.price)||0).toFixed(2)}</p><div class="cart-item-qty"><button class="qty-btn" onclick="CartApp.updateQty(${idx}, -1)">-</button><span>${qty}</span><button class="qty-btn" onclick="CartApp.updateQty(${idx}, 1)">+</button></div><button class="cart-item-buy" onclick="CartApp.buyNow(${idx})"><i class="fas fa-bolt"></i> Buy Now</button></div><button class="cart-item-remove" onclick="CartApp.remove(${idx})"><i class="fas fa-trash"></i></button></div>`;
+          return `<div class="cart-item"><button type="button" class="cart-preview-trigger" onclick="CartApp.previewCartItem(${idx})" aria-label="Preview ${item.name}"><img src="${image}" alt="${item.name}" class="cart-item-img" onerror="this.style.display='none'"><span class="cart-item-name">${item.name}</span></button><div class="cart-item-info"><p class="cart-item-price">EGP ${(parseFloat(item.price)||0).toFixed(2)}</p><div class="cart-item-qty"><button class="qty-btn" onclick="CartApp.updateQty(${idx}, -1)">-</button><span>${qty}</span><button class="qty-btn" onclick="CartApp.updateQty(${idx}, 1)">+</button></div><button class="cart-item-buy" onclick="CartApp.buyNow(${idx})"><i class="fas fa-bolt"></i> Buy Now</button></div><button class="cart-item-remove" onclick="CartApp.remove(${idx})"><i class="fas fa-trash"></i></button></div>`;
         }).join('');
       },
       add(item) {
@@ -1666,11 +1666,23 @@
         if (typeof openProductModal === 'function') openProductModal(item);
         else this.openBuyNowModal(item, true);
       },
+      previewCartItem(index) {
+        const item = this.items[index];
+        if (!item) return;
+        this.close();
+        if (typeof openProductModal === 'function') openProductModal(item);
+      },
       renderWishlist() {
         const container = document.getElementById('wishlistItems');
         if (!container) return;
         const items = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]');
-        container.innerHTML = items.length ? items.map((item, index) => `<div class="wishlist-item"><img src="${item.imageUrl || item.image || ''}" alt="${item.name || 'Product'}" class="wishlist-item-img"><div class="wishlist-item-info"><p class="wishlist-item-name">${item.name || 'Product'}</p><p class="wishlist-item-price">EGP ${(parseFloat(item.price)||0).toFixed(2)}</p><div class="wishlist-item-actions"><button class="wishlist-buy-now" onclick="CartApp.buyNowFromWishlist(${index})"><i class="fas fa-bolt"></i> Buy Now</button></div></div><button class="wishlist-item-remove" onclick="CartApp.removeFromWishlist(${index})"><i class="fas fa-trash"></i></button></div>`).join('') : '<p class="wishlist-empty">Your wishlist is empty</p>';
+        container.innerHTML = items.length ? items.map((item, index) => `<div class="wishlist-item"><button type="button" class="wishlist-preview-trigger" onclick="CartApp.previewWishlistItem(${index})" aria-label="Preview ${item.name || 'Product'}"><img src="${item.imageUrl || item.image || ''}" alt="${item.name || 'Product'}" class="wishlist-item-img"><span class="wishlist-item-name">${item.name || 'Product'}</span></button><div class="wishlist-item-info"><p class="wishlist-item-price">EGP ${(parseFloat(item.price)||0).toFixed(2)}</p><div class="wishlist-item-actions"><button class="wishlist-buy-now" onclick="CartApp.buyNowFromWishlist(${index})"><i class="fas fa-bolt"></i> Buy Now</button></div></div><button class="wishlist-item-remove" onclick="CartApp.removeFromWishlist(${index})"><i class="fas fa-trash"></i></button></div>`).join('') : '<p class="wishlist-empty">Your wishlist is empty</p>';
+      },
+      previewWishlistItem(index) {
+        const item = (JSON.parse(localStorage.getItem('lovara_wishlist') || '[]') || [])[index];
+        if (!item) return;
+        window.CategoryApp?.closeWishlistModal?.();
+        if (typeof openProductModal === 'function') openProductModal(item);
       },
       buyNowFromWishlist(index) {
         const item = (JSON.parse(localStorage.getItem('lovara_wishlist') || '[]') || [])[index];

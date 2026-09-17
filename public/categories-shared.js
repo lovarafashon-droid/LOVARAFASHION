@@ -627,9 +627,18 @@ const CategoryApp = {
       const color = item.color;
       const variantHtml = (size || color) ? `<p class="cart-item-variant">${size ? '<span class="v-label">Size:</span> <span class="v-val">' + size + '</span>' : ''}${size && color ? '<span class="v-sep">|</span>' : ''}${color ? '<span class="v-label">Color:</span> <span class="v-val">' + color + '</span>' : ''}</p>` : '';
       total += price * qty;
-      return `<div class="cart-item" data-cart-index="${index}"><img src="${image}" alt="${name}" class="cart-item-img" onerror="this.src='https://via.placeholder.com/80x100?text=LOVARA'"><div class="cart-item-info"><p class="cart-item-name">${name}</p>${variantHtml}<p class="cart-item-price">EGP ${price.toFixed(2)}</p><div class="cart-item-qty"><button class="qty-btn" data-action="minus" data-index="${index}" type="button">-</button><span>${qty}</span><button class="qty-btn" data-action="plus" data-index="${index}" type="button">+</button></div><button class="cart-item-buy" data-action="buy" data-index="${index}" type="button"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button></div><button class="cart-item-remove" data-action="remove" data-index="${index}" type="button"><i class="fas fa-trash"></i></button></div>`;
+      return `<div class="cart-item" data-cart-index="${index}"><button type="button" class="cart-preview-trigger" onclick="CategoryApp.previewCart(${index})" aria-label="Preview ${name}"><img src="${image}" alt="${name}" class="cart-item-img" onerror="this.src='https://via.placeholder.com/80x100?text=LOVARA'"><span class="cart-item-name">${name}</span></button><div class="cart-item-info">${variantHtml}<p class="cart-item-price">EGP ${price.toFixed(2)}</p><div class="cart-item-qty"><button class="qty-btn" data-action="minus" data-index="${index}" type="button">-</button><span>${qty}</span><button class="qty-btn" data-action="plus" data-index="${index}" type="button">+</button></div><button class="cart-item-buy" data-action="buy" data-index="${index}" type="button"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button></div><button class="cart-item-remove" data-action="remove" data-index="${index}" type="button"><i class="fas fa-trash"></i></button></div>`;
     }).join('');
     if (cartTotal) cartTotal.textContent = total.toFixed(2);
+  },
+
+  previewCart(index) {
+    const item = this.cart[index];
+    if (!item) return;
+    const product = this.products.find(p => p.id === item.id) || item;
+    if (!this.products.some(p => p.id === product.id)) this.products.push(product);
+    this.closeCartModal();
+    this.openProductDetail(product.id);
   },
 
   openCartModal() {
@@ -685,6 +694,14 @@ const CategoryApp = {
 
   isInWishlist(productId) { return this.wishlist.some(item => item && item.id === productId); },
   removeFromWishlist(index) { this.wishlist.splice(index, 1); this.saveWishlist(); this.updateWishlistCount(); this.renderWishlist(); },
+  previewWishlist(index) {
+    const item = this.wishlist[index];
+    if (!item) return;
+    const product = this.products.find(p => p.id === item.id) || item;
+    if (!this.products.some(p => p.id === product.id)) this.products.push(product);
+    this.closeWishlistModal();
+    this.openProductDetail(product.id);
+  },
   moveToCart(index) { const item = this.wishlist[index]; this.addToCart(item, item.size, item.color); this.removeFromWishlist(index); },
   buyNowFromWishlist(index) {
     const item = this.wishlist[index];
@@ -719,7 +736,7 @@ const CategoryApp = {
       const size = item.size;
       const color = item.color;
       const variantHtml = (size || color) ? `<p class="wishlist-item-variant">${size ? 'Size: ' + size : ''}${size && color ? ' · ' : ''}${color ? 'Color: ' + color : ''}</p>` : '';
-      return `<div class="wishlist-item"><img src="${image}" alt="${name}" class="wishlist-item-img" onerror="this.src='https://via.placeholder.com/80x100?text=LOVARA'"><div class="wishlist-item-info"><p class="wishlist-item-name">${name}</p>${variantHtml}<p class="wishlist-item-price">EGP ${price.toFixed(2)}</p><div class="wishlist-item-actions"><button class="wishlist-add-cart" onclick="CategoryApp.moveToCart(${index})"><i class="fas fa-shopping-bag"></i> ${this.t('addToCart')}</button><button class="wishlist-buy-now" onclick="CategoryApp.buyNowFromWishlist(${index})"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button></div></div><button class="wishlist-item-remove" onclick="CategoryApp.removeFromWishlist(${index})"><i class="fas fa-trash"></i></button></div>`;
+      return `<div class="wishlist-item"><button type="button" class="wishlist-preview-trigger" onclick="CategoryApp.previewWishlist(${index})" aria-label="Preview ${name}"><img src="${image}" alt="${name}" class="wishlist-item-img" onerror="this.src='https://via.placeholder.com/80x100?text=LOVARA'"><span class="wishlist-item-name">${name}</span></button><div class="wishlist-item-info">${variantHtml}<p class="wishlist-item-price">EGP ${price.toFixed(2)}</p><div class="wishlist-item-actions"><button class="wishlist-add-cart" onclick="CategoryApp.moveToCart(${index})"><i class="fas fa-shopping-bag"></i> ${this.t('addToCart')}</button><button class="wishlist-buy-now" onclick="CategoryApp.buyNowFromWishlist(${index})"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button></div></div><button class="wishlist-item-remove" onclick="CategoryApp.removeFromWishlist(${index})"><i class="fas fa-trash"></i></button></div>`;
     }).join('');
   },
 

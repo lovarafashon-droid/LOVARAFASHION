@@ -3227,12 +3227,41 @@ body.lang-ar .toggle-pw {
   .nav-actions .auth-buttons #openLogin {
     display: inline-flex !important;
     position: relative;
+    width: 58px;
+    min-width: 58px;
+    border-radius: 18px;
+    font-size: 0;
   }
 
   .nav-actions .auth-buttons #openLogin::before {
-    content: '\f2bd';
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    font-size: 14px;
+    content: none;
   }
+
+  body.lang-ar .nav-actions .auth-buttons #openLogin::after {
+    content: 'تسجيل';
+    font-size: 11px;
+  }
+
+  body:not(.lang-ar) .nav-actions .auth-buttons #openLogin::after {
+    content: 'Login';
+    font-size: 11px;
+  }
+}
+
+.cart-preview-trigger,
+.wishlist-preview-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.cart-preview-trigger .cart-item-name,
+.wishlist-preview-trigger .wishlist-item-name {
+  overflow-wrap: anywhere;
 }
