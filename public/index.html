@@ -418,10 +418,6 @@
             <span id="userEmail" class="user-email"></span>
           </div>
         </div>
-        <button class="btn btn-sm btn-primary" id="adminPortalBtn" type="button" style="display:none;" onclick="AuthApp.openAdminPortal()" aria-label="Open admin portal">
-          <i class="fas fa-shield-halved"></i>
-          <span data-i18n="adminPortal">Admin Portal</span>
-        </button>
         <button class="wishlist-btn" onclick="CategoryApp.openWishlistModal()" aria-label="Wishlist">
           <i class="fas fa-heart"></i>
           <span class="wishlist-count" id="wishlistCount">0</span>
@@ -1476,7 +1472,7 @@
           localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
           this.updateUI(this.currentUser);
           Modals.close(modalId);
-          if (admin) this.openAdminPortal();
+          if (admin) setTimeout(() => this.openAdminPortal(), 350);
           showToast('تم تسجيل الدخول بنجاح');
         } catch (error) { this.showAuthError(error); }
       },
@@ -1492,7 +1488,7 @@
           this.currentUser = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL, role: admin ? 'admin' : 'user' };
           localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
           this.updateUI(this.currentUser);
-          if (admin) this.openAdminPortal();
+          if (admin) setTimeout(() => this.openAdminPortal(), 350);
           showToast('تم تسجيل الدخول بنجاح');
         } catch (error) { this.showAuthError(error); }
       },
