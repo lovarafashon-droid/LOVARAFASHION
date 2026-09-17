@@ -3211,3 +3211,28 @@ body.lang-ar .toggle-pw {
     font-size: 20px;
   }
 }
+
+/* Keep the logged-out category header stable on narrow screens. */
+@media (max-width: 768px) {
+  .nav-actions .auth-buttons {
+    display: flex !important;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .nav-actions .auth-buttons #openSignup {
+    display: none !important;
+  }
+
+  .nav-actions .auth-buttons #openLogin {
+    display: inline-flex !important;
+    position: relative;
+  }
+
+  .nav-actions .auth-buttons #openLogin::before {
+    content: '\f2bd';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 14px;
+  }
+}
