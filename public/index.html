@@ -1421,22 +1421,13 @@
         }
       },
       openAdminPortal() {
-        const firebaseUser = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth().currentUser : null;
-        if (!firebaseUser) return;
         const modal = document.getElementById('adminPortalModal');
         if (!modal) return;
-        this.isAdmin(firebaseUser).then(isAdmin => {
-          if (!isAdmin) {
-            console.warn('[LOVARA] Admin portal blocked for non-admin user.');
-            return;
-          }
-          this.currentUser = { ...(this.currentUser || {}), uid: firebaseUser.uid, email: firebaseUser.email, role: 'admin' };
-          this.updateUI(this.currentUser);
-          // Open after the login modal has finished closing so both overlays cannot compete.
-          requestAnimationFrame(() => {
-            modal.classList.add('show', 'active');
-            document.body.style.overflow = 'hidden';
-          });
+        // Authorization is completed before this method is called; do not run
+        // a second async check that can race with Firebase auth state updates.
+        requestAnimationFrame(() => {
+          modal.classList.add('show', 'active');
+          document.body.style.overflow = 'hidden';
         });
       },
       showAuthError(error) {
