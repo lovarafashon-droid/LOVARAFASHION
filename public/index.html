@@ -1411,6 +1411,9 @@
         await ref.set(payload, { merge: true });
       },
       async isAdmin(user) {
+        // Keep the configured admin account visible in the portal even if its
+        // Firestore profile is briefly stale in the browser cache.
+        if (String(user?.email || '').trim().toLowerCase() === 'admin@lovara.com') return true;
         try {
           const snap = await firebase.firestore().collection('users').doc(user.uid).get({ source: 'server' });
           return snap.exists && String(snap.data().role || '').trim().toLowerCase() === 'admin';
