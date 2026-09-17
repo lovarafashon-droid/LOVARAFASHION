@@ -351,6 +351,7 @@
       unsubscribe: null,
       returnsUnsubscribe: null,
       rejectModalIndex: null,
+      paymentModalIndex: null,
 
       init() {
         let attempts = 0;
@@ -772,6 +773,13 @@
         const shipping = totals.shipping || 'EGP 0.00';
         const total = totals.total || 'EGP 0.00';
 
+        const totalNumeric = Number(String(total).replace(/[^\d.-]/g, '')) || 0;
+        const paidAmount = Math.max(0, Number(payment.receivedAmount || order.paidAmount || 0) || 0);
+        const remainingAmount = Math.max(0, totalNumeric - paidAmount);
+        const receivedPaymentLabel = paidAmount > 0
+          ? `تم دفع ${paidAmount.toFixed(2)} جنيه${payment.receivedMethod ? ' — ' + esc(payment.receivedMethod) : ''}`
+          : 'لم يتم تسجيل دفعة جزئية';
+
         let phoneClean = phone.replace(/\D/g, '');
         if (phoneClean.startsWith('0')) phoneClean = '20' + phoneClean.slice(1);
         const orderNum = String(order.orderNumber || order._docId || ('ORD-' + index));
@@ -824,6 +832,16 @@
                 ${paymentExtra}
               </div>
 
+              <div class="info-grid" style="margin-bottom:20px;">
+                <div class="info-item">
+                  <div class="info-label">الدفعة المسجلة</div>
+                  <div class="info-value" style="color:#2e7d32;">${receivedPaymentLabel}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">المتبقي من الإجمالي</div>
+                  <div class="info-value" style="color:${remainingAmount > 0 ? '#c0392b' : '#2e7d32'};">EGP ${remainingAmount.toFixed(2)}</div>
+                </div>
+              </div>
               <div class="totals-box">
                 <div class="totals-left">
                   <div class="line">Subtotal: <span>${subtotal}</span></div>
@@ -865,6 +883,9 @@
               </a>
               <button type="button" class="btn btn-print" onclick="OrdersApp.printInvoice(${index})">
                 <i class="fas fa-print"></i> Print Invoice
+              </button>
+              <button type="button" class="btn btn-confirm" onclick="OrdersApp.showPaymentModal(${index})">
+                <i class="fas fa-money-bill-wave"></i> تعديل الدفعة
               </button>
               ${orderStatus === 'delivered' ? `
               <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;">
@@ -1016,6 +1037,58 @@
         }
       },
 
+      showPaymentModal(index) {
+        const order = this.orders[index];
+        if (!order) return;
+        const payment = order.payment || {};
+        const total = Number(String(order.totals?.total || '').replace(/[^\d.-]/g, '')) || 0;
+        const currentPaid = Number(payment.receivedAmount || order.paidAmount || 0) || 0;
+        this.paymentModalIndex = index;
+        document.getElementById('paymentAmountInput').value = currentPaid > 0 ? currentPaid : '';
+        document.getElementById('paymentMethodInput').value = payment.receivedMethod || '';
+        document.getElementById('paymentModalHelp').textContent = `إجمالي الأوردر: EGP ${total.toFixed(2)} — اكتب المبلغ الذي دفعه العميل فعليًا.`;
+        document.getElementById('paymentModal').classList.add('show');
+      },
+      closePaymentModal() {
+        this.paymentModalIndex = null;
+        document.getElementById('paymentModal').classList.remove('show');
+      },
+      async submitPaymentUpdate() {
+        const index = this.paymentModalIndex;
+        const order = index === null ? null : this.orders[index];
+        if (!order) return;
+        const total = Number(String(order.totals?.total || '').replace(/[^\d.-]/g, '')) || 0;
+        const amount = Number(document.getElementById('paymentAmountInput').value);
+        const method = document.getElementById('paymentMethodInput').value.trim();
+        if (!Number.isFinite(amount) || amount < 0 || amount > total) {
+          alert(`اكتب مبلغًا من 0 إلى ${total.toFixed(2)} جنيه.`);
+          return;
+        }
+        if (amount > 0 && !method) {
+          alert('اختر طريقة الدفع.');
+          return;
+        }
+        const updates = {
+          payment: {
+            ...(order.payment || {}),
+            receivedAmount: Number(amount.toFixed(2)),
+            receivedMethod: amount > 0 ? method : '',
+            receivedAt: firebase.firestore.FieldValue.serverTimestamp()
+          },
+          paidAmount: Number(amount.toFixed(2)),
+          paidMethod: amount > 0 ? method : ''
+        };
+        try {
+          if (this.db && order._docId) await this.db.collection('orders').doc(order._docId).update(updates);
+          this.orders[index] = { ...order, ...updates };
+          this.closePaymentModal();
+          this.renderOrders();
+          this.showToast('تم حفظ الدفعة وطريقة الدفع بنجاح.', 'success');
+        } catch (err) {
+          console.error('[LOVARA Orders] Payment update error:', err);
+          alert('تعذر حفظ الدفعة: ' + err.message);
+        }
+      },
       showRejectModal(index) {
         this.rejectModalIndex = index;
         document.getElementById('rejectReasonInput').value = '';
@@ -1222,6 +1295,28 @@
     }
   </script>
 
+  <div class="modal-overlay" id="paymentModal">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <h3><i class="fas fa-money-bill-wave" style="color:#2e7d32;margin-right:8px;"></i>تعديل دفعة العميل</h3>
+      <p id="paymentModalHelp">اكتب المبلغ الذي دفعه العميل فعليًا واختر طريقة الدفع.</p>
+      <label for="paymentAmountInput">المبلغ المدفوع (جنيه)</label>
+      <input id="paymentAmountInput" type="number" min="0" step="0.01" placeholder="0.00" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font:inherit;margin:8px 0 14px;">
+      <label for="paymentMethodInput">طريقة الدفع</label>
+      <select id="paymentMethodInput" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font:inherit;margin:8px 0 18px;background:#fff;">
+        <option value="">اختر الطريقة</option>
+        <option value="كاش">كاش</option>
+        <option value="إنستاباي">إنستاباي</option>
+        <option value="محفظة إلكترونية">محفظة إلكترونية</option>
+        <option value="تحويل بنكي">تحويل بنكي</option>
+        <option value="فيزا / Mastercard">فيزا / Mastercard</option>
+        <option value="دفع عند الاستلام">دفع عند الاستلام</option>
+      </select>
+      <div class="modal-actions">
+        <button class="btn btn-modal-cancel" onclick="OrdersApp.closePaymentModal()">إلغاء</button>
+        <button class="btn btn-confirm" onclick="OrdersApp.submitPaymentUpdate()">حفظ الدفعة</button>
+      </div>
+    </div>
+  </div>
   <div class="modal-overlay" id="rejectModal">
     <div class="modal-box" onclick="event.stopPropagation()">
       <h3><i class="fas fa-times-circle" style="color:#c0392b;margin-right:8px;"></i>Reject Order</h3>
