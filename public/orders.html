@@ -44,6 +44,14 @@
     .nav-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
     .nav-btn.outline { background: transparent; color: var(--secondary); border: 1.5px solid var(--border); }
     .nav-btn.outline:hover { border-color: var(--primary); color: var(--primary); }
+    .order-status-nav { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .status-filter { display:inline-flex; align-items:center; gap:6px; padding:9px 12px; border:1px solid var(--border); background:#fff; color:var(--text-light); border-radius:20px; font-family:'Jost',sans-serif; font-size:11px; font-weight:600; cursor:pointer; white-space:nowrap; }
+    .status-filter.active { color:#fff; border-color:var(--secondary); background:var(--secondary); }
+    .status-filter.confirmed.active { background:#2e7d32; border-color:#2e7d32; }
+    .status-filter.rejected.active { background:#c0392b; border-color:#c0392b; }
+    .status-filter.pending.active { background:#8a6500; border-color:#8a6500; }
+    .status-filter .filter-count { min-width:18px; height:18px; padding:0 5px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:rgba(0,0,0,.08); font-size:10px; }
+    .status-filter.active .filter-count { background:rgba(255,255,255,.22); }
     .orders-page { padding: 90px 0 40px; min-height: 100vh; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
     .page-header h1 { font-family: 'Cormorant Garamond', serif; font-size: 36px; color: var(--secondary); }
@@ -221,8 +229,10 @@
       .container{padding-left:10px;padding-right:10px}
       .navbar .nav-container{flex-wrap:wrap;justify-content:center;gap:8px;padding:10px}
       .navbar .logo{font-size:22px;line-height:1}
-      .nav-actions{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+      .nav-actions{width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
+      .order-status-nav{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
       .nav-btn{justify-content:center;min-width:0;padding:9px 4px;font-size:10px;gap:4px;white-space:nowrap}
+      .status-filter{justify-content:center;min-width:0;padding:9px 4px;font-size:10px;gap:3px}
       .nav-btn i{font-size:11px}
       .orders-page{padding-top:132px}
       .page-header{margin-bottom:18px;align-items:flex-start}
@@ -294,6 +304,11 @@
         <a href="/" class="nav-btn outline"><i class="fas fa-home"></i> Home</a>
         <a href="/checkout" class="nav-btn"><i class="fas fa-shopping-bag"></i> New Order</a>
         <a href="/returns" class="nav-btn outline"><i class="fas fa-rotate-left"></i> Returns Form</a>
+        <div class="order-status-nav" aria-label="Order status filters">
+          <button type="button" class="status-filter pending active" data-filter="pending" onclick="OrdersApp.filterOrders('pending')"><i class="fas fa-clock"></i> Unconfirmed <span class="filter-count" id="pendingCount">0</span></button>
+          <button type="button" class="status-filter confirmed" data-filter="confirmed" onclick="OrdersApp.filterOrders('confirmed')"><i class="fas fa-circle-check"></i> Confirmed <span class="filter-count" id="confirmedCount">0</span></button>
+          <button type="button" class="status-filter rejected" data-filter="rejected" onclick="OrdersApp.filterOrders('rejected')"><i class="fas fa-circle-xmark"></i> Cancelled <span class="filter-count" id="rejectedCount">0</span></button>
+        </div>
         <button class="nav-btn" style="background:var(--secondary);color:#fff;" onclick="logout()">
           <i class="fas fa-sign-out-alt"></i> Logout
         </button>
@@ -352,6 +367,7 @@
       returnsUnsubscribe: null,
       rejectModalIndex: null,
       paymentModalIndex: null,
+      orderFilter: 'pending',
 
       init() {
         let attempts = 0;
@@ -595,6 +611,18 @@
         const container = document.getElementById('ordersList');
         const countBadge = document.getElementById('orderCount');
         countBadge.textContent = `${this.orders.length} Order${this.orders.length !== 1 ? 's' : ''}`;
+        const groups = { pending: [], confirmed: [], rejected: [] };
+        this.orders.forEach((order, index) => {
+          const filter = (order.status === 'cancelled' || order.confirmationStatus === 'rejected')
+            ? 'rejected' : (order.confirmationStatus === 'confirmed' ? 'confirmed' : 'pending');
+          groups[filter].push({ order, index });
+        });
+        ['pending', 'confirmed', 'rejected'].forEach(filter => {
+          const count = document.getElementById(`${filter}Count`);
+          if (count) count.textContent = groups[filter].length;
+          const button = document.querySelector(`.status-filter[data-filter="${filter}"]`);
+          if (button) button.classList.toggle('active', this.orderFilter === filter);
+        });
         if (this.orders.length === 0) {
           container.innerHTML = `
             <div class="empty-state">
@@ -605,23 +633,17 @@
           `;
           return;
         }
-        const completed = [];
-        const rejected = [];
-        const active = [];
-        this.orders.forEach((order, index) => {
-          if (order.status === 'cancelled' || order.confirmationStatus === 'rejected') rejected.push({ order, index });
-          else if (order.confirmationStatus === 'confirmed') completed.push({ order, index });
-          else active.push({ order, index });
-        });
-        const group = (name, icon, className, entries, emptyText) => `
-          <section class="order-group ${className}">
-            <h2 class="order-group-title"><i class="fas ${icon}"></i>${name} <span class="badge-count">${entries.length}</span></h2>
-            ${entries.length ? entries.map(entry => this.renderOrder(entry.order, entry.index)).join('') : `<div class="order-group-empty">${emptyText}</div>`}
-          </section>`;
-        container.innerHTML =
-          group('Completed / Confirmed Orders', 'fa-circle-check', 'completed', completed, 'No completed orders yet.') +
-          group('Rejected / Cancelled Orders', 'fa-circle-xmark', 'rejected', rejected, 'No rejected or cancelled orders.') +
-          group('Active Orders', 'fa-clock', 'active', active, 'No active orders.');
+        const entries = groups[this.orderFilter] || groups.pending;
+        const emptyText = { pending: 'No unconfirmed orders.', confirmed: 'No confirmed orders yet.', rejected: 'No cancelled or rejected orders.' }[this.orderFilter];
+        container.innerHTML = entries.length
+          ? entries.map(entry => this.renderOrder(entry.order, entry.index)).join('')
+          : `<div class="empty-state"><i class="fas fa-filter-circle-xmark"></i><h3>${emptyText}</h3><p>Choose another status from the navbar.</p></div>`;
+      },
+
+      filterOrders(filter) {
+        if (!['pending', 'confirmed', 'rejected'].includes(filter)) return;
+        this.orderFilter = filter;
+        this.renderOrders();
       },
 
       renderOrder(order, index) {
