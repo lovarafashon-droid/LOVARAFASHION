@@ -840,8 +840,15 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
                 <input type="text" id="pName" placeholder="e.g. Elegant Evening Dress" required>
               </div>
               <div class="form-group">
-                <label data-i18n="price">Price (EGP) *</label>
+                <label data-i18n="price">Piece Price (EGP) *</label>
                 <input type="number" id="pPrice" placeholder="e.g. 1999" step="0.01" min="0" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Dozen Price (EGP) <small style="color:var(--text-light)">(optional — bras / panties)</small></label>
+                <input type="number" id="pDozenPrice" placeholder="e.g. 600" step="0.01" min="0">
               </div>
             </div>
 
@@ -1896,6 +1903,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         const product = {
           name: document.getElementById('pName').value.trim(),
           price: parseFloat(document.getElementById('pPrice').value),
+          pricePiece: parseFloat(document.getElementById('pPrice').value),
+          priceDozen: document.getElementById('pDozenPrice').value ? parseFloat(document.getElementById('pDozenPrice').value) : null,
           oldPrice: document.getElementById('pOldPrice').value ? parseFloat(document.getElementById('pOldPrice').value) : null,
           supplier: document.getElementById('pSupplier').value.trim() || '',
           category: document.getElementById('pCategory').value,
@@ -2079,7 +2088,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
                 ${profitHtml}
               </div>
             </div>
-            <div class="product-item-price">EGP ${p.price}</div>
+            <div class="product-item-price">Piece: EGP ${p.price}${p.priceDozen ? `<br><small>Dozen: EGP ${p.priceDozen}</small>` : ''}</div>
             <div class="product-item-actions">
               <a href="/${p.category}" class="btn-view">${viewText}</a>
               <button class="btn-edit" onclick="ProductManager.editProduct('${p.id}')" title="${t.edit || 'Edit'}">
@@ -2106,6 +2115,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         document.getElementById('editProductId').value = id;
         document.getElementById('pName').value = product.name || '';
         document.getElementById('pPrice').value = product.price !== undefined && product.price !== null ? product.price : '';
+        document.getElementById('pDozenPrice').value = product.priceDozen !== undefined && product.priceDozen !== null ? product.priceDozen : '';
         document.getElementById('pOldPrice').value = product.oldPrice !== undefined && product.oldPrice !== null ? product.oldPrice : '';
         document.getElementById('pCost').value = product.cost !== undefined && product.cost !== null ? product.cost : '';
         document.getElementById('pStock').value = product.stock !== undefined && product.stock !== null ? product.stock : 1;
@@ -2210,6 +2220,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         document.getElementById('productForm').reset();
         document.getElementById('editProductId').value = '';
         document.getElementById('pCost').value = '';
+        document.getElementById('pDozenPrice').value = '';
         document.getElementById('pSupplier').value = '';
         document.getElementById('pStock').value = '1';
         document.getElementById('editModeBadge').classList.add('hidden');

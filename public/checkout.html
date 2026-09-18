@@ -828,7 +828,7 @@
               <div class="order-item-info">
                 <h4>${item.name || 'Product'}</h4>
                 ${descHtml}
-                <p class="item-meta">EGP ${price.toFixed(2)}</p>
+                <p class="item-meta">EGP ${price.toFixed(2)} ${item.pricingUnit ? `<strong> / ${item.unitLabel || (item.pricingUnit === 'dozen' ? 'دستة' : 'قطعة')}</strong>` : ''}</p>
                 <div class="item-options">
                   <div class="item-option">
                     <label>${this.t('size') || 'Size'}:</label>
