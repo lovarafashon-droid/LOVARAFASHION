@@ -44,7 +44,8 @@
     .nav-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
     .nav-btn.outline { background: transparent; color: var(--secondary); border: 1.5px solid var(--border); }
     .nav-btn.outline:hover { border-color: var(--primary); color: var(--primary); }
-    .order-status-nav { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .navbar-status-bar { border-top:1px solid var(--border); background:rgba(250,248,245,.96); padding:8px 20px; }
+    .navbar-status-bar .order-status-nav { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; }
     .status-filter { display:inline-flex; align-items:center; gap:6px; padding:9px 12px; border:1px solid var(--border); background:#fff; color:var(--text-light); border-radius:20px; font-family:'Jost',sans-serif; font-size:11px; font-weight:600; cursor:pointer; white-space:nowrap; }
     .status-filter.active { color:#fff; border-color:var(--secondary); background:var(--secondary); }
     .status-filter.confirmed.active { background:#2e7d32; border-color:#2e7d32; }
@@ -52,7 +53,7 @@
     .status-filter.pending.active { background:#8a6500; border-color:#8a6500; }
     .status-filter .filter-count { min-width:18px; height:18px; padding:0 5px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:rgba(0,0,0,.08); font-size:10px; }
     .status-filter.active .filter-count { background:rgba(255,255,255,.22); }
-    .orders-page { padding: 90px 0 40px; min-height: 100vh; }
+    .orders-page { padding: 145px 0 40px; min-height: 100vh; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
     .page-header h1 { font-family: 'Cormorant Garamond', serif; font-size: 36px; color: var(--secondary); }
     .page-header p { color: var(--text-light); font-size: 14px; }
@@ -119,7 +120,7 @@
     .footer { background: var(--secondary); color: #888; padding: 25px 0; text-align: center; margin-top: 50px; }
     .footer p { font-size: 13px; }
     @media (max-width: 768px) {
-      .orders-page { padding: 80px 0 30px; }
+      .orders-page { padding: 165px 0 30px; }
       .page-header h1 { font-size: 28px; }
       .order-header { padding: 15px 20px; }
       .order-body { padding: 18px; }
@@ -221,6 +222,9 @@
       font-weight: 600 !important;
     }
     .supplier-tag i { color: #1565c0 !important; }
+    .item-variant { background:#fff3e0 !important; color:#8d4e00 !important; border:1px solid #ffcc80 !important; font-size:14px !important; font-weight:700 !important; padding:6px 10px !important; }
+    .item-variant i { color:#e65100; }
+    .customer-box .info-value.highlight { font-size:17px; font-weight:800; }
   
     @media (max-width: 900px) {
       .container{padding-left:14px;padding-right:14px}.nav-container{padding:12px 14px}.nav-actions{gap:6px}.nav-btn{padding:8px 11px;font-size:12px}.order-header{padding:14px 16px}.order-body{padding:16px}.return-body{padding:16px}.return-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.return-photo{width:86px;height:86px}.return-card .order-actions{padding:12px 0!important}.return-card .btn{flex:1;justify-content:center;min-width:120px}
@@ -230,11 +234,12 @@
       .navbar .nav-container{flex-wrap:wrap;justify-content:center;gap:8px;padding:10px}
       .navbar .logo{font-size:22px;line-height:1}
       .nav-actions{width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
-      .order-status-nav{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+      .navbar-status-bar{padding:7px 10px}
+      .navbar-status-bar .order-status-nav{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
       .nav-btn{justify-content:center;min-width:0;padding:9px 4px;font-size:10px;gap:4px;white-space:nowrap}
       .status-filter{justify-content:center;min-width:0;padding:9px 4px;font-size:10px;gap:3px}
       .nav-btn i{font-size:11px}
-      .orders-page{padding-top:132px}
+      .orders-page{padding-top:178px}
       .page-header{margin-bottom:18px;align-items:flex-start}
       .page-header h1{font-size:26px;line-height:1.1}
       .page-header p{font-size:12px;line-height:1.4;margin-top:5px}
@@ -304,16 +309,18 @@
         <a href="/" class="nav-btn outline"><i class="fas fa-home"></i> Home</a>
         <a href="/checkout" class="nav-btn"><i class="fas fa-shopping-bag"></i> New Order</a>
         <a href="/returns" class="nav-btn outline"><i class="fas fa-rotate-left"></i> Returns Form</a>
-        <div class="order-status-nav" aria-label="Order status filters">
-          <button type="button" class="status-filter pending active" data-filter="pending" onclick="OrdersApp.filterOrders('pending')"><i class="fas fa-clock"></i> Unconfirmed <span class="filter-count" id="pendingCount">0</span></button>
-          <button type="button" class="status-filter confirmed" data-filter="confirmed" onclick="OrdersApp.filterOrders('confirmed')"><i class="fas fa-circle-check"></i> Confirmed <span class="filter-count" id="confirmedCount">0</span></button>
-          <button type="button" class="status-filter rejected" data-filter="rejected" onclick="OrdersApp.filterOrders('rejected')"><i class="fas fa-circle-xmark"></i> Cancelled <span class="filter-count" id="rejectedCount">0</span></button>
-        </div>
         <button class="nav-btn" style="background:var(--secondary);color:#fff;" onclick="logout()">
           <i class="fas fa-sign-out-alt"></i> Logout
         </button>
       </div>
     </div>
+      <div class="navbar-status-bar">
+        <div class="order-status-nav" aria-label="Order status filters">
+          <button type="button" class="status-filter pending active" data-filter="pending" onclick="OrdersApp.filterOrders('pending')"><i class="fas fa-clock"></i> Unconfirmed <span class="filter-count" id="pendingCount">0</span></button>
+          <button type="button" class="status-filter confirmed" data-filter="confirmed" onclick="OrdersApp.filterOrders('confirmed')"><i class="fas fa-circle-check"></i> Confirmed <span class="filter-count" id="confirmedCount">0</span></button>
+          <button type="button" class="status-filter rejected" data-filter="rejected" onclick="OrdersApp.filterOrders('rejected')"><i class="fas fa-circle-xmark"></i> Cancelled <span class="filter-count" id="rejectedCount">0</span></button>
+        </div>
+      </div>
   </header>
 
   <div class="auth-overlay" id="authOverlay">
@@ -747,8 +754,8 @@
               <div class="item-info">
                 <div class="item-name">${esc(item.name || 'Unknown Product')}</div>
                 <div class="item-tags">
-                  <span class="item-tag"><i class="fas fa-palette"></i> ${esc(item.color || 'N/A')}</span>
-                  <span class="item-tag"><i class="fas fa-ruler"></i> ${esc(item.size || 'N/A')}</span>
+                  <span class="item-tag item-variant"><i class="fas fa-palette"></i> Color: ${esc(item.color || 'N/A')}</span>
+                  <span class="item-tag item-variant"><i class="fas fa-ruler"></i> Size: ${esc(item.size || 'N/A')}</span>
                   <span class="item-tag"><i class="fas fa-times"></i> Qty: ${itemQty}</span>
                   <span class="item-tag"><i class="fas fa-tag"></i> Sell: EGP ${itemPrice.toFixed(2)}</span>
                   ${supplierName ? `<span class="item-tag supplier-tag"><i class="fas fa-industry"></i> Factory: ${esc(supplierName)}</span>` : ''}
