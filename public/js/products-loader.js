@@ -122,6 +122,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     initProductCarousel(grid, productsToRender);
+    const sharedProductId = new URLSearchParams(window.location.search).get('product');
+    if (sharedProductId) {
+      setTimeout(() => {
+        const sharedProduct = productsToRender.find(product => product.id === sharedProductId);
+        if (sharedProduct && typeof window.openProductModal === 'function') window.openProductModal(sharedProduct);
+      }, 250);
+    }
 
   } catch (error) {
     console.error('Error loading products:', error);
@@ -550,10 +557,12 @@ async function shareProduct(productId, productName) {
   const product = carouselState.products.find(p => p.id === productId);
   if (!product) return;
 
+  const shareUrl = new URL(window.location.href);
+  shareUrl.searchParams.set('product', productId);
   const shareData = {
     title: productName,
     text: 'Check out ' + productName + ' on LOVARA!',
-    url: window.location.origin + '/' + getCategoryPage(product.category)
+    url: shareUrl.toString()
   };
 
   if (navigator.share) {

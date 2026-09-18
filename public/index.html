@@ -1071,9 +1071,9 @@
   <button class="back-to-top" id="backToTop" aria-label="Back to top"><i class="fas fa-chevron-up"></i></button>
 
   <!-- ===================== SCRIPTS ===================== -->
-  <script src="categories-shared.js?v=unit-pricing1"></script>
+  <script src="categories-shared.js?v=shared-product1"></script>
   <script src="js/main.js"></script>
-  <script src="js/products-loader.js?v=stable-add1"></script>
+  <script src="js/products-loader.js?v=shared-product1"></script>
 
   <!-- Language -->
   <script>
@@ -1864,8 +1864,10 @@
       shareProduct(productId) {
         const product = (window.carouselState && Array.isArray(window.carouselState.products)) ? window.carouselState.products.find(p => p.id === productId) : null;
         if (!product) return;
-        const shareData = { title: product.name, text: 'Check out ' + product.name + ' on LOVARA!', url: window.location.href };
-        if (navigator.share) { navigator.share(shareData); } else { navigator.clipboard.writeText(window.location.href); showToast('Link copied to clipboard!'); }
+        const shareUrl = new URL(window.location.href);
+        shareUrl.searchParams.set('product', productId);
+        const shareData = { title: product.name, text: 'Check out ' + product.name + ' on LOVARA!', url: shareUrl.toString() };
+        if (navigator.share) { navigator.share(shareData); } else { navigator.clipboard.writeText(shareData.url); showToast('Link copied to clipboard!'); }
       },
       toggleWishlist(product) {
         if (!product || !product.id) return;

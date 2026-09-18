@@ -792,6 +792,7 @@ const CategoryApp = {
       this.setupProductPagination();
       if (loading) loading.style.display = 'none';
       if (emptyState) emptyState.style.display = 'none';
+      this.openSharedProductFromUrl();
       return;
     }
     if (loading) loading.style.display = 'flex';
@@ -812,12 +813,18 @@ const CategoryApp = {
       this.setupProductPagination();
       if (loading) loading.style.display = 'none';
       if (this.products.length === 0) { if (emptyState) emptyState.style.display = 'flex'; }
-      else { if (emptyState) emptyState.style.display = 'none'; this.renderProductPage(); }
+      else { if (emptyState) emptyState.style.display = 'none'; this.renderProductPage(); this.openSharedProductFromUrl(); }
     } catch (error) {
       console.error('Error loading products:', error);
       if (loading) loading.style.display = 'none';
       if (emptyState) emptyState.style.display = 'flex';
     }
+  },
+
+  openSharedProductFromUrl() {
+    const productId = new URLSearchParams(window.location.search).get('product');
+    if (!productId || !this.products.some(product => product.id === productId)) return;
+    setTimeout(() => this.openProductDetail(productId), 250);
   },
 
   collectProductsFromDOM() {
@@ -1134,8 +1141,11 @@ const CategoryApp = {
     let product = this.products.find(p => p.id === productId);
     if (!product && window.carouselState && window.carouselState.products) product = window.carouselState.products.find(p => p.id === productId);
     if (!product) return;
-    if (navigator.share) { navigator.share({ title: product.name, text: `Check out ${product.name} on LOVARA!`, url: window.location.href }); }
-    else { navigator.clipboard.writeText(window.location.href); this.showToast('Link copied to clipboard!'); }
+    const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set('product', productId);
+    const url = shareUrl.toString();
+    if (navigator.share) { navigator.share({ title: product.name, text: `Check out ${product.name} on LOVARA!`, url }); }
+    else { navigator.clipboard.writeText(url); this.showToast('Link copied to clipboard!'); }
   },
 
   setupCartDelegation() {
