@@ -923,7 +923,15 @@
         return this.promo ? (Number(this.promo.discount) || 0) * this.getPromoUnits() : 0;
       },
       getPromoCommissionTotal() {
-        return this.promo ? (Number(this.promo.commission ?? 10) || 10) * this.getPromoUnits() : 0;
+        if (!this.promo) return 0;
+        const percentValue = this.promo.commissionPercent ?? this.promo.employeeProfitPercent;
+        if (percentValue !== undefined && percentValue !== null && percentValue !== '') {
+          const percent = Math.max(0, Number(percentValue) || 0);
+          const sales = (this.cart || []).reduce((sum, item) => sum + (Number(item.price) || 0) * Math.max(1, Number(item.quantity || item.qty) || 1), 0);
+          return sales * percent / 100;
+        }
+        // Backward compatibility for promo codes created before percentage support.
+        return (Number(this.promo.commission ?? 10) || 10) * this.getPromoUnits();
       },
       calculateShipping(subtotal) {
         const governorate = document.getElementById('governorate')?.value || '';
