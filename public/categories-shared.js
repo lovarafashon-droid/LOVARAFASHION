@@ -1096,7 +1096,7 @@ const CategoryApp = {
       return quantity > 1 ? colorsForPieces : (colorsForPieces[0] || null);
     };
     modal.querySelector('.category-preview-add').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.addToCart(product, selectedSize(), getSelectedColorValue(quantity), quantity, selectedUnit()); this.closeProductDetail(); });
-    modal.querySelector('.category-preview-buy').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.startDirectCheckout(product, selectedSize(), getSelectedColorValue(quantity), quantity, selectedUnit()); this.closeProductDetail(); });
+    modal.querySelector('.category-preview-buy').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.startDirectCheckout(product, selectedSize(), getSelectedColorValue(quantity), quantity, selectedUnit()); });
     modal.querySelector('.category-preview-wish').addEventListener('click', event => { this.toggleWishlist(product); event.currentTarget.classList.toggle('active'); });
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => modal.classList.add('show'));
