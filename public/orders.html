@@ -235,7 +235,7 @@
       .navbar .logo{font-size:22px;line-height:1}
       .nav-actions{width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
       .navbar-status-bar{padding:7px 10px}
-      .navbar-status-bar .order-status-nav{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+      .navbar-status-bar .order-status-nav{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
       .nav-btn{justify-content:center;min-width:0;padding:9px 4px;font-size:10px;gap:4px;white-space:nowrap}
       .status-filter{justify-content:center;min-width:0;padding:9px 4px;font-size:10px;gap:3px}
       .nav-btn i{font-size:11px}
@@ -318,6 +318,7 @@
         <div class="order-status-nav" aria-label="Order status filters">
           <button type="button" class="status-filter pending active" data-filter="pending" onclick="OrdersApp.filterOrders('pending')"><i class="fas fa-clock"></i> Unconfirmed <span class="filter-count" id="pendingCount">0</span></button>
           <button type="button" class="status-filter confirmed" data-filter="confirmed" onclick="OrdersApp.filterOrders('confirmed')"><i class="fas fa-circle-check"></i> Confirmed <span class="filter-count" id="confirmedCount">0</span></button>
+          <button type="button" class="status-filter delivered" data-filter="delivered" onclick="OrdersApp.filterOrders('delivered')"><i class="fas fa-person-walking-luggage"></i> Delivered <span class="filter-count" id="deliveredCount">0</span></button>
           <button type="button" class="status-filter rejected" data-filter="rejected" onclick="OrdersApp.filterOrders('rejected')"><i class="fas fa-circle-xmark"></i> Cancelled <span class="filter-count" id="rejectedCount">0</span></button>
         </div>
       </div>
@@ -618,13 +619,14 @@
         const container = document.getElementById('ordersList');
         const countBadge = document.getElementById('orderCount');
         countBadge.textContent = `${this.orders.length} Order${this.orders.length !== 1 ? 's' : ''}`;
-        const groups = { pending: [], confirmed: [], rejected: [] };
+        const groups = { pending: [], confirmed: [], delivered: [], rejected: [] };
         this.orders.forEach((order, index) => {
           const filter = (order.status === 'cancelled' || order.confirmationStatus === 'rejected')
-            ? 'rejected' : (order.confirmationStatus === 'confirmed' ? 'confirmed' : 'pending');
+            ? 'rejected' : order.status === 'delivered'
+              ? 'delivered' : (order.confirmationStatus === 'confirmed' ? 'confirmed' : 'pending');
           groups[filter].push({ order, index });
         });
-        ['pending', 'confirmed', 'rejected'].forEach(filter => {
+        ['pending', 'confirmed', 'delivered', 'rejected'].forEach(filter => {
           const count = document.getElementById(`${filter}Count`);
           if (count) count.textContent = groups[filter].length;
           const button = document.querySelector(`.status-filter[data-filter="${filter}"]`);
@@ -641,14 +643,14 @@
           return;
         }
         const entries = groups[this.orderFilter] || groups.pending;
-        const emptyText = { pending: 'No unconfirmed orders.', confirmed: 'No confirmed orders yet.', rejected: 'No cancelled or rejected orders.' }[this.orderFilter];
+        const emptyText = { pending: 'No unconfirmed orders.', confirmed: 'No confirmed orders yet.', delivered: 'No delivered orders yet.', rejected: 'No cancelled or rejected orders.' }[this.orderFilter];
         container.innerHTML = entries.length
           ? entries.map(entry => this.renderOrder(entry.order, entry.index)).join('')
           : `<div class="empty-state"><i class="fas fa-filter-circle-xmark"></i><h3>${emptyText}</h3><p>Choose another status from the navbar.</p></div>`;
       },
 
       filterOrders(filter) {
-        if (!['pending', 'confirmed', 'rejected'].includes(filter)) return;
+        if (!['pending', 'confirmed', 'delivered', 'rejected'].includes(filter)) return;
         this.orderFilter = filter;
         this.renderOrders();
       },
