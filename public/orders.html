@@ -1297,7 +1297,7 @@
           }).join('') : '<div class="muted">لا توجد منتجات</div>';
           return `<section class="bulk-order">
             <div class="bulk-order-head"><strong>طلب #${orderNum}</strong><span>${dateText}</span></div>
-            <div class="bulk-customer"><strong>الهاتف:</strong> ${esc(customer.phone || '—')} &nbsp; <strong>العنوان:</strong> ${esc([customer.address, customer.city, customer.state || customer.governorate].filter(Boolean).join(', ') || '—')}</div>
+            <div class="bulk-customer"><strong>الهاتف:</strong> ${esc(customer.phone || '—')}</div>
             <div class="bulk-items">${itemsHtml}</div>
             <div class="bulk-notes"><strong>الملاحظات:</strong> ${esc(notes || 'لا توجد ملاحظات')}</div>
           </section>`;
