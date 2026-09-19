@@ -683,6 +683,7 @@
         const firstName = customer.firstName || '';
         const lastName = customer.lastName || '';
         const phone = customer.phone || '';
+        const phone2 = customer.phone2 || '';
         const email = customer.email || '';
         const address = customer.address || '';
         const city = customer.city || '';
@@ -707,8 +708,8 @@
                 <div class="info-value highlight">${esc(firstName)} ${esc(lastName)}</div>
               </div>
               <div class="info-item">
-                <div class="info-label">Phone Number</div>
-                <div class="info-value phone">${esc(phone)}</div>
+                <div class="info-label">Phone Numbers</div>
+                <div class="info-value phone">1) ${esc(phone || '—')}<br>2) ${esc(phone2 || '—')}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Email</div>
@@ -1233,7 +1234,8 @@
           </div>
           <div style="margin-bottom:10px; font-size:11px; line-height:1.5;">
             <strong>Customer:</strong> ${(customer.firstName||'') + ' ' + (customer.lastName||'')}<br>
-            <strong>Phone:</strong> ${customer.phone||'-'}<br>
+            <strong>Phone 1:</strong> ${customer.phone||'-'}<br>
+            <strong>Phone 2:</strong> ${customer.phone2||'-'}<br>
             <strong>Address:</strong> ${(customer.address||'') + (customer.city ? ', ' + customer.city : '') + (customer.state || customer.governorate ? ', ' + (customer.state || customer.governorate) : '')}
           </div>
           <div style="border-top:1px dashed #000; margin:8px 0;"></div>
