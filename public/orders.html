@@ -1355,6 +1355,25 @@
           const dateText = esc(orderDate.toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }));
           const notes = String(customer.notes || order.notes || '').trim();
           const items = order.items || [];
+          const groupedItems = new Map();
+          items.forEach(item => {
+            const quantity = Math.max(1, parseInt(item.quantity) || 1);
+            const colors = Array.isArray(item.color) ? item.color : [item.color || 'غير محدد'];
+            const sizes = Array.isArray(item.size) ? item.size : [item.size || 'غير محدد'];
+            const product = this.getProductForItem(item);
+            const supplier = String(item.supplier || item.factory || item.madeBy || product?.supplier || '').trim();
+            const source = supplier ? `من مصنع: ${supplier}` : 'من مكتب';
+            for (let pieceIndex = 0; pieceIndex < quantity; pieceIndex++) {
+              const color = String(colors[pieceIndex] || colors[0] || 'غير محدد').trim();
+              const size = String(sizes[pieceIndex] || sizes[0] || 'غير محدد').trim();
+              const name = String(item.name || 'منتج غير معروف').trim();
+              const key = `${name}\u0000${color}\u0000${size}\u0000${source}`;
+              const current = groupedItems.get(key) || { name, color, size, source, quantity: 0 };
+              current.quantity += 1;
+              groupedItems.set(key, current);
+            }
+          });
+          const summaryHtml = groupedItems.size ? `<div class="bulk-summary"><div class="bulk-summary-title">ملخص المنتجات</div>${[...groupedItems.values()].map(item => `<div class="bulk-summary-row"><strong>${esc(item.name)}</strong><span>اللون: ${esc(item.color)}</span><span>المقاس: ${esc(item.size)}</span><span>العدد: <strong>${item.quantity}</strong></span><span>${esc(item.source)}</span></div>`).join('')}</div>` : '';
           const itemsHtml = items.length ? items.map((item, itemIndex) => {
             const product = this.getProductForItem(item);
             const supplier = String(item.supplier || item.factory || item.madeBy || product?.supplier || '').trim();
@@ -1367,6 +1386,7 @@
           }).join('') : '<div class="muted">لا توجد منتجات</div>';
           return `<section class="bulk-order">
             <div class="bulk-order-head"><strong>طلب #${orderNum}</strong><span>${dateText}</span></div>
+            ${summaryHtml}
             ${isFull ? `<div class="bulk-customer"><strong>اسم العميل:</strong> ${esc(`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || '—')} &nbsp; <strong>الهاتف:</strong> ${esc(customer.phone || '—')} &nbsp; <strong>العنوان:</strong> ${esc([customer.address, customer.city, customer.state || customer.governorate].filter(Boolean).join(', ') || '—')}</div>` : ''}
             <div class="bulk-items">${itemsHtml}</div>
             <div class="bulk-notes"><strong>الملاحظات:</strong> ${esc(notes || 'لا توجد ملاحظات')}</div>
@@ -1377,7 +1397,7 @@
         if (!printWindow) { alert('Please allow popups to print invoices.'); return; }
         const printTitle = isFull ? 'الطلبات المؤكدة — طباعة كاملة' : 'الطلبات المؤكدة — طباعة للمكتب';
         printWindow.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${printTitle}</title><style>
-          @page { size: A5 portrait; margin: 8mm; } body { margin:0; font-family:Arial,"Noto Sans Arabic",sans-serif; color:#111; font-size:10px; } h1 { text-align:center; margin:0 0 3px; font-size:17px; } .subtitle { text-align:center; color:#666; margin-bottom:10px; font-size:9px; } .bulk-order { border:1px solid #222; padding:7px; margin-bottom:9px; page-break-inside:avoid; } .bulk-order-head { display:flex; justify-content:space-between; border-bottom:1px solid #222; padding-bottom:4px; margin-bottom:5px; font-size:11px; } .bulk-customer { line-height:1.5; border-bottom:1px dotted #888; padding-bottom:4px; margin-bottom:5px; } .bulk-item { position:relative; border-bottom:1px dotted #aaa; padding:4px 0 5px; } .bulk-item:last-child { border-bottom:0; } .bulk-item-title { font-weight:700; margin-bottom:3px; } .bulk-item-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:3px 5px; color:#444; font-size:9px; } .bulk-notes { background:#fff8e1; border:1px solid #e0c66c; padding:5px; margin-top:5px; min-height:14px; } .muted { color:#777; } .print-meta { text-align:center; color:#666; font-size:8px; margin-top:10px; } @media print { .bulk-order { break-inside:avoid; } }
+          @page { size: A5 portrait; margin: 8mm; } body { margin:0; font-family:Arial,"Noto Sans Arabic",sans-serif; color:#111; font-size:10px; } h1 { text-align:center; margin:0 0 3px; font-size:17px; } .subtitle { text-align:center; color:#666; margin-bottom:10px; font-size:9px; } .bulk-order { border:1px solid #222; padding:7px; margin-bottom:9px; page-break-inside:avoid; } .bulk-order-head { display:flex; justify-content:space-between; border-bottom:1px solid #222; padding-bottom:4px; margin-bottom:5px; font-size:11px; } .bulk-customer { line-height:1.5; border-bottom:1px dotted #888; padding-bottom:4px; margin-bottom:5px; } .bulk-summary { border:1px solid #444; background:#f7f7f7; padding:5px; margin:5px 0 7px; } .bulk-summary-title { font-weight:700; font-size:10px; margin-bottom:4px; } .bulk-summary-row { display:grid; grid-template-columns:1.5fr repeat(4,1fr); gap:4px; padding:3px 0; border-top:1px dotted #aaa; font-size:9px; align-items:center; } .bulk-item { position:relative; border-bottom:1px dotted #aaa; padding:4px 0 5px; } .bulk-item:last-child { border-bottom:0; } .bulk-item-title { font-weight:700; margin-bottom:3px; } .bulk-item-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:3px 5px; color:#444; font-size:9px; } .bulk-notes { background:#fff8e1; border:1px solid #e0c66c; padding:5px; margin-top:5px; min-height:14px; } .muted { color:#777; } .print-meta { text-align:center; color:#666; font-size:8px; margin-top:10px; } @media print { .bulk-order { break-inside:avoid; } }
         </style></head><body><h1>LOVARA — ${printTitle}</h1><div class="subtitle">عدد الطلبات: ${confirmedOrders.length}</div>${ordersHtml}<div class="print-meta">تمت الطباعة بتاريخ ${esc(new Date().toLocaleString('ar-EG'))}</div></body></html>`);
         const script = printWindow.document.createElement('script');
         script.textContent = "window.onload = function() { setTimeout(function() { window.print(); }, 400); };";
