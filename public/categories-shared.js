@@ -1120,7 +1120,7 @@ const CategoryApp = {
     if (modal) { modal.classList.remove('show'); setTimeout(() => modal.remove(), 300); }
   },
 
-  startDirectCheckout(product, size, color, quantity = 1, pricingUnit = 'piece') { const unit = pricingUnit === 'dozen' ? 'dozen' : 'piece'; const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0); localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, price, pricePiece: parseFloat(product.pricePiece ?? product.price) || 0, priceDozen: parseFloat(product.priceDozen) || 0, pricingUnit: unit, unitLabel: unit === 'dozen' ? 'Dozen / دستة' : 'Piece / قطعة', size: size || null, color: color || null, quantity, qty: quantity })); window.location.href = '/checkout'; },
+  startDirectCheckout(product, size, color, quantity = 1, pricingUnit = 'piece') { const unit = pricingUnit === 'dozen' ? 'dozen' : 'piece'; const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0); localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, price, pricePiece: parseFloat(product.pricePiece ?? product.price) || 0, priceDozen: parseFloat(product.priceDozen) || 0, pricingUnit: unit, unitLabel: unit === 'dozen' ? 'Dozen / دستة' : 'Piece / قطعة', size: size || null, color: color || null, quantity, qty: quantity })); window.location.assign('/checkout.html'); },
   confirmBuyNow(productId, isDirectBuy) {
     const product = this.products.find(p => p.id === productId);
     if (!product) return;
