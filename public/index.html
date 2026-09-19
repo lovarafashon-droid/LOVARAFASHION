@@ -372,6 +372,11 @@
       .pm-btn-add i, .pm-btn-buy i { display: none; }
     }
 </style>
+<style>
+  .pm-piece-color { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:8px 0; font-size:13px; }
+  .pm-piece-color span { font-weight:500; }
+  .pm-piece-color select { flex:1; min-height:36px; padding:6px 10px; border:1px solid #e5e5e5; border-radius:8px; background:#fff; font:inherit; }
+</style>
 </head>
 <body>
 
@@ -1980,6 +1985,7 @@
     let pmCurrentProduct = null;
     let pmSelectedSize = null;
     let pmSelectedColor = null;
+    let pmSelectedColors = [];
     let pmQty = 1;
     let pmImages = [];
     let pmImageIndex = 0;
@@ -2018,6 +2024,7 @@
       pmCurrentProduct = product;
       pmSelectedSize = Array.isArray(product.sizes) && product.sizes.length > 0 ? product.sizes[0] : null;
       pmSelectedColor = Array.isArray(product.colors) && product.colors.length > 0 ? product.colors[0] : null;
+      pmSelectedColors = pmSelectedColor ? [pmSelectedColor] : [];
       pmQty = 1;
       pmImages = pmGetImages(product);
       pmImageIndex = 0;
@@ -2065,26 +2072,8 @@
         sizesSection.style.display = 'none';
       }
 
-      // Colors
-      const colorsContainer = document.getElementById('pmColors');
-      const colorsSection = document.getElementById('pmColorsSection');
-      if (Array.isArray(product.colors) && product.colors.length > 0) {
-        colorsSection.style.display = 'block';
-        colorsContainer.innerHTML = product.colors.map((c, i) => {
-          const colorMap = {
-            'Black':'#1a1a1a','White':'#ffffff','Beige':'#d4b996','Nude':'#e8c4a0',
-            'Red':'#c0392b','Burgundy':'#800020','Pink':'#e91e63','Rose':'#f8c3cd',
-            'Blue':'#2980b9','Navy':'#000080','Green':'#27ae60','Olive':'#556b2f',
-            'Gold':'#d4af37','Silver':'#c0c0c0','Champagne':'#f7e7ce','Lavender':'#e6e6fa'
-          };
-          const hex = colorMap[c] || '#ccc';
-          return `<span class="pm-option pm-color ${c === pmSelectedColor ? 'selected' : ''}" onclick="pmSelectColor(this, '${c}')">
-            <span class="pm-color-swatch" style="background:${hex}; ${c==='White'?'border:1px solid #ddd':''}"></span> ${c}
-          </span>`;
-        }).join('');
-      } else {
-        colorsSection.style.display = 'none';
-      }
+      // Colors: one independent selector for every selected piece.
+      pmRenderColorSelectors();
 
       document.getElementById('pmQty').textContent = pmQty;
 
@@ -2121,9 +2110,30 @@
       el.classList.add('selected');
     }
 
+    function pmRenderColorSelectors() {
+      const colorsContainer = document.getElementById('pmColors');
+      const colorsSection = document.getElementById('pmColorsSection');
+      const colors = Array.isArray(pmCurrentProduct?.colors) ? pmCurrentProduct.colors : [];
+      if (!colorsContainer || !colorsSection) return;
+      if (!colors.length) { colorsSection.style.display = 'none'; return; }
+      colorsSection.style.display = 'block';
+      while (pmSelectedColors.length < pmQty) pmSelectedColors.push(pmSelectedColors[0] || colors[0]);
+      pmSelectedColors = pmSelectedColors.slice(0, pmQty);
+      colorsContainer.innerHTML = pmSelectedColors.map((selected, index) => {
+        const options = colors.map(color => `<option value="${color}" ${color === selected ? 'selected' : ''}>${color}</option>`).join('');
+        return `<label class="pm-piece-color"><span>لون القطعة ${index + 1}</span><select onchange="pmSelectPieceColor(${index}, this.value)">${options}</select></label>`;
+      }).join('');
+    }
+
+    function pmSelectPieceColor(index, color) {
+      pmSelectedColors[index] = color;
+      pmSelectedColor = pmSelectedColors[0] || color;
+    }
+
     function pmChangeQty(delta) {
       pmQty = Math.max(1, pmQty + delta);
       document.getElementById('pmQty').textContent = pmQty;
+      pmRenderColorSelectors();
     }
 
     function pmAddToCart() {
@@ -2136,11 +2146,11 @@
       const item = {
         ...pmCurrentProduct,
         size: pmSelectedSize,
-        color: pmSelectedColor,
+        color: pmQty > 1 ? pmSelectedColors : pmSelectedColor,
         quantity: pmQty
       };
       if (window.CategoryApp) {
-        CategoryApp.addToCart(item, pmSelectedSize, pmSelectedColor);
+        CategoryApp.addToCart(item, pmSelectedSize, item.color, pmQty);
       } else {
         CartApp.add(item);
       }
@@ -2157,7 +2167,7 @@
       const item = {
         ...pmCurrentProduct,
         size: pmSelectedSize,
-        color: pmSelectedColor,
+        color: pmQty > 1 ? pmSelectedColors : pmSelectedColor,
         qty: pmQty,
         quantity: pmQty
       };
