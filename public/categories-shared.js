@@ -75,7 +75,7 @@ const CategoryApp = {
       btnSendReset: "Send Reset Link", rememberPassword: "Remember your password?",
       logout: "Logout", welcome: "Welcome",
       size: "Size", color: "Color", selectSize: "Select size", selectColor: "Select color",
-      subcatAll: "All", subcatBras: "Bras", subcatPanties: "Panties", subcatNightgowns: "Nightgowns",
+      subcatAll: "All", subcatBras: "Bras", subcatPanties: "Panties", subcatNightgowns: "Nightgowns", subcatHotShorts: "Hot Shorts",
       subcatBags: "Bags", subcatCosmetics: "Cosmetics", subcatPersonalCare: "Personal Care", subcatJewelry: "Jewelry",
       subcatHalfSleeve: "Half Sleeve", subcatSleeveless: "Sleeveless / Tank", subcatLongSleeve: "Long Sleeve", subcatShoes: "Shoes", subcatJackets: "Jackets", subcatSweaters: "Sweaters", subcatHoodies: "Hoodies", subcatKnitwear: "Knitwear"
     },
@@ -126,7 +126,7 @@ const CategoryApp = {
       btnSendReset: "إرسال رابط إعادة التعيين", rememberPassword: "تذكرتِ كلمة المرور؟",
       logout: "تسجيل الخروج", welcome: "أهلاً",
       size: "المقاس", color: "اللون", selectSize: "اختيار المقاس", selectColor: "اختيار اللون",
-      subcatAll: "الكل", subcatBras: "برهات", subcatPanties: "اندرات", subcatNightgowns: "قمصان نوم",
+      subcatAll: "الكل", subcatBras: "برهات", subcatPanties: "اندرات", subcatNightgowns: "قمصان نوم", subcatHotShorts: "هوت شورت",
       subcatBags: "شنط", subcatCosmetics: "مستحضرات تجميل", subcatPersonalCare: "عناية شخصية", subcatJewelry: "مجوهرات",
       subcatHalfSleeve: "نص كم", subcatSleeveless: "كت", subcatLongSleeve: "كم", subcatShoes: "كوتشيات", subcatJackets: "جواكت", subcatSweaters: "سيلبرات", subcatHoodies: "هوديات", subcatKnitwear: "تريكو"
     }
@@ -860,7 +860,7 @@ const CategoryApp = {
     const category = document.body.getAttribute('data-category');
     // The homepage has its own product carousel and must not show category filters.
     if (!category) return;
-    if (['winter', 'tops', 'suits', 'sets', 'pajamas'].includes(category) && !document.getElementById('categorySubcategoryTabs')) {
+    if (['winter', 'tops', 'suits', 'sets', 'pajamas', 'lingerie'].includes(category) && !document.getElementById('categorySubcategoryTabs')) {
       const tabs = document.createElement('div');
       tabs.id = 'categorySubcategoryTabs';
       tabs.className = 'subcategory-tabs';
@@ -869,7 +869,8 @@ const CategoryApp = {
         tops: [['all', this.translations[this.currentLang].subcatAll], ['half-sleeve', this.translations[this.currentLang].subcatHalfSleeve], ['sleeveless', this.translations[this.currentLang].subcatSleeveless], ['long-sleeve', this.translations[this.currentLang].subcatLongSleeve]],
         suits: [['all', this.translations[this.currentLang].subcatAll], ['half-sleeve', this.translations[this.currentLang].subcatHalfSleeve], ['sleeveless', this.translations[this.currentLang].subcatSleeveless], ['long-sleeve', this.translations[this.currentLang].subcatLongSleeve]],
         sets: [['all', this.translations[this.currentLang].subcatAll], ['half-sleeve', this.translations[this.currentLang].subcatHalfSleeve], ['long-sleeve', this.translations[this.currentLang].subcatLongSleeve]],
-        pajamas: [['all', this.translations[this.currentLang].subcatAll]]
+        pajamas: [['all', this.translations[this.currentLang].subcatAll]],
+        lingerie: [['all', this.translations[this.currentLang].subcatAll], ['bras', this.translations[this.currentLang].subcatBras], ['panties', this.translations[this.currentLang].subcatPanties], ['hot-shorts', this.translations[this.currentLang].subcatHotShorts], ['nightgowns', this.translations[this.currentLang].subcatNightgowns]]
       };
       const labels = labelsByCategory[category] || [['all', this.currentLang === 'ar' ? 'الكل' : 'All']];
       tabs.innerHTML = labels.map(([value, label]) => `<button type="button" class="subcat-tab${value === this.activeSubcategory ? ' active' : ''}" data-subcat="${value}">${label}</button>`).join('');

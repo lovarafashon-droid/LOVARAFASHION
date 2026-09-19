@@ -1077,7 +1077,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         subcategory: "Subcategory", selectSubcategory: "Select Subcategory",
         subcatBags: "Bags", subcatCosmetics: "Cosmetics", subcatPersonalCare: "Personal Care",
         subcatShoes: "Shoes", subcatJewelry: "Jewelry",
-        subcatBras: "Bras", subcatPanties: "Panties", subcatNightgowns: "Nightgowns",
+        subcatBras: "Bras", subcatPanties: "Panties", subcatHotShorts: "Hot Shorts", subcatNightgowns: "Nightgowns",
         subcatJackets: "Jackets", subcatSweaters: "Sweaters", subcatHoodies: "Hoodies", subcatKnitwear: "Knitwear", subcatHalfSleeve: "Half Sleeve", subcatSleeveless: "Sleeveless / Tank", subcatLongSleeve: "Long Sleeve",
         bagSizes: "Bag Sizes",
         sizeSmall: "Small", sizeMedium: "Medium", sizeLarge: "Large", oneSize: "One Size",
@@ -1123,7 +1123,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         subcategory: "القسم الفرعي", selectSubcategory: "اختار القسم الفرعي",
         subcatBags: "شنط", subcatCosmetics: "مستحضرات تجميل", subcatPersonalCare: "عناية شخصية",
         subcatShoes: "كوتشيات", subcatJewelry: "مجوهرات",
-        subcatBras: "برهات", subcatPanties: "اندرات", subcatNightgowns: "قمصان نوم",
+        subcatBras: "برهات", subcatPanties: "اندرات", subcatHotShorts: "هوت شورت", subcatNightgowns: "قمصان نوم",
         subcatJackets: "جواكت", subcatSweaters: "سيلبرات", subcatHoodies: "هوديات", subcatKnitwear: "تريكو", subcatHalfSleeve: "نص كم", subcatSleeveless: "كت", subcatLongSleeve: "كم",
         shoeSizes: "مقاسات الأحذية", bagSizes: "مقاسات الشنط",
         sizeSmall: "صغير", sizeMedium: "وسط", sizeLarge: "كبير", oneSize: "مقاس واحد",
@@ -1591,6 +1591,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             subcatSelect.innerHTML = '<option value="">' + (t.selectSubcategory || 'Select Subcategory') + '</option>' +
               '<option value="bras">' + (t.subcatBras || 'Bras') + '</option>' +
               '<option value="panties">' + (t.subcatPanties || 'Panties') + '</option>' +
+              '<option value="hot-shorts">' + (t.subcatHotShorts || 'Hot Shorts') + '</option>' +
               '<option value="nightgowns">' + (t.subcatNightgowns || 'Nightgowns') + '</option>';
           }
         } else if (category === 'tops' || category === 'suits' || category === 'sets') {
@@ -1645,7 +1646,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
           if (volumeGroup) volumeGroup.classList.add('hidden');
           if (sizeSelector) sizeSelector.classList.add('hidden');
-        } else if (['bras', 'panties', 'nightgowns', 'jackets', 'sweaters', 'hoodies', 'knitwear', 'half-sleeve', 'sleeveless', 'long-sleeve'].includes(subcategory)) {
+        } else if (['bras', 'panties', 'hot-shorts', 'nightgowns', 'jackets', 'sweaters', 'hoodies', 'knitwear', 'half-sleeve', 'sleeveless', 'long-sleeve'].includes(subcategory)) {
           if (bagSizeSelector) bagSizeSelector.classList.add('hidden');
           if (shoeSizeGroup) shoeSizeGroup.classList.add('hidden');
           if (volumeGroup) volumeGroup.classList.add('hidden');
@@ -2045,7 +2046,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           'Limited': t.limitedBadge, 'Coming Soon': t.comingSoonBadge
         };
         const subcatMap = {
-          'bras': t.subcatBras, 'panties': t.subcatPanties, 'nightgowns': t.subcatNightgowns,
+          'bras': t.subcatBras, 'panties': t.subcatPanties, 'hot-shorts': t.subcatHotShorts, 'nightgowns': t.subcatNightgowns,
           'bags': t.subcatBags, 'cosmetics': t.subcatCosmetics, 'personal-care': t.subcatPersonalCare,
           'jewelry': t.subcatJewelry, 'shoes': t.subcatShoes,
           'jackets': t.subcatJackets, 'sweaters': t.subcatSweaters,
