@@ -224,6 +224,8 @@
     .supplier-tag i { color: #1565c0 !important; }
     .item-variant { background:#fff3e0 !important; color:#8d4e00 !important; border:1px solid #ffcc80 !important; font-size:14px !important; font-weight:700 !important; padding:6px 10px !important; }
     .item-variant i { color:#e65100; }
+    .item-variant select { margin-left:4px; padding:2px 5px; border:1px solid #ffcc80; border-radius:6px; background:#fffaf2; color:#8d4e00; font:inherit; font-size:12px; font-weight:700; cursor:pointer; max-width:150px; }
+    .item-variant select:focus { outline:2px solid rgba(230,81,0,.2); border-color:#e65100; }
     .customer-box .info-value.highlight { font-size:17px; font-weight:800; }
   
     @media (max-width: 900px) {
@@ -376,6 +378,7 @@
       rejectModalIndex: null,
       paymentModalIndex: null,
       orderFilter: 'pending',
+      productCatalog: { byId: {}, byName: {} },
 
       init() {
         let attempts = 0;
@@ -560,6 +563,7 @@
               this.orders.push(data);
             });
             await this.enrichWithSuppliers();
+            await this.loadProductCatalog();
             this.renderOrders();
           }, (err) => {
             console.error('[LOVARA Orders] Firestore error:', err);
@@ -612,6 +616,69 @@
               await this.db.collection('orders').doc(order._docId).update({ items: order.items });
             } catch (e) {}
           }
+        }
+      },
+
+      async loadProductCatalog() {
+        this.productCatalog = { byId: {}, byName: {} };
+        if (!this.db) return;
+        try {
+          const snapshot = await this.db.collection('products').get();
+          snapshot.forEach(doc => {
+            const product = { ...doc.data(), id: doc.id };
+            this.productCatalog.byId[doc.id] = product;
+            const name = String(product.name || '').trim();
+            if (name && !this.productCatalog.byName[name]) this.productCatalog.byName[name] = product;
+          });
+        } catch (error) {
+          console.warn('[LOVARA Orders] Could not load product variants:', error);
+        }
+      },
+
+      getProductForItem(item) {
+        if (!item) return null;
+        return (item.productId && this.productCatalog.byId[item.productId])
+          || (item.id && this.productCatalog.byId[item.id])
+          || this.productCatalog.byName[String(item.name || '').trim()]
+          || null;
+      },
+
+      getVariantOptions(product, key) {
+        if (!product) return [];
+        const raw = product[key] ?? product[key === 'sizes' ? 'size' : 'color'];
+        const values = Array.isArray(raw) ? raw : String(raw || '').split(',');
+        return [...new Set(values.map(value => String(value || '').trim()).filter(Boolean))];
+      },
+
+      renderVariantSelect(orderIndex, itemIndex, item, product, key, label, icon) {
+        const options = this.getVariantOptions(product, key);
+        const field = key === 'sizes' ? 'size' : 'color';
+        const current = String(item[field] || '').trim();
+        if (!options.length) return `<span class="item-tag item-variant"><i class="fas ${icon}"></i> ${label}: ${this.escapeHTML(current || 'N/A')}</span>`;
+        const selected = options.includes(current) ? current : '';
+        const optionHtml = [`<option value="">${current && !options.includes(current) ? 'اختر' : 'اختيار'}</option>`, ...options.map(value => `<option value="${this.escapeHTML(value)}"${value === selected ? ' selected' : ''}>${this.escapeHTML(value)}</option>`)].join('');
+        return `<label class="item-tag item-variant"><i class="fas ${icon}"></i> ${label}: <select aria-label="${label}" onchange="OrdersApp.updateItemVariant(${orderIndex}, ${itemIndex}, '${field}', this.value)" onclick="event.stopPropagation()">${optionHtml}</select></label>`;
+      },
+
+      updateItemVariant(orderIndex, itemIndex, field, value) {
+        const order = this.orders[orderIndex];
+        const item = order && order.items && order.items[itemIndex];
+        if (!item || !['size', 'color'].includes(field)) return;
+        const product = this.getProductForItem(item);
+        const options = this.getVariantOptions(product, field === 'size' ? 'sizes' : 'colors');
+        if (!options.includes(value)) {
+          this.showToast('اختاري قيمة موجودة لهذا المنتج فقط', 'error');
+          this.renderOrders();
+          return;
+        }
+        item[field] = value;
+        if (this.db && order._docId) {
+          this.db.collection('orders').doc(order._docId).update({ items: order.items })
+            .then(() => this.showToast('تم تحديث المقاس/اللون', 'success'))
+            .catch(error => { console.error('[LOVARA Orders] Variant update error:', error); this.showToast('تعذر حفظ التعديل', 'error'); });
+        } else {
+          localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
+          this.showToast('تم تحديث المقاس/اللون', 'success');
         }
       },
 
@@ -749,6 +816,7 @@
           const itemQty = parseInt(item.quantity) || 1;
           const itemProfit = (itemPrice - itemCost) * itemQty;
           const supplierName = item.supplier || item.factory || item.madeBy || '';
+          const product = this.getProductForItem(item);
           return `
             <div class="item-card">
               <img src="${this.safeImageUrl(item.imageUrl || item.image) || 'https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA'}"
@@ -757,8 +825,8 @@
               <div class="item-info">
                 <div class="item-name">${esc(item.name || 'Unknown Product')}</div>
                 <div class="item-tags">
-                  <span class="item-tag item-variant"><i class="fas fa-palette"></i> Color: ${esc(item.color || 'N/A')}</span>
-                  <span class="item-tag item-variant"><i class="fas fa-ruler"></i> Size: ${esc(item.size || 'N/A')}</span>
+                  ${this.renderVariantSelect(index, itemIdx, item, product, 'colors', 'Color', 'fa-palette')}
+                  ${this.renderVariantSelect(index, itemIdx, item, product, 'sizes', 'Size', 'fa-ruler')}
                   ${item.pricingUnit ? `<span class="item-tag item-variant"><i class="fas fa-boxes-stacked"></i> ${esc(item.unitLabel || (item.pricingUnit === 'dozen' ? 'Dozen / دستة' : 'Piece / قطعة'))}</span>` : ''}
                   <span class="item-tag"><i class="fas fa-times"></i> Qty: ${itemQty}</span>
                   <span class="item-tag"><i class="fas fa-tag"></i> Sell: EGP ${itemPrice.toFixed(2)}</span>
