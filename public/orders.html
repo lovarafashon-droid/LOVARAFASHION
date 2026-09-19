@@ -720,8 +720,11 @@
         const bulkPrintBar = this.orderFilter === 'confirmed' ? `
           <div class="bulk-print-bar">
             <span><i class="fas fa-file-invoice"></i> ${confirmedOrders.length} confirmed order(s) ready to print</span>
-            <button type="button" class="btn btn-bulk-print" onclick="OrdersApp.printConfirmedOrders()" ${confirmedOrders.length ? '' : 'disabled'}>
-              <i class="fas fa-print"></i> طباعة كل الطلبات المؤكدة
+            <button type="button" class="btn btn-bulk-print" onclick="OrdersApp.printConfirmedOrders('office')" ${confirmedOrders.length ? '' : 'disabled'}>
+              <i class="fas fa-print"></i> طباعة للمكتب
+            </button>
+            <button type="button" class="btn btn-bulk-print" style="background:#1a1a1a;border-color:#1a1a1a;" onclick="OrdersApp.printConfirmedOrders('full')" ${confirmedOrders.length ? '' : 'disabled'}>
+              <i class="fas fa-file-invoice"></i> طباعة كاملة
             </button>
           </div>` : '';
         container.innerHTML = bulkPrintBar + (entries.length
@@ -1272,12 +1275,13 @@
         }
       },
 
-      printConfirmedOrders() {
+      printConfirmedOrders(mode = 'office') {
         const confirmedOrders = this.getConfirmedOrders();
         if (!confirmedOrders.length) {
           this.showToast('لا توجد طلبات مؤكدة للطباعة', 'error');
           return;
         }
+        const isFull = mode === 'full';
         const esc = this.escapeHTML.bind(this);
         const ordersHtml = confirmedOrders.map(({ order }, orderIndex) => {
           const customer = order.customer || {};
@@ -1293,19 +1297,23 @@
             return `<div class="bulk-item">
               <div class="bulk-item-title">${itemIndex + 1}. ${esc(item.name || 'منتج غير معروف')}</div>
               <div class="bulk-item-grid"><span>اللون: <strong>${esc(item.color || 'غير محدد')}</strong></span><span>المقاس: <strong>${esc(item.size || 'غير محدد')}</strong></span><span>الكمية: <strong>${parseInt(item.quantity) || 1}</strong></span><span>المصدر: <strong>${esc(source)}</strong></span></div>
+              ${isFull ? `<div class="bulk-item-price">السعر: ${(parseFloat(item.price) || 0).toFixed(2)} EGP</div>` : ''}
             </div>`;
           }).join('') : '<div class="muted">لا توجد منتجات</div>';
           return `<section class="bulk-order">
             <div class="bulk-order-head"><strong>طلب #${orderNum}</strong><span>${dateText}</span></div>
+            ${isFull ? `<div class="bulk-customer"><strong>اسم العميل:</strong> ${esc(`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || '—')} &nbsp; <strong>الهاتف:</strong> ${esc(customer.phone || '—')} &nbsp; <strong>العنوان:</strong> ${esc([customer.address, customer.city, customer.state || customer.governorate].filter(Boolean).join(', ') || '—')}</div>` : ''}
             <div class="bulk-items">${itemsHtml}</div>
             <div class="bulk-notes"><strong>الملاحظات:</strong> ${esc(notes || 'لا توجد ملاحظات')}</div>
+            ${isFull ? `<div class="bulk-total"><strong>الإجمالي:</strong> ${esc((order.totals || {}).total || 'EGP 0.00')}</div>` : ''}
           </section>`;
         }).join('');
         const printWindow = window.open('', '_blank');
         if (!printWindow) { alert('Please allow popups to print invoices.'); return; }
-        printWindow.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>الطلبات المؤكدة</title><style>
+        const printTitle = isFull ? 'الطلبات المؤكدة — طباعة كاملة' : 'الطلبات المؤكدة — طباعة للمكتب';
+        printWindow.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${printTitle}</title><style>
           @page { size: A5 portrait; margin: 8mm; } body { margin:0; font-family:Arial,"Noto Sans Arabic",sans-serif; color:#111; font-size:10px; } h1 { text-align:center; margin:0 0 3px; font-size:17px; } .subtitle { text-align:center; color:#666; margin-bottom:10px; font-size:9px; } .bulk-order { border:1px solid #222; padding:7px; margin-bottom:9px; page-break-inside:avoid; } .bulk-order-head { display:flex; justify-content:space-between; border-bottom:1px solid #222; padding-bottom:4px; margin-bottom:5px; font-size:11px; } .bulk-customer { line-height:1.5; border-bottom:1px dotted #888; padding-bottom:4px; margin-bottom:5px; } .bulk-item { position:relative; border-bottom:1px dotted #aaa; padding:4px 0 5px; } .bulk-item:last-child { border-bottom:0; } .bulk-item-title { font-weight:700; margin-bottom:3px; } .bulk-item-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:3px 5px; color:#444; font-size:9px; } .bulk-notes { background:#fff8e1; border:1px solid #e0c66c; padding:5px; margin-top:5px; min-height:14px; } .muted { color:#777; } .print-meta { text-align:center; color:#666; font-size:8px; margin-top:10px; } @media print { .bulk-order { break-inside:avoid; } }
-        </style></head><body><h1>LOVARA — الطلبات المؤكدة</h1><div class="subtitle">عدد الطلبات: ${confirmedOrders.length}</div>${ordersHtml}<div class="print-meta">تمت الطباعة بتاريخ ${esc(new Date().toLocaleString('ar-EG'))}</div></body></html>`);
+        </style></head><body><h1>LOVARA — ${printTitle}</h1><div class="subtitle">عدد الطلبات: ${confirmedOrders.length}</div>${ordersHtml}<div class="print-meta">تمت الطباعة بتاريخ ${esc(new Date().toLocaleString('ar-EG'))}</div></body></html>`);
         const script = printWindow.document.createElement('script');
         script.textContent = "window.onload = function() { setTimeout(function() { window.print(); }, 400); };";
         printWindow.document.body.appendChild(script);
