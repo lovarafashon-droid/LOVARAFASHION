@@ -738,7 +738,7 @@
       getConfirmedOrders() {
         return this.orders
           .map((order, index) => ({ order, index }))
-          .filter(({ order }) => order.confirmationStatus === 'confirmed' && order.status !== 'cancelled');
+          .filter(({ order }) => order.confirmationStatus === 'confirmed' && !['cancelled', 'delivered'].includes(order.status));
       },
 
       renderOrder(order, index) {
@@ -1290,19 +1290,16 @@
             const product = this.getProductForItem(item);
             const supplier = String(item.supplier || item.factory || item.madeBy || product?.supplier || '').trim();
             const source = supplier ? `من مصنع: ${supplier}` : 'من مكتب';
-            const price = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
             return `<div class="bulk-item">
               <div class="bulk-item-title">${itemIndex + 1}. ${esc(item.name || 'منتج غير معروف')}</div>
               <div class="bulk-item-grid"><span>اللون: <strong>${esc(item.color || 'غير محدد')}</strong></span><span>المقاس: <strong>${esc(item.size || 'غير محدد')}</strong></span><span>الكمية: <strong>${parseInt(item.quantity) || 1}</strong></span><span>المصدر: <strong>${esc(source)}</strong></span></div>
-              <div class="bulk-item-price">${price.toFixed(2)} EGP</div>
             </div>`;
           }).join('') : '<div class="muted">لا توجد منتجات</div>';
           return `<section class="bulk-order">
             <div class="bulk-order-head"><strong>طلب #${orderNum}</strong><span>${dateText}</span></div>
-            <div class="bulk-customer"><strong>العميل:</strong> ${esc(`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || '—')} &nbsp; <strong>الهاتف:</strong> ${esc(customer.phone || '—')} &nbsp; <strong>العنوان:</strong> ${esc([customer.address, customer.city, customer.state || customer.governorate].filter(Boolean).join(', ') || '—')}</div>
+            <div class="bulk-customer"><strong>الهاتف:</strong> ${esc(customer.phone || '—')} &nbsp; <strong>العنوان:</strong> ${esc([customer.address, customer.city, customer.state || customer.governorate].filter(Boolean).join(', ') || '—')}</div>
             <div class="bulk-items">${itemsHtml}</div>
             <div class="bulk-notes"><strong>الملاحظات:</strong> ${esc(notes || 'لا توجد ملاحظات')}</div>
-            <div class="bulk-total"><strong>الإجمالي:</strong> ${esc((order.totals || {}).total || 'EGP 0.00')}</div>
           </section>`;
         }).join('');
         const printWindow = window.open('', '_blank');
