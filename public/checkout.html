@@ -930,8 +930,10 @@
           const sales = (this.cart || []).reduce((sum, item) => sum + (Number(item.price) || 0) * Math.max(1, Number(item.quantity || item.qty) || 1), 0);
           return sales * percent / 100;
         }
-        // Backward compatibility for promo codes created before percentage support.
-        return (Number(this.promo.commission ?? 10) || 10) * this.getPromoUnits();
+        // Legacy codes now use their commission value as a percentage too.
+        const percent = Math.max(0, Number(this.promo.commission ?? 10) || 10);
+        const sales = (this.cart || []).reduce((sum, item) => sum + (Number(item.price) || 0) * Math.max(1, Number(item.quantity || item.qty) || 1), 0);
+        return sales * percent / 100;
       },
       calculateShipping(subtotal) {
         const governorate = document.getElementById('governorate')?.value || '';
