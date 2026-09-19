@@ -860,7 +860,7 @@ const CategoryApp = {
     const category = document.body.getAttribute('data-category');
     // The homepage has its own product carousel and must not show category filters.
     if (!category) return;
-    if (['winter', 'tops', 'suits', 'sets', 'pajamas', 'lingerie'].includes(category) && !document.getElementById('categorySubcategoryTabs')) {
+    if (['winter', 'tops', 'suits', 'sets', 'pajamas'].includes(category) && !document.getElementById('categorySubcategoryTabs')) {
       const tabs = document.createElement('div');
       tabs.id = 'categorySubcategoryTabs';
       tabs.className = 'subcategory-tabs';
@@ -870,7 +870,6 @@ const CategoryApp = {
         suits: [['all', this.translations[this.currentLang].subcatAll], ['half-sleeve', this.translations[this.currentLang].subcatHalfSleeve], ['sleeveless', this.translations[this.currentLang].subcatSleeveless], ['long-sleeve', this.translations[this.currentLang].subcatLongSleeve]],
         sets: [['all', this.translations[this.currentLang].subcatAll], ['half-sleeve', this.translations[this.currentLang].subcatHalfSleeve], ['long-sleeve', this.translations[this.currentLang].subcatLongSleeve]],
         pajamas: [['all', this.translations[this.currentLang].subcatAll]],
-        lingerie: [['all', this.translations[this.currentLang].subcatAll], ['bras', this.translations[this.currentLang].subcatBras], ['panties', this.translations[this.currentLang].subcatPanties], ['hot-shorts', this.translations[this.currentLang].subcatHotShorts], ['nightgowns', this.translations[this.currentLang].subcatNightgowns]]
       };
       const labels = labelsByCategory[category] || [['all', this.currentLang === 'ar' ? 'الكل' : 'All']];
       tabs.innerHTML = labels.map(([value, label]) => `<button type="button" class="subcat-tab${value === this.activeSubcategory ? ' active' : ''}" data-subcat="${value}">${label}</button>`).join('');
