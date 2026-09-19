@@ -558,7 +558,8 @@ const CategoryApp = {
   addToCart(product, size, color, quantity = 1, pricingUnit = 'piece') {
     const unit = pricingUnit === 'dozen' ? 'dozen' : 'piece';
     const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0);
-    const existing = this.cart.find(item => item.id === product.id && item.size === size && item.color === color && (item.pricingUnit || 'piece') === unit);
+    const colorKey = Array.isArray(color) ? JSON.stringify(color) : color;
+    const existing = this.cart.find(item => item.id === product.id && item.size === size && (Array.isArray(item.color) ? JSON.stringify(item.color) : item.color) === colorKey && (item.pricingUnit || 'piece') === unit);
     if (existing) {
       existing.quantity = ((existing.quantity || existing.qty) || 1) + quantity;
       existing.qty = existing.quantity;
@@ -1040,11 +1041,27 @@ const CategoryApp = {
     const colors = Array.isArray(product.colors) ? product.colors : [];
     const hasUnitPricing = ['bras', 'panties'].includes(String(product.subcategory || '').toLowerCase()) && Number(product.priceDozen) > 0;
     const unitOptions = hasUnitPricing ? `<div class="category-preview-section unit-pricing-section"><h4>اختاري طريقة الشراء</h4><div class="category-preview-options category-preview-units"><button type="button" class="category-preview-option selected" data-unit="piece">قطعة <small>EGP ${(parseFloat(product.pricePiece ?? product.price) || 0).toFixed(2)}</small></button><button type="button" class="category-preview-option" data-unit="dozen">دستة <small>EGP ${(parseFloat(product.priceDozen) || 0).toFixed(2)}</small></button></div></div>` : '';
-    modal.innerHTML = `<div class="category-product-overlay"></div><div class="category-product-dialog" role="dialog" aria-modal="true"><button type="button" class="category-product-close" aria-label="Close"><i class="fas fa-times"></i></button><div class="category-product-gallery"><img class="category-preview-image" alt=""><button type="button" class="category-preview-prev"><i class="fas fa-chevron-left"></i></button><button type="button" class="category-preview-next"><i class="fas fa-chevron-right"></i></button><span class="category-preview-counter"></span></div><div class="category-product-details"><span class="category-preview-badge"></span><h2></h2><div class="category-preview-prices"><span class="category-preview-price"></span><del class="category-preview-old"></del></div><div class="category-preview-description"></div>${unitOptions}${sizes.length ? `<div class="category-preview-section"><h4>${this.t('selectSize')}</h4><div class="category-preview-options category-preview-sizes">${sizes.map((size, index) => `<button type="button" class="category-preview-option${index === 0 ? ' selected' : ''}" data-size="${size}">${size}</button>`).join('')}</div></div>` : ''}${colors.length ? `<div class="category-preview-section"><h4>${this.t('selectColor')}</h4><div class="category-preview-options category-preview-colors">${colors.map((color, index) => `<button type="button" class="category-preview-option${index === 0 ? ' selected' : ''}" data-color="${color}"><span style="background:${color}"></span>${color}</button>`).join('')}</div></div>` : ''}<div class="category-preview-actions"><div class="category-preview-qty"><button type="button" data-qty="-1">−</button><span>1</span><button type="button" data-qty="1">+</button></div><button type="button" class="category-preview-add"><i class="fas fa-bag-shopping"></i>${this.t('addToCart')}</button><button type="button" class="category-preview-buy"><i class="fas fa-bolt"></i>${this.t('buyNow')}</button><button type="button" class="category-preview-wish"><i class="far fa-heart"></i></button></div></div></div>`;
+    modal.innerHTML = `<div class="category-product-overlay"></div><div class="category-product-dialog" role="dialog" aria-modal="true"><button type="button" class="category-product-close" aria-label="Close"><i class="fas fa-times"></i></button><div class="category-product-gallery"><img class="category-preview-image" alt=""><button type="button" class="category-preview-prev"><i class="fas fa-chevron-left"></i></button><button type="button" class="category-preview-next"><i class="fas fa-chevron-right"></i></button><span class="category-preview-counter"></span></div><div class="category-product-details"><span class="category-preview-badge"></span><h2></h2><div class="category-preview-prices"><span class="category-preview-price"></span><del class="category-preview-old"></del></div><div class="category-preview-description"></div>${unitOptions}${sizes.length ? `<div class="category-preview-section"><h4>${this.t('selectSize')}</h4><div class="category-preview-options category-preview-sizes">${sizes.map((size, index) => `<button type="button" class="category-preview-option${index === 0 ? ' selected' : ''}" data-size="${size}">${size}</button>`).join('')}</div></div>` : ''}${colors.length ? `<div class="category-preview-section category-preview-color-selection"></div>` : ''}<div class="category-preview-actions"><div class="category-preview-qty"><button type="button" data-qty="-1">−</button><span>1</span><button type="button" data-qty="1">+</button></div><button type="button" class="category-preview-add"><i class="fas fa-bag-shopping"></i>${this.t('addToCart')}</button><button type="button" class="category-preview-buy"><i class="fas fa-bolt"></i>${this.t('buyNow')}</button><button type="button" class="category-preview-wish"><i class="far fa-heart"></i></button></div></div></div>`;
     document.body.appendChild(modal);
     const selectedSize = () => modal.querySelector('.category-preview-sizes .selected')?.dataset.size || null;
-    const selectedColor = () => modal.querySelector('.category-preview-colors .selected')?.dataset.color || null;
+    const selectedColors = () => {
+      const selectors = [...modal.querySelectorAll('.category-preview-color-select')];
+      if (selectors.length) return selectors.map(select => select.value);
+      const color = modal.querySelector('.category-preview-colors .selected')?.dataset.color || null;
+      return color ? [color] : [];
+    };
     const selectedUnit = () => modal.querySelector('.category-preview-units .selected')?.dataset.unit || 'piece';
+    const renderColorSelectors = quantity => {
+      const section = modal.querySelector('.category-preview-color-selection');
+      if (!section || !colors.length) return;
+      const previous = selectedColors();
+      section.innerHTML = `<h4>${this.t('selectColor')}</h4><div class="category-preview-color-list">${Array.from({ length: quantity }, (_, index) => {
+        const selected = previous[index] || previous[0] || colors[0];
+        const options = colors.map(color => `<option value="${color}" ${color === selected ? 'selected' : ''}>${color}</option>`).join('');
+        const label = this.currentLang === 'ar' ? `لون القطعة ${index + 1}` : `Piece ${index + 1} color`;
+        return `<label class="category-preview-piece-color"><span>${label}</span><select class="category-preview-color-select" data-piece-index="${index}">${options}</select></label>`;
+      }).join('')}</div>`;
+    };
     const updateImage = () => {
       const image = modal.querySelector('.category-preview-image');
       const count = modal.querySelector('.category-preview-counter');
@@ -1057,6 +1074,7 @@ const CategoryApp = {
     modal.querySelector('h2').textContent = product.name || 'Product';
     const updatePrice = () => { const unit = selectedUnit(); const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0); modal.querySelector('.category-preview-price').textContent = `EGP ${price.toFixed(2)} / ${unit === 'dozen' ? 'دستة' : 'قطعة'}`; };
     updatePrice();
+    renderColorSelectors(1);
     modal.querySelector('.category-preview-old').textContent = product.oldPrice ? `EGP ${parseFloat(product.oldPrice).toFixed(2)}` : '';
     modal.querySelector('.category-preview-description').textContent = product.description || '';
     modal.querySelector('.category-preview-badge').textContent = product.badge || '';
@@ -1067,9 +1085,18 @@ const CategoryApp = {
     modal.querySelector('.category-preview-prev').addEventListener('click', () => { this.previewImageIndex = (this.previewImageIndex - 1 + this.previewImages.length) % this.previewImages.length; updateImage(); });
     modal.querySelector('.category-preview-next').addEventListener('click', () => { this.previewImageIndex = (this.previewImageIndex + 1) % this.previewImages.length; updateImage(); });
     modal.querySelectorAll('.category-preview-option').forEach(option => option.addEventListener('click', () => { option.parentNode.querySelectorAll('.category-preview-option').forEach(item => item.classList.remove('selected')); option.classList.add('selected'); if (option.dataset.unit) updatePrice(); }));
-    modal.querySelectorAll('[data-qty]').forEach(button => button.addEventListener('click', () => { const qty = modal.querySelector('.category-preview-qty span'); qty.textContent = String(Math.max(1, parseInt(qty.textContent, 10) + parseInt(button.dataset.qty, 10))); }));
-    modal.querySelector('.category-preview-add').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.addToCart(product, selectedSize(), selectedColor(), quantity, selectedUnit()); this.closeProductDetail(); });
-    modal.querySelector('.category-preview-buy').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.startDirectCheckout(product, selectedSize(), selectedColor(), quantity, selectedUnit()); this.closeProductDetail(); });
+    modal.querySelectorAll('[data-qty]').forEach(button => button.addEventListener('click', () => {
+      const qty = modal.querySelector('.category-preview-qty span');
+      const nextQuantity = Math.max(1, parseInt(qty.textContent, 10) + parseInt(button.dataset.qty, 10));
+      qty.textContent = String(nextQuantity);
+      renderColorSelectors(nextQuantity);
+    }));
+    const getSelectedColorValue = quantity => {
+      const colorsForPieces = selectedColors();
+      return quantity > 1 ? colorsForPieces : (colorsForPieces[0] || null);
+    };
+    modal.querySelector('.category-preview-add').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.addToCart(product, selectedSize(), getSelectedColorValue(quantity), quantity, selectedUnit()); this.closeProductDetail(); });
+    modal.querySelector('.category-preview-buy').addEventListener('click', () => { const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1; this.startDirectCheckout(product, selectedSize(), getSelectedColorValue(quantity), quantity, selectedUnit()); this.closeProductDetail(); });
     modal.querySelector('.category-preview-wish').addEventListener('click', event => { this.toggleWishlist(product); event.currentTarget.classList.toggle('active'); });
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => modal.classList.add('show'));

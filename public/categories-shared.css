@@ -3265,3 +3265,10 @@ body.lang-ar .toggle-pw {
 .wishlist-preview-trigger .wishlist-item-name {
   overflow-wrap: anywhere;
 }
+
+
+/* Per-piece color selection in the product preview */
+.category-preview-color-list { display: grid; gap: 8px; }
+.category-preview-piece-color { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; }
+.category-preview-piece-color span { font-weight: 500; }
+.category-preview-color-select { flex: 1; min-height: 36px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); font: inherit; color: var(--text); }

@@ -774,7 +774,8 @@
           subtotal += itemTotal;
 
           const currentSize = item.size || 'M';
-          const currentColor = item.color || 'Black';
+          const currentColors = Array.isArray(item.color) ? item.color : [item.color || 'Black'];
+          const currentColor = currentColors[0] || 'Black';
 
           // Build size options from product sizes or defaults
           let sizeOptionsList = [];
@@ -804,9 +805,12 @@
           if (productColors.length === 0) {
             productColors = [currentColor];
           }
-          const colorOptions = productColors.map(c => 
+          const colorOptions = productColors.map(c =>
             `<option value="${c}" ${c === currentColor ? 'selected' : ''}>${c}</option>`
           ).join('');
+          const colorControls = currentColors.length > 1
+            ? currentColors.map((color, pieceIndex) => `<div class="item-option item-piece-color"><label>${this.currentLang === 'ar' ? 'لون القطعة' : 'Piece color'} ${pieceIndex + 1}:</label><select class="color-select" onchange="CheckoutApp.updateColor(${index}, this.value, ${pieceIndex})">${productColors.map(c => `<option value="${c}" ${c === color ? 'selected' : ''}>${c}</option>`).join('')}</select></div>`).join('')
+            : `<div class="item-option"><label>${this.t('color') || 'Color'}:</label><select class="color-select" onchange="CheckoutApp.updateColor(${index}, this.value)">${colorOptions.replace('selected', 'selected')}</select></div>`;
 
           // Build images HTML (main + thumbnails gallery)
           const itemImages = item.images && item.images.length > 0 ? item.images : [item.imageUrl || item.image || 'https://via.placeholder.com/300x300/c9a87c/ffffff?text=LOVARA'];
@@ -839,10 +843,7 @@
                     <label>${this.t('size') || 'Size'}:</label>
                     <select onchange="CheckoutApp.updateSize(${index}, this.value)">${sizeOptions}</select>
                   </div>
-                  <div class="item-option">
-                    <label>${this.t('color') || 'Color'}:</label>
-                    <select class="color-select" onchange="CheckoutApp.updateColor(${index}, this.value)">${colorOptions}</select>
-                  </div>
+                  ${colorControls}
                 </div>
                 <div class="qty-control">
                   <button type="button" onclick="CheckoutApp.updateQty(${index}, -1)" aria-label="Decrease">&minus;</button>
@@ -982,9 +983,13 @@
         this.showToast((this.t('sizeUpdated') || 'Size updated') + ': ' + size, 'success');
       },
 
-      updateColor(index, color) {
+      updateColor(index, color, pieceIndex = null) {
         if (!this.cart[index]) return;
-        this.cart[index].color = color;
+        if (pieceIndex === null || !Array.isArray(this.cart[index].color)) {
+          this.cart[index].color = pieceIndex === null ? color : [color];
+        } else {
+          this.cart[index].color[pieceIndex] = color;
+        }
         this.saveCart();
         this.showToast((this.t('colorUpdated') || 'Color updated') + ': ' + color, 'success');
       },
