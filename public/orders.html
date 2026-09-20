@@ -979,6 +979,15 @@
         const subtotal = totals.subtotal || 'EGP 0.00';
         const shipping = totals.shipping || 'EGP 0.00';
         const total = totals.total || 'EGP 0.00';
+        const shippingBase = totals.shippingBase || '';
+        const postalFee = totals.postalFee || '';
+        const vat = totals.vat || '';
+        const codFee = totals.codFee || '';
+        const shippingDetailsHtml = (shippingBase || postalFee || vat || codFee) ? `
+          ${shippingBase ? `<div class="line">سعر J&amp;T الأساسي: <span>${esc(shippingBase)}</span></div>` : ''}
+          ${postalFee ? `<div class="line">رسوم بريدية 10%: <span>${esc(postalFee)}</span></div>` : ''}
+          ${vat ? `<div class="line">ضريبة القيمة المضافة 14%: <span>${esc(vat)}</span></div>` : ''}
+          ${codFee && !/^EGP 0(?:\.00)?$/.test(String(codFee).trim()) ? `<div class="line">رسوم الدفع عند الاستلام: <span>${esc(codFee)}</span></div>` : ''}` : '';
 
         const totalNumeric = Number(String(total).replace(/[^\d.-]/g, '')) || 0;
         const paidAmount = Math.max(0, Number(payment.receivedAmount || order.paidAmount || 0) || 0);
@@ -1053,6 +1062,7 @@
                 <div class="totals-left">
                   <div class="line">Subtotal: <span>${subtotal}</span></div>
                   <div class="line">Shipping: <span>${shipping}</span></div>
+                  ${shippingDetailsHtml}
                 </div>
                 <div class="totals-right">
                   <div class="label">Total Amount</div>
@@ -1508,6 +1518,10 @@
           <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:6px;">
             <span>Shipping:</span><span>${shipping}</span>
           </div>
+          ${totals.shippingBase ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>J&amp;T base:</span><span>${totals.shippingBase}</span></div>` : ''}
+          ${totals.postalFee ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>Postal fee 10%:</span><span>${totals.postalFee}</span></div>` : ''}
+          ${totals.vat ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>VAT 14%:</span><span>${totals.vat}</span></div>` : ''}
+          ${totals.codFee && !/^EGP 0(?:\.00)?$/.test(String(totals.codFee).trim()) ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>COD fee:</span><span>${totals.codFee}</span></div>` : ''}
           <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:700; margin-top:8px; padding-top:6px; border-top:1px solid #000;">
             <span>TOTAL:</span><span>${total}</span>
           </div>
