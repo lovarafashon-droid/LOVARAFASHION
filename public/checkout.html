@@ -622,8 +622,10 @@
 
       async init() {
         const directBuy = JSON.parse(localStorage.getItem('lovara_direct_buy') || 'null');
+        const selectedCart = JSON.parse(localStorage.getItem('lovara_checkout_selection') || 'null');
         this.isDirectPurchase = !!directBuy;
-        this.cart = directBuy ? [directBuy] : (JSON.parse(localStorage.getItem('lovara_cart')) || []);
+        this.isSelectedCartPurchase = !directBuy && Array.isArray(selectedCart) && selectedCart.length > 0;
+        this.cart = directBuy ? [directBuy] : (this.isSelectedCartPurchase ? selectedCart : (JSON.parse(localStorage.getItem('lovara_cart')) || []));
         this.firebaseReady = this.initFirebase();
         await this.firebaseReady.catch(() => null);
         if (typeof firebase !== 'undefined' && firebase.auth) {
@@ -1409,13 +1411,24 @@
         }
       },
 
+      cartLineKey(item) {
+        const color = Array.isArray(item?.color) ? JSON.stringify(item.color) : (item?.color || '');
+        return [item?.id || '', item?.size || '', color, item?.pricingUnit || 'piece'].join('::');
+      },
       showSuccess(orderNumber) {
+        const purchasedKeys = new Set((this.cart || []).map(item => this.cartLineKey(item)).filter(Boolean));
         const purchasedIds = new Set((this.cart || []).map(item => item.id).filter(Boolean));
-        const remainingCart = (JSON.parse(localStorage.getItem('lovara_cart') || '[]') || []).filter(item => !purchasedIds.has(item.id));
+        const remainingCart = (JSON.parse(localStorage.getItem('lovara_cart') || '[]') || []).filter(item => {
+          // A selected-cart checkout removes only the exact purchased lines.
+          // Direct checkout has no source cart line, so it must not clear the cart.
+          if (this.isDirectPurchase) return true;
+          return !purchasedKeys.has(this.cartLineKey(item));
+        });
         localStorage.setItem('lovara_cart', JSON.stringify(remainingCart));
         const remainingWishlist = (JSON.parse(localStorage.getItem('lovara_wishlist') || '[]') || []).filter(item => !purchasedIds.has(item.id));
         localStorage.setItem('lovara_wishlist', JSON.stringify(remainingWishlist));
         localStorage.removeItem('lovara_direct_buy');
+        localStorage.removeItem('lovara_checkout_selection');
         window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_cart', newValue: JSON.stringify(remainingCart) }));
         window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_wishlist', newValue: JSON.stringify(remainingWishlist) }));
         let countdown = 5;

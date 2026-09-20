@@ -1767,23 +1767,14 @@
         window.location.href = '/checkout';
       },
       previewCheckout() {
+        if (window.LovaraCartCheckoutPreview) {
+          window.LovaraCartCheckoutPreview();
+          return;
+        }
         const items = this.items;
         if (!items.length) { showToast('Your cart is empty!', 'error'); return; }
-        const existing = document.getElementById('cartPreviewModal');
-        if (existing) existing.remove();
-        const total = items.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (item.qty || item.quantity || 1)), 0);
-        const rows = items.map(item => {
-          const qty = item.qty || item.quantity || 1;
-          const image = item.imageUrl || item.image || '';
-          const options = [item.size ? 'المقاس: ' + item.size : '', item.color ? 'اللون: ' + item.color : ''].filter(Boolean).join(' · ');
-          return `<div class="cart-preview-item"><img src="${image}" alt="${item.name || 'Product'}" onerror="this.style.display='none'"><div><strong>${item.name || 'Product'}</strong><small>${options || 'تفاصيل المنتج'} · الكمية: ${qty}</small></div><b>EGP ${((parseFloat(item.price) || 0) * qty).toFixed(2)}</b></div>`;
-        }).join('');
-        const modal = document.createElement('div');
-        modal.id = 'cartPreviewModal';
-        modal.className = 'cart-preview-modal';
-        modal.innerHTML = `<div class="cart-preview-overlay" onclick="CartApp.closePreview()"></div><div class="cart-preview-content" role="dialog" aria-modal="true" aria-label="Order preview"><div class="cart-preview-head"><h3>معاينة الطلب</h3><button onclick="CartApp.closePreview()" aria-label="Close"><i class="fas fa-times"></i></button></div><div class="cart-preview-list">${rows}</div><div class="cart-preview-total"><span>الإجمالي</span><strong>EGP ${total.toFixed(2)}</strong></div><div class="cart-preview-actions"><button class="btn-clear" onclick="CartApp.closePreview()">العودة للسلة</button><button class="btn-checkout" onclick="CartApp.closePreview(); CartApp.checkout()">متابعة لإتمام الشراء</button></div></div>`;
-        document.body.appendChild(modal);
-        requestAnimationFrame(() => modal.classList.add('show'));
+        localStorage.setItem('lovara_checkout_selection', JSON.stringify(items));
+        window.location.href = '/checkout.html';
       },
       closePreview() {
         const modal = document.getElementById('cartPreviewModal');

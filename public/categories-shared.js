@@ -693,7 +693,57 @@ const CategoryApp = {
       this.showToast(this.currentLang === 'ar' ? 'السلة فارغة!' : 'Your cart is empty!');
       return;
     }
-    window.location.href = '/checkout';
+    this.openCartCheckoutPreview();
+  },
+
+  cartLineKey(item) {
+    const color = Array.isArray(item?.color) ? JSON.stringify(item.color) : (item?.color || '');
+    return [item?.id || '', item?.size || '', color, item?.pricingUnit || 'piece'].join('::');
+  },
+
+  openCartCheckoutPreview() {
+    const existing = document.getElementById('cartCheckoutPreview');
+    if (existing) existing.remove();
+    this.checkoutPreviewItems = this.cart.map(item => JSON.parse(JSON.stringify(item)));
+    const modal = document.createElement('div');
+    modal.id = 'cartCheckoutPreview';
+    modal.dir = this.currentLang === 'ar' ? 'rtl' : 'ltr';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:10050;background:rgba(20,18,16,.68);display:flex;align-items:center;justify-content:center;padding:18px;';
+    modal.innerHTML = `<div role="dialog" aria-modal="true" style="background:#fff;width:min(760px,100%);max-height:90vh;overflow:auto;border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.28);font-family:inherit;"><div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;z-index:1;"><h2 style="margin:0;font-size:22px;color:#292522;">${this.currentLang === 'ar' ? 'معاينة الطلب' : 'Order preview'}</h2><button type="button" data-preview-close aria-label="Close" style="border:0;background:#f6f2ee;border-radius:50%;width:34px;height:34px;font-size:20px;cursor:pointer;">×</button></div><div data-preview-items style="padding:8px 24px 0;"></div><div style="padding:18px 24px 22px;border-top:1px solid #eee;position:sticky;bottom:0;background:#fff;"><div style="display:flex;justify-content:space-between;font-weight:700;font-size:18px;margin-bottom:14px;"><span>${this.currentLang === 'ar' ? 'الإجمالي' : 'Total'}</span><span data-preview-total>EGP 0.00</span></div><div style="display:flex;gap:10px;"><button type="button" data-preview-back style="flex:1;padding:13px;border:1px solid #d8c4aa;background:#fff;color:#765b3d;border-radius:8px;cursor:pointer;">${this.currentLang === 'ar' ? 'العودة للسلة' : 'Back to cart'}</button><button type="button" data-preview-continue style="flex:1;padding:13px;border:0;background:#c9a87c;color:#fff;border-radius:8px;cursor:pointer;font-weight:700;">${this.currentLang === 'ar' ? 'متابعة لإتمام الشراء' : 'Continue to checkout'}</button></div></div></div>`;
+    document.body.appendChild(modal);
+    const render = () => {
+      const itemsEl = modal.querySelector('[data-preview-items]');
+      const totalEl = modal.querySelector('[data-preview-total]');
+      let total = 0;
+      itemsEl.innerHTML = this.checkoutPreviewItems.map((item, index) => {
+        const qty = Math.max(1, Number(item.quantity || item.qty) || 1);
+        const price = Number(item.price) || 0;
+        total += price * qty;
+        const image = item.imageUrl || item.image || 'https://via.placeholder.com/72x90?text=LOVARA';
+        const sizes = Array.isArray(item.sizes) && item.sizes.length ? `<label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:#777;">${this.currentLang === 'ar' ? 'المقاس' : 'Size'}<select data-preview-size="${index}" style="padding:7px;border:1px solid #ddd;border-radius:6px;">${item.sizes.map(s => `<option value="${s}" ${String(s) === String(item.size) ? 'selected' : ''}>${s}</option>`).join('')}</select></label>` : '';
+        const colors = Array.isArray(item.colors) && item.colors.length ? `<label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:#777;">${this.currentLang === 'ar' ? 'اللون' : 'Color'}<select data-preview-color="${index}" style="padding:7px;border:1px solid #ddd;border-radius:6px;">${item.colors.map(c => `<option value="${c}" ${String(c) === String(item.color) ? 'selected' : ''}>${c}</option>`).join('')}</select></label>` : '';
+        return `<div style="display:grid;grid-template-columns:72px 1fr auto;gap:14px;align-items:start;padding:16px 0;border-bottom:1px solid #f0ece8;"><img src="${image}" alt="${item.name || ''}" style="width:72px;height:88px;object-fit:cover;border-radius:8px;background:#f5f2ef;" onerror="this.src='https://via.placeholder.com/72x90?text=LOVARA'"><div><strong style="display:block;margin-bottom:8px;color:#292522;">${item.name || 'Product'}</strong><div style="display:flex;gap:8px;flex-wrap:wrap;">${sizes}${colors}</div><div style="display:flex;align-items:center;gap:8px;margin-top:10px;"><button type="button" data-preview-qty="${index}" data-delta="-1" style="width:28px;height:28px;border:1px solid #ddd;background:#fff;border-radius:5px;cursor:pointer;">−</button><span style="min-width:20px;text-align:center;">${qty}</span><button type="button" data-preview-qty="${index}" data-delta="1" style="width:28px;height:28px;border:1px solid #ddd;background:#fff;border-radius:5px;cursor:pointer;">+</button></div></div><div style="text-align:${this.currentLang === 'ar' ? 'left' : 'right'};white-space:nowrap;"><strong style="display:block;color:#a48764;">EGP ${(price * qty).toFixed(2)}</strong><button type="button" data-preview-remove="${index}" style="border:0;background:none;color:#a15d54;margin-top:16px;cursor:pointer;text-decoration:underline;">${this.currentLang === 'ar' ? 'حذف من المعاينة' : 'Remove from preview'}</button></div></div>`;
+      }).join('') || `<p style="text-align:center;color:#777;padding:36px 10px;">${this.currentLang === 'ar' ? 'لم تختاري أي منتج للشراء.' : 'No products selected.'}</p>`;
+      totalEl.textContent = `EGP ${total.toFixed(2)}`;
+      modal.querySelector('[data-preview-continue]').disabled = this.checkoutPreviewItems.length === 0;
+      modal.querySelector('[data-preview-continue]').style.opacity = this.checkoutPreviewItems.length ? '1' : '.5';
+    };
+    render();
+    modal.addEventListener('click', event => {
+      if (event.target === modal || event.target.closest('[data-preview-close]') || event.target.closest('[data-preview-back]')) { modal.remove(); return; }
+      const qty = event.target.closest('[data-preview-qty]');
+      if (qty) { const index = Number(qty.dataset.previewQty); const item = this.checkoutPreviewItems[index]; item.quantity = Math.max(1, (Number(item.quantity || item.qty) || 1) + Number(qty.dataset.delta)); item.qty = item.quantity; render(); return; }
+      const remove = event.target.closest('[data-preview-remove]');
+      if (remove) { this.checkoutPreviewItems.splice(Number(remove.dataset.previewRemove), 1); render(); return; }
+      const select = event.target.closest('select[data-preview-size], select[data-preview-color]');
+      if (select) { const index = Number(select.dataset.previewSize ?? select.dataset.previewColor); if (select.dataset.previewSize !== undefined) this.checkoutPreviewItems[index].size = select.value; else this.checkoutPreviewItems[index].color = select.value; }
+      if (event.target.closest('[data-preview-continue]')) {
+        if (!this.checkoutPreviewItems.length) return;
+        localStorage.setItem('lovara_checkout_selection', JSON.stringify(this.checkoutPreviewItems));
+        modal.remove();
+        window.location.href = '/checkout.html';
+      }
+    });
   },
 
   setupWishlist() { this.cleanupWishlist(); },
@@ -1009,7 +1059,11 @@ const CategoryApp = {
       this.showToast(this.currentLang === 'ar' ? 'هذا المنتج سيتوفر قريباً!' : 'This product is coming soon!');
       return;
     }
-    this.openProductDetail(product.id);
+    // The card action is a real add action (not a silent redirect to a preview).
+    // The product preview remains available through Buy Now and the product image.
+    const defaultSize = Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : null;
+    const defaultColor = Array.isArray(product.colors) && product.colors.length ? product.colors[0] : null;
+    this.addToCart(product, defaultSize, defaultColor, 1);
   },
 
   handleBuyNow(productId) {
@@ -1306,4 +1360,5 @@ if (document.readyState === 'loading') {
 } else {
   CategoryApp.init();
 }
+window.LovaraCartCheckoutPreview = () => CategoryApp.openCartCheckoutPreview();
 window.CategoryApp = CategoryApp;
