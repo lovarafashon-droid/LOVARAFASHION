@@ -206,6 +206,7 @@ const CategoryApp = {
     this.setupNewsletterForm();
     this.setupProductCardDelegation();
     this.setupPreviewHistory();
+    this.setupOverlayInteractions();
     this.setupCartDelegation();
     this.cart = JSON.parse(localStorage.getItem('lovara_cart') || '[]');
     this.wishlist = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]');
@@ -664,20 +665,23 @@ const CategoryApp = {
   },
 
   openCartModal() {
+    this.closeWishlistModal(true);
     this.renderCart();
     const modal = document.getElementById('cartModal');
     const overlay = document.getElementById('cartOverlay');
     if (modal) { modal.classList.add('show'); modal.classList.add('active'); }
     if (overlay) { overlay.classList.add('show'); overlay.classList.add('active'); }
+    this.pushOverlayHistory('cart');
     document.body.style.overflow = 'hidden';
   },
 
-  closeCartModal() {
+  closeCartModal(fromPopstate = false) {
     const modal = document.getElementById('cartModal');
     const overlay = document.getElementById('cartOverlay');
     if (modal) { modal.classList.remove('show'); modal.classList.remove('active'); }
     if (overlay) { overlay.classList.remove('show'); overlay.classList.remove('active'); }
     document.body.style.overflow = '';
+    if (!fromPopstate && history.state?.lovaraOverlay === 'cart') history.back();
   },
 
   buyNowFromCart(index) {
@@ -1082,6 +1086,8 @@ const CategoryApp = {
     if (!product) return;
     const existingModal = document.getElementById('categoryProductModal');
     if (existingModal) existingModal.remove();
+    this.closeCartModal(true);
+    this.closeWishlistModal(true);
     document.body.style.overflow = '';
     if (!history.state?.lovaraProductPreview) {
       history.pushState({ lovaraProductPreview: true }, '', window.location.href);
@@ -1164,9 +1170,32 @@ const CategoryApp = {
     if (history.state?.lovaraProductPreview) history.back();
   },
 
+  pushOverlayHistory(type) {
+    if (history.state?.lovaraOverlay === type) return;
+    const nextState = { ...(history.state || {}), lovaraOverlay: type };
+    if (history.state?.lovaraOverlay) history.replaceState(nextState, '', window.location.href);
+    else history.pushState(nextState, '', window.location.href);
+  },
+
+  setupOverlayInteractions() {
+    const cartOverlay = document.getElementById('cartOverlay');
+    const wishlistOverlay = document.getElementById('wishlistOverlay');
+    if (cartOverlay && !cartOverlay._lovaraCloseBound) {
+      cartOverlay._lovaraCloseBound = true;
+      cartOverlay.addEventListener('click', () => this.closeCartModal());
+    }
+    if (wishlistOverlay && !wishlistOverlay._lovaraCloseBound) {
+      wishlistOverlay._lovaraCloseBound = true;
+      wishlistOverlay.addEventListener('click', () => this.closeWishlistModal());
+    }
+  },
+
   setupPreviewHistory() {
     window.addEventListener('popstate', event => {
-      if (document.getElementById('categoryProductModal')) {
+      const state = event.state || {};
+      if (state.lovaraOverlay !== 'cart') this.closeCartModal(true);
+      if (state.lovaraOverlay !== 'wishlist') this.closeWishlistModal(true);
+      if (!state.lovaraProductPreview && document.getElementById('categoryProductModal')) {
         const modal = document.getElementById('categoryProductModal');
         modal.remove();
         document.body.style.overflow = '';

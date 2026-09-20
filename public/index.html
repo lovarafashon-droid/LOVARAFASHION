@@ -440,7 +440,7 @@
   <div class="mobile-overlay" id="mobileOverlay"></div>
 
   <!-- ===================== CART MODAL ===================== -->
-  <div class="cart-overlay" id="cartOverlay"></div>
+  <div class="cart-overlay" id="cartOverlay" onclick="CartApp.close()"></div>
   <div class="cart-modal" id="cartModal">
     <div class="cart-modal-header">
       <h3 data-i18n="cartTitle">Your Cart</h3>
@@ -1655,19 +1655,26 @@
           else if (window.CategoryApp) { CategoryApp.openLoginModal(); console.log('[LOVARA] CategoryApp.openLoginModal called'); }
           return;
         }
+        window.CategoryApp?.closeWishlistModal?.(true);
         const modal = document.getElementById('cartModal');
         const overlay = document.getElementById('cartOverlay');
         if (modal) { modal.classList.add('show'); modal.classList.add('active'); }
         if (overlay) { overlay.classList.add('show'); overlay.classList.add('active'); }
+        if (history.state?.lovaraOverlay !== 'cart') {
+          const nextState = { ...(history.state || {}), lovaraOverlay: 'cart' };
+          if (history.state?.lovaraOverlay) history.replaceState(nextState, '', window.location.href);
+          else history.pushState(nextState, '', window.location.href);
+        }
         document.body.style.overflow = 'hidden';
         this.render();
       },
-      close() {
+      close(fromPopstate = false) {
         const modal = document.getElementById('cartModal');
         const overlay = document.getElementById('cartOverlay');
         if (modal) { modal.classList.remove('show'); modal.classList.remove('active'); }
         if (overlay) { overlay.classList.remove('show'); overlay.classList.remove('active'); }
         document.body.style.overflow = '';
+        if (!fromPopstate && history.state?.lovaraOverlay === 'cart') history.back();
       },
       toggle() { this.open(); },
       render() {
@@ -1895,21 +1902,28 @@
       openLoginModal() { Modals.open('loginModal'); },
       openSignupModal() { Modals.open('signupModal'); },
       openCartModal() { CartApp.open(); },
-      closeCartModal() { CartApp.close(); },
+      closeCartModal(fromPopstate = false) { CartApp.close(fromPopstate); },
       openWishlistModal() {
+        CartApp.close(true);
         const modal = document.getElementById('wishlistModal');
         const overlay = document.getElementById('wishlistOverlay');
         if (modal) { modal.classList.add('show'); modal.classList.add('active'); }
         if (overlay) { overlay.classList.add('show'); overlay.classList.add('active'); }
+        if (history.state?.lovaraOverlay !== 'wishlist') {
+          const nextState = { ...(history.state || {}), lovaraOverlay: 'wishlist' };
+          if (history.state?.lovaraOverlay) history.replaceState(nextState, '', window.location.href);
+          else history.pushState(nextState, '', window.location.href);
+        }
         document.body.style.overflow = 'hidden';
         CartApp.renderWishlist && CartApp.renderWishlist();
       },
-      closeWishlistModal() {
+      closeWishlistModal(fromPopstate = false) {
         const modal = document.getElementById('wishlistModal');
         const overlay = document.getElementById('wishlistOverlay');
         if (modal) { modal.classList.remove('show'); modal.classList.remove('active'); }
         if (overlay) { overlay.classList.remove('show'); overlay.classList.remove('active'); }
         document.body.style.overflow = '';
+        if (!fromPopstate && history.state?.lovaraOverlay === 'wishlist') history.back();
       },
       logout() {
         if (typeof firebase !== 'undefined' && firebase.auth) {
@@ -1945,6 +1959,13 @@
     };
 
     window.CartApp = CartApp;
+    window.addEventListener('popstate', event => {
+      const state = event.state || {};
+      if (state.lovaraOverlay !== 'cart') CartApp.close(true);
+      if (state.lovaraOverlay !== 'wishlist') window.CategoryApp?.closeWishlistModal?.(true);
+      if (!state.lovaraProductPreview && document.getElementById('categoryProductModal')) document.getElementById('categoryProductModal').remove();
+      document.body.style.overflow = '';
+    });
     CartApp.render();
     CartApp.updateWishlistCount();
     document.addEventListener('lovara-account-data-ready', () => {

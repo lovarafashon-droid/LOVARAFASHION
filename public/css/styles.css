@@ -4178,3 +4178,16 @@ html[dir="rtl"] .marquee-content {
 @media (max-width: 420px) {
   #navbar .nav-container { padding-left: 9px; padding-right: 9px; gap: 4px; }
 }
+
+/* Mobile drawer sizing shared by the homepage cart and wishlist. */
+@media (max-width: 600px) {
+  .cart-modal, .wishlist-modal { width: calc(100vw - 10px); max-width: 420px; height: 100dvh; }
+  .cart-modal-header, .wishlist-modal-header { padding: 14px 16px; min-height: 58px; }
+  .cart-modal-header h3, .wishlist-modal-header h3 { font-size: 1.2rem; }
+  .cart-items, .wishlist-items { padding: 8px 14px; }
+  .cart-item, .wishlist-item { gap: 9px; padding: 12px 0; align-items: flex-start; }
+  .cart-item-img, .wishlist-item-img { width: 58px; height: 70px; flex: 0 0 58px; }
+  .cart-modal-footer { padding: 14px 16px; }
+  .cart-actions { gap: 8px; }
+  .cart-actions button { min-height: 42px; padding: 10px 8px; font-size: .78rem; }
+}
