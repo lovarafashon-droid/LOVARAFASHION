@@ -4,5 +4,8 @@ Disallow: /admin
 Disallow: /orders
 Disallow: /checkout
 Disallow: /profile
+Disallow: /other
+Disallow: /meta-tags.html
+Disallow: /structured-data.html
 Disallow: /api/
 Sitemap: https://lovarafashion.com/sitemap.xml
