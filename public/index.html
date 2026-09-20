@@ -440,7 +440,7 @@
   <div class="mobile-overlay" id="mobileOverlay"></div>
 
   <!-- ===================== CART MODAL ===================== -->
-  <div class="cart-overlay" id="cartOverlay" onclick="CartApp.close()"></div>
+  <div class="cart-overlay" id="cartOverlay" onclick="CartApp.close(false, true)"></div>
   <div class="cart-modal" id="cartModal">
     <div class="cart-modal-header">
       <h3 data-i18n="cartTitle">Your Cart</h3>
@@ -467,7 +467,7 @@
   </div>
 
   <!-- ===================== WISHLIST MODAL ===================== -->
-  <div class="wishlist-overlay" id="wishlistOverlay" onclick="CategoryApp.closeWishlistModal()"></div>
+  <div class="wishlist-overlay" id="wishlistOverlay" onclick="CategoryApp.closeWishlistModal(false, true)"></div>
   <div class="wishlist-modal" id="wishlistModal">
     <div class="wishlist-modal-header">
       <h3>Your Wishlist</h3>
@@ -1668,13 +1668,14 @@
         document.body.style.overflow = 'hidden';
         this.render();
       },
-      close(fromPopstate = false) {
+      close(fromPopstate = false, closeWithoutBack = false) {
         const modal = document.getElementById('cartModal');
         const overlay = document.getElementById('cartOverlay');
         if (modal) { modal.classList.remove('show'); modal.classList.remove('active'); }
         if (overlay) { overlay.classList.remove('show'); overlay.classList.remove('active'); }
         document.body.style.overflow = '';
-        if (!fromPopstate && history.state?.lovaraOverlay === 'cart') history.back();
+        if (closeWithoutBack && history.state?.lovaraOverlay === 'cart') history.replaceState({}, '', window.location.href);
+        else if (!fromPopstate && history.state?.lovaraOverlay === 'cart') history.back();
       },
       toggle() { this.open(); },
       render() {
@@ -1902,7 +1903,7 @@
       openLoginModal() { Modals.open('loginModal'); },
       openSignupModal() { Modals.open('signupModal'); },
       openCartModal() { CartApp.open(); },
-      closeCartModal(fromPopstate = false) { CartApp.close(fromPopstate); },
+      closeCartModal(fromPopstate = false, closeWithoutBack = false) { CartApp.close(fromPopstate, closeWithoutBack); },
       openWishlistModal() {
         CartApp.close(true);
         const modal = document.getElementById('wishlistModal');
@@ -1917,13 +1918,14 @@
         document.body.style.overflow = 'hidden';
         CartApp.renderWishlist && CartApp.renderWishlist();
       },
-      closeWishlistModal(fromPopstate = false) {
+      closeWishlistModal(fromPopstate = false, closeWithoutBack = false) {
         const modal = document.getElementById('wishlistModal');
         const overlay = document.getElementById('wishlistOverlay');
         if (modal) { modal.classList.remove('show'); modal.classList.remove('active'); }
         if (overlay) { overlay.classList.remove('show'); overlay.classList.remove('active'); }
         document.body.style.overflow = '';
-        if (!fromPopstate && history.state?.lovaraOverlay === 'wishlist') history.back();
+        if (closeWithoutBack && history.state?.lovaraOverlay === 'wishlist') history.replaceState({}, '', window.location.href);
+        else if (!fromPopstate && history.state?.lovaraOverlay === 'wishlist') history.back();
       },
       logout() {
         if (typeof firebase !== 'undefined' && firebase.auth) {
