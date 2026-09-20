@@ -771,7 +771,6 @@
       renderOrders() {
         const container = document.getElementById('ordersList');
         const countBadge = document.getElementById('orderCount');
-        countBadge.textContent = `${this.orders.length} Order${this.orders.length !== 1 ? 's' : ''}`;
         const groups = { pending: [], confirmed: [], delivered: [], rejected: [] };
         this.orders.forEach((order, index) => {
           const filter = (order.status === 'cancelled' || order.confirmationStatus === 'rejected')
@@ -796,6 +795,9 @@
           return;
         }
         const entries = groups[this.orderFilter] || groups.pending;
+        const filterLabels = { pending: 'Unconfirmed Order', confirmed: 'Confirmed Order', delivered: 'Delivered Order', rejected: 'Cancelled Order' };
+        const filterLabel = filterLabels[this.orderFilter] || 'Order';
+        countBadge.textContent = `${entries.length} ${filterLabel}${entries.length !== 1 ? 's' : ''}`;
         const emptyText = { pending: 'No unconfirmed orders.', confirmed: 'No confirmed orders yet.', delivered: 'No delivered orders yet.', rejected: 'No cancelled or rejected orders.' }[this.orderFilter];
         const confirmedOrders = this.getConfirmedOrders();
         const bulkPrintBar = this.orderFilter === 'confirmed' ? `
