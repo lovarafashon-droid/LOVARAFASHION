@@ -208,7 +208,7 @@ const CategoryApp = {
     this.setupPreviewHistory();
     this.setupOverlayInteractions();
     this.setupCartDelegation();
-    this.cart = JSON.parse(localStorage.getItem('lovara_cart') || '[]');
+    this.loadCart();
     this.wishlist = JSON.parse(localStorage.getItem('lovara_wishlist') || '[]');
     this.updateCartCount();
     this.updateWishlistCount();
@@ -541,6 +541,19 @@ const CategoryApp = {
 
   t(key) { return this.translations[this.currentLang][key] || key; },
 
+  loadCart() {
+    let changed = false;
+    let raw = [];
+    try { raw = JSON.parse(localStorage.getItem('lovara_cart') || '[]') || []; } catch (error) { raw = []; }
+    this.cart = raw.filter(Boolean).map(item => {
+      const preferredQty = item.qty ?? item.quantity;
+      const quantity = Math.max(1, Number(preferredQty) || 1);
+      if (Number(item.qty) !== quantity || Number(item.quantity) !== quantity) changed = true;
+      return { ...item, qty: quantity, quantity };
+    });
+    if (changed) this.saveCart();
+  },
+
   setupCart() {
     window.addEventListener('storage', (e) => {
       if (e.key === 'lovara_cart') {
@@ -562,7 +575,7 @@ const CategoryApp = {
     const colorKey = Array.isArray(color) ? JSON.stringify(color) : color;
     const existing = this.cart.find(item => item.id === product.id && item.size === size && (Array.isArray(item.color) ? JSON.stringify(item.color) : item.color) === colorKey && (item.pricingUnit || 'piece') === unit);
     if (existing) {
-      existing.quantity = ((existing.quantity || existing.qty) || 1) + quantity;
+      existing.quantity = ((existing.qty ?? existing.quantity) || 1) + quantity;
       existing.qty = existing.quantity;
     } else {
       this.cart.push({
@@ -600,7 +613,7 @@ const CategoryApp = {
 
   updateQty(index, delta) {
     if (!this.cart[index]) return;
-    const currentQty = (this.cart[index].quantity || this.cart[index].qty) || 1;
+    const currentQty = (this.cart[index].qty ?? this.cart[index].quantity) || 1;
     const newQty = currentQty + delta;
     if (newQty <= 0) { this.removeFromCart(index); return; }
     this.cart[index].quantity = newQty;
@@ -612,12 +625,13 @@ const CategoryApp = {
 
   clearCart() { this.cart = []; this.saveCart(); this.updateCartCount(); this.renderCart(); },
   saveCart() {
+    this.cart = this.cart.map(item => { const quantity = Math.max(1, Number(item.qty ?? item.quantity) || 1); return { ...item, qty: quantity, quantity }; });
     localStorage.setItem('lovara_cart', JSON.stringify(this.cart));
     window.LovaraData?.saveCart();
   },
 
   updateCartCount() {
-    const count = this.cart.reduce((sum, item) => sum + ((item.quantity || item.qty) || 1), 0);
+    const count = this.cart.reduce((sum, item) => sum + ((item.qty ?? item.quantity) || 1), 0);
     const cartCount = document.getElementById('cartCount');
     if (cartCount) cartCount.textContent = count;
   },
@@ -642,7 +656,7 @@ const CategoryApp = {
     let total = 0;
     cartItems.innerHTML = this.cart.map((item, index) => {
       const price = parseFloat(item.price) || 0;
-      const qty = (item.quantity || item.qty) || 1;
+      const qty = (item.qty ?? item.quantity) || 1;
       const image = item.imageUrl || item.image || 'https://via.placeholder.com/80x100?text=LOVARA';
       const name = item.name || 'Unknown Product';
       const size = item.size;
@@ -721,7 +735,7 @@ const CategoryApp = {
       const totalEl = modal.querySelector('[data-preview-total]');
       let total = 0;
       itemsEl.innerHTML = this.checkoutPreviewItems.map((item, index) => {
-        const qty = Math.max(1, Number(item.quantity || item.qty) || 1);
+        const qty = Math.max(1, Number(item.qty ?? item.quantity) || 1);
         const price = Number(item.price) || 0;
         total += price * qty;
         const image = item.imageUrl || item.image || 'https://via.placeholder.com/72x90?text=LOVARA';
@@ -737,7 +751,7 @@ const CategoryApp = {
     modal.addEventListener('click', event => {
       if (event.target === modal || event.target.closest('[data-preview-close]') || event.target.closest('[data-preview-back]')) { modal.remove(); return; }
       const qty = event.target.closest('[data-preview-qty]');
-      if (qty) { const index = Number(qty.dataset.previewQty); const item = this.checkoutPreviewItems[index]; item.quantity = Math.max(1, (Number(item.quantity || item.qty) || 1) + Number(qty.dataset.delta)); item.qty = item.quantity; render(); return; }
+      if (qty) { const index = Number(qty.dataset.previewQty); const item = this.checkoutPreviewItems[index]; item.qty = Math.max(1, (Number(item.qty ?? item.quantity) || 1) + Number(qty.dataset.delta)); item.quantity = item.qty; render(); return; }
       const remove = event.target.closest('[data-preview-remove]');
       if (remove) { this.checkoutPreviewItems.splice(Number(remove.dataset.previewRemove), 1); render(); return; }
       const select = event.target.closest('select[data-preview-size], select[data-preview-color]');
