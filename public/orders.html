@@ -633,7 +633,10 @@
             const product = { ...doc.data(), id: doc.id };
             this.productCatalog.byId[doc.id] = product;
             const name = String(product.name || '').trim();
-            if (name && !this.productCatalog.byName[name]) this.productCatalog.byName[name] = product;
+            if (name) {
+              if (!this.productCatalog.byName[name]) this.productCatalog.byName[name] = [];
+              this.productCatalog.byName[name].push(product);
+            }
           });
         } catch (error) {
           console.warn('[LOVARA Orders] Could not load product variants:', error);
@@ -644,7 +647,15 @@
         if (!item) return null;
         return (item.productId && this.productCatalog.byId[item.productId])
           || (item.id && this.productCatalog.byId[item.id])
-          || this.productCatalog.byName[String(item.name || '').trim()]
+          // New orders carry a snapshot of their own options; prefer it over
+          // a live catalog lookup so later product edits cannot change history.
+          || ((Array.isArray(item.sizes) || Array.isArray(item.colors) || item.category || item.subcategory || item.productType) ? item : null)
+          // Names are not unique identifiers. Only use the catalog fallback
+          // when exactly one product has this name; never guess on duplicates.
+          || (() => {
+            const matches = this.productCatalog.byName[String(item.name || '').trim()] || [];
+            return matches.length === 1 ? matches[0] : null;
+          })()
           || null;
       },
 

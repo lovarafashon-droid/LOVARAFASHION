@@ -1179,7 +1179,7 @@
             notes: document.getElementById('orderNotes').value.trim()
           },
           payment: { method: 'visa', transactionId: '', methodName: this.getPaymentMethodName('visa'), status: 'awaiting_payment' },
-          items: this.cart.map(item => ({ productId: item.id || '', name: item.name || 'Product', price: parseFloat(item.price) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
+          items: this.cart.map(item => ({ productId: item.id || '', name: item.name || 'Product', category: item.category || item.categoryName || '', subcategory: item.subcategory || item.subCategory || '', productType: item.productType || item.type || '', sizes: Array.isArray(item.sizes) ? item.sizes : [], colors: Array.isArray(item.colors) ? item.colors : [], price: parseFloat(item.price) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
           totals: { subtotal: document.getElementById('subtotal').textContent, shipping: document.getElementById('shipping').textContent, discount: this.promo ? ('EGP ' + this.getPromoDiscountTotal().toFixed(2)) : 'EGP 0.00', total: totalText },
           promoCode: this.promo ? this.promo.code : '',
           promoId: this.promo ? this.promo.id : '',
@@ -1293,7 +1293,7 @@
             methodName: this.getPaymentMethodName(paymentMethod),
             status: paymentMethod === 'cod' ? 'cash_on_delivery' : 'awaiting_payment'
           },
-          items: this.cart.map(item => ({ productId: item.id || '', name: item.name || 'Product', price: parseFloat(item.price) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
+          items: this.cart.map(item => ({ productId: item.id || '', name: item.name || 'Product', category: item.category || item.categoryName || '', subcategory: item.subcategory || item.subCategory || '', productType: item.productType || item.type || '', sizes: Array.isArray(item.sizes) ? item.sizes : [], colors: Array.isArray(item.colors) ? item.colors : [], price: parseFloat(item.price) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
           totals: { subtotal: subtotalText, shipping: shippingText, discount: this.promo ? ('EGP ' + this.getPromoDiscountTotal().toFixed(2)) : 'EGP 0.00', total: totalText },
           promoCode: this.promo ? this.promo.code : '',
           promoId: this.promo ? this.promo.id : '',

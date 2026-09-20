@@ -581,6 +581,9 @@ const CategoryApp = {
       this.cart.push({
         id: product.id,
         name: product.name,
+        category: product.category || product.categoryName || '',
+        subcategory: product.subcategory || product.subCategory || '',
+        productType: product.productType || product.type || '',
         price,
         pricePiece: parseFloat(product.pricePiece ?? product.price) || 0,
         priceDozen: parseFloat(product.priceDozen) || 0,
@@ -1247,7 +1250,7 @@ const CategoryApp = {
     if (modal) { modal.classList.remove('show'); setTimeout(() => modal.remove(), 300); }
   },
 
-  startDirectCheckout(product, size, color, quantity = 1, pricingUnit = 'piece') { const unit = pricingUnit === 'dozen' ? 'dozen' : 'piece'; const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0); localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, price, pricePiece: parseFloat(product.pricePiece ?? product.price) || 0, priceDozen: parseFloat(product.priceDozen) || 0, pricingUnit: unit, unitLabel: unit === 'dozen' ? 'Dozen / دستة' : 'Piece / قطعة', size: size || null, color: color || null, quantity, qty: quantity })); window.location.assign('/checkout.html'); },
+  startDirectCheckout(product, size, color, quantity = 1, pricingUnit = 'piece') { const unit = pricingUnit === 'dozen' ? 'dozen' : 'piece'; const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0); localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, category: product.category || product.categoryName || '', subcategory: product.subcategory || product.subCategory || '', productType: product.productType || product.type || '', price, pricePiece: parseFloat(product.pricePiece ?? product.price) || 0, priceDozen: parseFloat(product.priceDozen) || 0, pricingUnit: unit, unitLabel: unit === 'dozen' ? 'Dozen / دستة' : 'Piece / قطعة', size: size || null, color: color || null, quantity, qty: quantity })); window.location.assign('/checkout.html'); },
   confirmBuyNow(productId, isDirectBuy) {
     const product = this.products.find(p => p.id === productId);
     if (!product) return;
