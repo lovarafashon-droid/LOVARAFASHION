@@ -49,7 +49,10 @@
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
       body: JSON.stringify({ token, uid, userAgent: navigator.userAgent })
     });
-    if (!response.ok) throw new Error('تعذر تسجيل هذا الجهاز. تأكد من صلاحية حساب الأدمن.');
+    if (!response.ok) {
+      const details = await response.json().catch(() => ({}));
+      throw new Error(details.error || 'تعذر تسجيل هذا الجهاز. تأكد من صلاحية حساب الأدمن.');
+    }
     localStorage.setItem('lovara_push_enabled', '1');
     return token;
   }
