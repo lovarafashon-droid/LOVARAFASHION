@@ -25,6 +25,19 @@
 
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     const messaging = firebase.messaging();
+    if (!messaging.__lovaraForegroundListener) {
+      messaging.onMessage((payload) => {
+        const notification = payload.notification || {};
+        const data = payload.data || {};
+        const title = notification.title || data.title || 'طلب جديد - LOVARA';
+        const body = notification.body || data.body || 'وصل طلب جديد إلى المتجر.';
+        if (Notification.permission === 'granted') {
+          const popup = new Notification(title, { body, icon: '/LOVARA.jpeg', tag: data.orderNumber || 'lovara-new-order' });
+          popup.onclick = () => { window.focus(); window.location.href = data.url || '/admin.html'; };
+        }
+      });
+      messaging.__lovaraForegroundListener = true;
+    }
     const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
     if (!token) throw new Error('تعذر تسجيل هذا الجهاز للإشعارات.');
 
