@@ -1435,7 +1435,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         const status = document.getElementById('pushStatus');
         const button = document.getElementById('enablePushBtn');
         if (!status || !button) return;
-        const granted = typeof Notification !== 'undefined' && Notification.permission === 'granted' && localStorage.getItem('lovara_push_enabled') === '1';
+        const granted = localStorage.getItem('lovara_push_enabled') === '1';
         status.textContent = granted ? 'إشعارات الطلبات مفعلة على هذا الجهاز' : 'الإشعارات غير مفعلة';
         button.innerHTML = granted ? '<i class="fas fa-check"></i> الإشعارات مفعلة' : '<i class="fas fa-bell"></i> تفعيل إشعارات الطلبات';
       },
