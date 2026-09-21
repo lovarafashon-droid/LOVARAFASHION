@@ -1430,6 +1430,11 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         ProductManager.loadProducts();
         FinancialDashboard.loadData();
         this.updatePushStatus();
+        if (localStorage.getItem('lovara_push_enabled') === '1' && window.LovaraPushNotifications) {
+          LovaraPushNotifications.enable(this.db, this.currentUser?.uid).catch((error) => {
+            console.warn('[LOVARA Push] Refresh registration:', error.message);
+          });
+        }
       },
       updatePushStatus() {
         const status = document.getElementById('pushStatus');

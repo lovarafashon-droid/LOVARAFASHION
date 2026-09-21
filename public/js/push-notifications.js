@@ -33,7 +33,7 @@
         const body = notification.body || data.body || 'وصل طلب جديد إلى المتجر.';
         if (Notification.permission === 'granted') {
           const popup = new Notification(title, { body, icon: '/LOVARA.jpeg', tag: data.orderNumber || 'lovara-new-order' });
-          popup.onclick = () => { window.focus(); window.location.href = data.url || '/admin.html'; };
+          popup.onclick = () => { window.focus(); window.location.href = data.url || '/orders.html'; };
         }
       });
       messaging.__lovaraForegroundListener = true;

@@ -47,10 +47,10 @@ module.exports = async (req, res) => {
         orderNumber,
         title: 'طلب جديد - LOVARA',
         body: `${customerName} • ${amountText(order)}`,
-        url: '/admin.html'
+        url: '/orders.html'
       },
       webpush: {
-        ...(siteUrl ? { fcmOptions: { link: `${siteUrl}/admin.html` } } : {}),
+        ...(siteUrl ? { fcmOptions: { link: `${siteUrl}/orders.html` } } : {}),
         notification: {
           icon: '/LOVARA.jpeg',
           badge: '/LOVARA.jpeg',

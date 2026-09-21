@@ -22,7 +22,7 @@ messaging.onBackgroundMessage((payload) => {
     body,
     icon: '/LOVARA.jpeg',
     badge: '/LOVARA.jpeg',
-    data: { url: data.url || '/admin.html' },
+    data: { url: data.url || '/orders.html' },
     tag: data.orderNumber || 'lovara-new-order',
     renotify: true
   });
@@ -30,7 +30,7 @@ messaging.onBackgroundMessage((payload) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/admin.html';
+  const url = event.notification.data?.url || '/orders.html';
   event.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
     for (const client of clientList) {
       if ('focus' in client) {
