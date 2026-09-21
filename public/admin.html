@@ -1442,20 +1442,26 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         if (!status || !button) return;
         const granted = localStorage.getItem('lovara_push_enabled') === '1';
         status.textContent = granted ? 'إشعارات الطلبات مفعلة على هذا الجهاز' : 'الإشعارات غير مفعلة';
-        button.innerHTML = granted ? '<i class="fas fa-check"></i> الإشعارات مفعلة' : '<i class="fas fa-bell"></i> تفعيل إشعارات الطلبات';
+        button.innerHTML = granted ? '<i class="fas fa-bell-slash"></i> إيقاف إشعارات الطلبات' : '<i class="fas fa-bell"></i> تشغيل إشعارات الطلبات';
       },
       async enablePushNotifications() {
         const button = document.getElementById('enablePushBtn');
         const status = document.getElementById('pushStatus');
-        if (button) { button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التفعيل...'; }
+        const enabled = localStorage.getItem('lovara_push_enabled') === '1';
+        if (button) { button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحديث...'; }
         try {
-          await LovaraPushNotifications.enable(this.db, this.currentUser?.uid);
-          if (status) status.textContent = 'إشعارات الطلبات مفعلة على هذا الجهاز';
+          if (enabled) {
+            await LovaraPushNotifications.disable(this.db, this.currentUser?.uid);
+            if (status) status.textContent = 'تم إيقاف إشعارات الطلبات';
+          } else {
+            await LovaraPushNotifications.enable(this.db, this.currentUser?.uid);
+            if (status) status.textContent = 'إشعارات الطلبات مفعلة على هذا الجهاز';
+          }
           this.updatePushStatus();
         } catch (error) {
           console.error('[LOVARA Push]', error);
           if (status) status.textContent = error.message || 'تعذر تفعيل الإشعارات';
-          if (button) button.innerHTML = '<i class="fas fa-bell"></i> إعادة تفعيل الإشعارات';
+          if (button) button.innerHTML = enabled ? '<i class="fas fa-bell-slash"></i> إيقاف إشعارات الطلبات' : '<i class="fas fa-bell"></i> تشغيل إشعارات الطلبات';
         } finally {
           if (button) button.disabled = false;
         }

@@ -58,11 +58,19 @@
   }
 
   async function disable(db, uid) {
-    if (!db || !uid) return;
+    if (!uid) return;
     const messaging = typeof firebase !== 'undefined' && firebase.messaging ? firebase.messaging() : null;
     let token = null;
     try { if (messaging) token = await messaging.getToken({ vapidKey: VAPID_KEY }); } catch (_) {}
-    if (token) await db.collection('notificationTokens').doc(tokenId(token)).set({ active: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    const currentUser = firebase.auth && firebase.auth().currentUser;
+    if (token && currentUser) {
+      const idToken = await currentUser.getIdToken(true);
+      await fetch('/api/notifications/unregister', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ token, uid })
+      });
+    }
     localStorage.removeItem('lovara_push_enabled');
   }
 
