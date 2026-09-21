@@ -12,7 +12,7 @@
   }
 
   async function enable(db, uid) {
-    if (!db || !uid) throw new Error('يجب تسجيل الدخول كأدمن أولًا.');
+    if (!uid) throw new Error('يجب تسجيل الدخول كأدمن أولًا.');
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
       throw new Error('هذا المتصفح لا يدعم إشعارات الموقع.');
     }
@@ -28,8 +28,15 @@
     const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
     if (!token) throw new Error('تعذر تسجيل هذا الجهاز للإشعارات.');
 
-    const ref = db.collection('notificationTokens').doc(tokenId(token));
-    await ref.set({ token, uid, active: true, userAgent: navigator.userAgent.slice(0, 500), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    const currentUser = firebase.auth && firebase.auth().currentUser;
+    if (!currentUser) throw new Error('انتهت جلسة الأدمن. سجّل الدخول مرة أخرى.');
+    const idToken = await currentUser.getIdToken(true);
+    const response = await fetch('/api/notifications/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify({ token, uid, userAgent: navigator.userAgent })
+    });
+    if (!response.ok) throw new Error('تعذر تسجيل هذا الجهاز. تأكد من صلاحية حساب الأدمن.');
     localStorage.setItem('lovara_push_enabled', '1');
     return token;
   }
