@@ -98,6 +98,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Push notification devices registered by administrators.
+    match /notificationTokens/{tokenId} {
+      allow read, write: if isAdmin();
+    }
+
     // ============================================
     // DEFAULT: DENY EVERYTHING ELSE
     // ============================================

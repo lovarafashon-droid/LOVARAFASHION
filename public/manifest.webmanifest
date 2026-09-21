@@ -1,0 +1,16 @@
+{
+  "name": "LOVARA Admin",
+  "short_name": "LOVARA",
+  "start_url": "/admin.html",
+  "display": "standalone",
+  "background_color": "#f8f6f3",
+  "theme_color": "#c9a87c",
+  "icons": [
+    {
+      "src": "/LOVARA.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

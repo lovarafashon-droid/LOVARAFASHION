@@ -1340,6 +1340,14 @@
           if (paymentMethod !== 'visa') {
             orderRef = await db.collection('orders').add(orderData);
             console.log('[LOVARA Checkout] Order saved to Firestore:', orderNumber);
+            try {
+              await fetch('/api/notifications/new-order', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderNumber })
+              });
+            } catch (notificationError) {
+              console.warn('[LOVARA Checkout] Notification error:', notificationError);
+            }
           }
           if (paymentMethod === 'visa') {
             const amount = Number(String(totalText).replace(/[^0-9.]/g, '')) || 0;

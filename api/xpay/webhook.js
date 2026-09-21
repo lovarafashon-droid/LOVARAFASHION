@@ -1,6 +1,20 @@
 const crypto = require('crypto');
 const { findOrderByNumber, admin } = require('../_lib/firestore');
 
+async function notifyNewOrder(orderNumber) {
+  const siteUrl = String(process.env.PUBLIC_SITE_URL || '').replace(/\/$/, '');
+  if (!siteUrl) return;
+  try {
+    await fetch(`${siteUrl}/api/notifications/new-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderNumber })
+    });
+  } catch (error) {
+    console.error('[XPay webhook] New-order notification failed:', error.message);
+  }
+}
+
 function isValidSignature(req) {
   const secret = process.env.XPAY_WEBHOOK_SECRET;
   if (!secret) return false;
@@ -55,6 +69,7 @@ module.exports = async (req, res) => {
     } else {
       await order.ref.update(update);
     }
+    if (paid) await notifyNewOrder(orderNumber);
     console.log(JSON.stringify({ source: 'xpay', orderNumber, status, paid, transactionId }));
     return res.status(200).json({ received: true, orderNumber, paid });
   } catch (error) {
