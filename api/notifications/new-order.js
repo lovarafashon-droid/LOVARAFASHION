@@ -60,13 +60,28 @@ module.exports = async (req, res) => {
       }
     };
 
-    const result = await admin().messaging().sendEachForMulticast(message);
+    let result = null;
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        result = await admin().messaging().sendEachForMulticast(message);
+        if (result.successCount > 0) break;
+      } catch (error) {
+        lastError = error;
+      }
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+    }
+    if (!result) throw lastError || new Error('Firebase did not return a notification result.');
     const invalidCodes = new Set(['messaging/registration-token-not-registered', 'messaging/invalid-registration-token']);
     const cleanup = [];
     result.responses.forEach((response, index) => {
       if (!response.success && invalidCodes.has(response.error?.code)) cleanup.push(tokenDocs[index].ref);
     });
     await Promise.all(cleanup.map((ref) => ref.delete()));
+    if (result.successCount === 0) {
+      await orderRef.set({ notifications: { ...(order.notifications || {}), newOrder: { sentAt: null, lastAttemptAt: admin().firestore.FieldValue.serverTimestamp(), successCount: 0, failureCount: result.failureCount } } }, { merge: true });
+      return res.status(503).json({ sent: false, successCount: 0, failureCount: result.failureCount, error: 'No registered device accepted the notification.' });
+    }
     await orderRef.set({ notifications: { ...(order.notifications || {}), newOrder: { sentAt: admin().firestore.FieldValue.serverTimestamp(), successCount: result.successCount, failureCount: result.failureCount } } }, { merge: true });
 
     return res.status(200).json({ sent: result.successCount > 0, successCount: result.successCount, failureCount: result.failureCount });
