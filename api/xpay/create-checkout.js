@@ -1,4 +1,4 @@
-const { orderTotal } = require('../_lib/firestore');
+const { orderTotal, admin } = require('../_lib/firestore');
 
 const required = ['XPAY_CHECKOUT_URL', 'XPAY_API_KEY', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
 
@@ -19,6 +19,18 @@ module.exports = async (req, res) => {
     if (!amount) return res.status(422).json({ error: 'Order total is invalid.' });
     const currentStatus = String(orderData.payment?.status || '').toLowerCase();
     if (['paid', 'succeeded', 'completed'].includes(currentStatus)) return res.status(409).json({ error: 'This order is already paid.' });
+
+    // Keep a server-side pending copy before payment starts. If the browser is
+    // closed after a successful card charge, XPay's webhook can still promote
+    // this record into the orders collection.
+    const pendingOrder = {
+      ...orderData,
+      orderNumber,
+      date: orderData.date || new Date().toISOString(),
+      payment: { ...(orderData.payment || {}), method: 'visa', status: 'awaiting_payment' },
+      updatedAt: admin().firestore.FieldValue.serverTimestamp()
+    };
+    await admin().firestore().collection('pendingOrders').doc(orderNumber).set(pendingOrder, { merge: true });
 
     const origin = process.env.PUBLIC_SITE_URL || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
     const payload = {

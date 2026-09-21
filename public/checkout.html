@@ -1191,6 +1191,8 @@
         return {
           orderNumber: 'LOV-' + Date.now().toString(36).toUpperCase(),
           userId: (this.currentUser ? this.currentUser.uid : 'guest'),
+          // Firestore rules require every order, including Visa orders, to have a date.
+          date: new Date().toISOString(),
           status: 'pending',
           customer: {
             firstName: document.getElementById('firstName').value.trim(),

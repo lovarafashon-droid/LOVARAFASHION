@@ -564,13 +564,18 @@
           </div>
         `;
         this.unsubscribe = this.db.collection('orders')
-          .orderBy('date', 'desc')
           .onSnapshot(async (snapshot) => {
             this.orders = [];
             snapshot.forEach(doc => {
               const data = doc.data();
               data._docId = doc.id;
               this.orders.push(data);
+            });
+            // Sort in the browser so legacy orders without `date` are not
+            // silently excluded by Firestore's orderBy query.
+            this.orders.sort((a, b) => {
+              const toMillis = value => value?.toDate ? value.toDate().getTime() : (Date.parse(value || '') || 0);
+              return toMillis(b.date || b.createdAt || b.updatedAt) - toMillis(a.date || a.createdAt || a.updatedAt);
             });
             await this.enrichWithSuppliers();
             await this.loadProductCatalog();
