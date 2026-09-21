@@ -468,9 +468,9 @@
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label data-i18n="email">Email (optional)</label>
-                    <input type="email" id="email" autocomplete="email" data-field="email">
-                    <span class="error-msg" id="emailError"><i class="fas fa-exclamation-circle"></i> <span data-i18n="invalidEmail">Please enter a valid email or leave it empty</span></span>
+                    <label data-i18n="email">Email *</label>
+                    <input type="email" id="email" required autocomplete="email" data-field="email">
+                    <span class="error-msg" id="emailError"><i class="fas fa-exclamation-circle"></i> <span data-i18n="requiredField">Please enter a valid email address</span></span>
                   </div>
                   <div class="form-group">
                     <label data-i18n="phone">Phone *</label>
@@ -1148,7 +1148,7 @@
       },
 
       setupValidation() {
-        document.querySelectorAll('#checkoutForm input[required], #checkoutForm select[required], #checkoutForm textarea[required]').forEach(input => {
+        document.querySelectorAll('#checkoutForm input[required], #checkoutForm select[required], #checkoutForm textarea[required], #phone2').forEach(input => {
           input.addEventListener('blur', () => this.validateField(input));
           input.addEventListener('input', () => { if (input.classList.contains('error')) this.validateField(input); });
         });
@@ -1157,8 +1157,8 @@
       validateField(input) {
         const errorEl = document.getElementById(input.id + 'Error');
         let valid = true;
-        if (input.id === 'email') valid = !input.value.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value.trim());
-        else if (input.id === 'phone') valid = /^[0-9\s\-+]{10,15}$/.test(input.value.trim());
+        if (input.id === 'email') valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value.trim());
+        else if (input.id === 'phone' || input.id === 'phone2') valid = !input.value.trim() || /^[0-9\s\-+]{10,15}$/.test(input.value.trim());
         else valid = input.value.trim() !== '';
 
         if (valid) { input.classList.remove('error'); if (errorEl) errorEl.classList.remove('show'); }
@@ -1168,7 +1168,7 @@
 
       validateForm() {
         let valid = true;
-        document.querySelectorAll('#checkoutForm input[required], #checkoutForm select[required], #checkoutForm textarea[required]').forEach(input => {
+        document.querySelectorAll('#checkoutForm input[required], #checkoutForm select[required], #checkoutForm textarea[required], #phone2').forEach(input => {
           if (!this.validateField(input)) valid = false;
         });
         return valid;
