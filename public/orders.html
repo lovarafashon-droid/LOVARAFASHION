@@ -49,6 +49,7 @@
     .status-filter { display:inline-flex; align-items:center; gap:6px; padding:9px 12px; border:1px solid var(--border); background:#fff; color:var(--text-light); border-radius:20px; font-family:'Jost',sans-serif; font-size:11px; font-weight:600; cursor:pointer; white-space:nowrap; }
     .status-filter.active { color:#fff; border-color:var(--secondary); background:var(--secondary); }
     .status-filter.confirmed.active { background:#2e7d32; border-color:#2e7d32; }
+    .status-filter.shipped.active { background:#1976d2; border-color:#1976d2; }
     .status-filter.rejected.active { background:#c0392b; border-color:#c0392b; }
     .status-filter.pending.active { background:#8a6500; border-color:#8a6500; }
     .status-filter .filter-count { min-width:18px; height:18px; padding:0 5px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:rgba(0,0,0,.08); font-size:10px; }
@@ -247,7 +248,7 @@
       .navbar .logo{font-size:22px;line-height:1}
       .nav-actions{width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
       .navbar-status-bar{padding:7px 10px}
-      .navbar-status-bar .order-status-nav{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+      .navbar-status-bar .order-status-nav{width:100%;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
       .nav-btn{justify-content:center;min-width:0;padding:9px 4px;font-size:10px;gap:4px;white-space:nowrap}
       .status-filter{justify-content:center;min-width:0;padding:9px 4px;font-size:10px;gap:3px}
       .nav-btn i{font-size:11px}
@@ -330,6 +331,7 @@
         <div class="order-status-nav" aria-label="Order status filters">
           <button type="button" class="status-filter pending active" data-filter="pending" onclick="OrdersApp.filterOrders('pending')"><i class="fas fa-clock"></i> Unconfirmed <span class="filter-count" id="pendingCount">0</span></button>
           <button type="button" class="status-filter confirmed" data-filter="confirmed" onclick="OrdersApp.filterOrders('confirmed')"><i class="fas fa-circle-check"></i> Confirmed <span class="filter-count" id="confirmedCount">0</span></button>
+          <button type="button" class="status-filter shipped" data-filter="shipped" onclick="OrdersApp.filterOrders('shipped')"><i class="fas fa-truck-fast"></i> مع شركة الشحن <span class="filter-count" id="shippedCount">0</span></button>
           <button type="button" class="status-filter delivered" data-filter="delivered" onclick="OrdersApp.filterOrders('delivered')"><i class="fas fa-person-walking-luggage"></i> Delivered <span class="filter-count" id="deliveredCount">0</span></button>
           <button type="button" class="status-filter rejected" data-filter="rejected" onclick="OrdersApp.filterOrders('rejected')"><i class="fas fa-circle-xmark"></i> Cancelled <span class="filter-count" id="rejectedCount">0</span></button>
         </div>
@@ -776,14 +778,15 @@
       renderOrders() {
         const container = document.getElementById('ordersList');
         const countBadge = document.getElementById('orderCount');
-        const groups = { pending: [], confirmed: [], delivered: [], rejected: [] };
+        const groups = { pending: [], confirmed: [], shipped: [], delivered: [], rejected: [] };
         this.orders.forEach((order, index) => {
           const filter = (order.status === 'cancelled' || order.confirmationStatus === 'rejected')
             ? 'rejected' : order.status === 'delivered'
-              ? 'delivered' : (order.confirmationStatus === 'confirmed' ? 'confirmed' : 'pending');
+              ? 'delivered' : order.status === 'shipped'
+                ? 'shipped' : (order.confirmationStatus === 'confirmed' ? 'confirmed' : 'pending');
           groups[filter].push({ order, index });
         });
-        ['pending', 'confirmed', 'delivered', 'rejected'].forEach(filter => {
+        ['pending', 'confirmed', 'shipped', 'delivered', 'rejected'].forEach(filter => {
           const count = document.getElementById(`${filter}Count`);
           if (count) count.textContent = groups[filter].length;
           const button = document.querySelector(`.status-filter[data-filter="${filter}"]`);
@@ -800,10 +803,10 @@
           return;
         }
         const entries = groups[this.orderFilter] || groups.pending;
-        const filterLabels = { pending: 'Unconfirmed Order', confirmed: 'Confirmed Order', delivered: 'Delivered Order', rejected: 'Cancelled Order' };
+        const filterLabels = { pending: 'Unconfirmed Order', confirmed: 'Confirmed Order', shipped: 'Orders with shipping company', delivered: 'Delivered Order', rejected: 'Cancelled Order' };
         const filterLabel = filterLabels[this.orderFilter] || 'Order';
         countBadge.textContent = `${entries.length} ${filterLabel}${entries.length !== 1 ? 's' : ''}`;
-        const emptyText = { pending: 'No unconfirmed orders.', confirmed: 'No confirmed orders yet.', delivered: 'No delivered orders yet.', rejected: 'No cancelled or rejected orders.' }[this.orderFilter];
+        const emptyText = { pending: 'No unconfirmed orders.', confirmed: 'No confirmed orders yet.', shipped: 'لا توجد طلبات مع شركة الشحن.', delivered: 'No delivered orders yet.', rejected: 'No cancelled or rejected orders.' }[this.orderFilter];
         const confirmedOrders = this.getConfirmedOrders();
         const bulkPrintBar = this.orderFilter === 'confirmed' ? `
           <div class="bulk-print-bar">
@@ -821,7 +824,7 @@
       },
 
       filterOrders(filter) {
-        if (!['pending', 'confirmed', 'delivered', 'rejected'].includes(filter)) return;
+        if (!['pending', 'confirmed', 'shipped', 'delivered', 'rejected'].includes(filter)) return;
         this.orderFilter = filter;
         this.renderOrders();
       },
@@ -829,7 +832,7 @@
       getConfirmedOrders() {
         return this.orders
           .map((order, index) => ({ order, index }))
-          .filter(({ order }) => order.confirmationStatus === 'confirmed' && !['cancelled', 'delivered'].includes(order.status));
+          .filter(({ order }) => order.confirmationStatus === 'confirmed' && !['cancelled', 'delivered', 'shipped'].includes(order.status));
       },
 
       renderOrder(order, index) {
@@ -1090,6 +1093,10 @@
               <button type="button" class="btn btn-reject" onclick="OrdersApp.showRejectModal(${index})">
                 <i class="fas fa-times-circle"></i> Reject Order
               </button>
+              ` : confirmStatus === 'confirmed' && orderStatus === 'shipped' ? `
+              <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;background:#e3f2fd;color:#1565c0;border-color:#90caf9;">
+                <i class="fas fa-truck-fast"></i> مع شركة الشحن ✓
+              </button>
               ` : confirmStatus === 'confirmed' ? `
               <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;">
                 <i class="fas fa-user-check"></i> تم تأكيد الأوردر من العميل ✓
@@ -1115,9 +1122,13 @@
               <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;">
                 <i class="fas fa-person-walking-luggage"></i> تم الوصول ✓
               </button>
-              ` : confirmStatus === 'confirmed' ? `
+              ` : orderStatus === 'shipped' ? `
               <button type="button" class="btn btn-confirm" onclick="OrdersApp.markDelivered(${index})">
                 <i class="fas fa-person-walking-luggage"></i> تم الوصول
+              </button>
+              ` : confirmStatus === 'confirmed' ? `
+              <button type="button" class="btn btn-confirm" onclick="OrdersApp.markShipped(${index})">
+                <i class="fas fa-truck-fast"></i> مع شركة الشحن
               </button>
               ` : ''}
               <a href="${whatsappLink}" class="btn btn-whatsapp" target="_blank" rel="noopener noreferrer">
@@ -1255,9 +1266,37 @@
         });
       },
 
+      markShipped(index) {
+        const order = this.orders[index];
+        if (!order || order.confirmationStatus !== 'confirmed') return;
+        if (!confirm('هل تم تسليم الأوردر لشركة الشحن؟')) return;
+        const updates = {
+          status: 'shipped',
+          shippedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (this.db && order._docId) {
+          this.db.collection('orders').doc(order._docId).update(updates)
+            .then(() => {
+              this.orders[index] = { ...order, ...updates };
+              this.showToast('تم نقل الأوردر إلى قسم مع شركة الشحن.', 'success');
+              this.renderOrders();
+            })
+            .catch(err => alert('Failed to send to shipping company: ' + err.message));
+        } else {
+          this.orders[index] = { ...order, ...updates };
+          localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
+          this.renderOrders();
+          this.showToast('تم نقل الأوردر إلى قسم مع شركة الشحن.', 'success');
+        }
+      },
+
       markDelivered(index) {
         const order = this.orders[index];
         if (!order) return;
+        if (order.status !== 'shipped') {
+          this.showToast('انقل الأوردر إلى شركة الشحن أولًا.', 'error');
+          return;
+        }
         if (!confirm('هل تم تسليم الأوردر للعميل؟')) return;
         const updates = {
           status: 'delivered',
