@@ -855,21 +855,21 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
                 <input type="text" id="pName" placeholder="e.g. Elegant Evening Dress" required>
               </div>
               <div class="form-group">
-                <label data-i18n="price">Piece Price (EGP) *</label>
+                <label data-i18n="price">سعر القطعة (ج.م) *</label>
                 <input type="number" id="pPrice" placeholder="e.g. 1999" step="0.01" min="0" required>
               </div>
             </div>
 
             <div class="form-row hidden" id="dozenPriceGroup">
               <div class="form-group">
-                <label><span data-i18n="dozenPrice">Dozen Price (EGP)</span> <small style="color:var(--text-light)" data-i18n="dozenPriceHint">(optional — bras / panties)</small></label>
+                <label><span data-i18n="dozenPrice">سعر الدستة (ج.م)</span> <small style="color:var(--text-light)" data-i18n="dozenPriceHint">(اختياري — البرالات والاندرات)</small></label>
                 <input type="number" id="pDozenPrice" placeholder="e.g. 600" step="0.01" min="0">
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label><span data-i18n="oldPrice">Old Price (EGP)</span> <small style="color:var(--text-light)" data-i18n="optional">(optional)</small></label>
+                <label><span data-i18n="oldPrice">السعر القديم (ج.م)</span> <small style="color:var(--text-light)" data-i18n="optional">(اختياري)</small></label>
                 <input type="number" id="pOldPrice" placeholder="e.g. 2499" step="0.01" min="0">
               </div>
               <div class="form-group">
@@ -879,7 +879,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label><span data-i18n="cost">Cost (EGP)</span> <small style="color:var(--text-light)" data-i18n="costHint">(purchase price)</small></label>
+                <label><span data-i18n="cost">التكلفة (ج.م)</span> <small style="color:var(--text-light)" data-i18n="costHint">(سعر الشراء)</small></label>
                 <input type="number" id="pCost" placeholder="e.g. 1500" step="0.01" min="0" required>
               </div>
               <div class="form-group">
@@ -1117,7 +1117,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         totalProfit: "Total Net Profit", profitMargin: "Profit Margin",
         cost: "Cost (EGP)", costHint: "(purchase price)", costLabelShort: "Cost", profitLabelShort: "Profit", noCostSet: "No cost set", stock: "Stock Quantity",
         categoryProfit: "Category Profit", revenue: "Revenue", totalCost: "Total Cost",
-        itemsSold: "Items Sold", avgProfit: "Avg Profit/Item",
+        itemsSold: "Items Sold", avgProfit: "Avg Profit/Item", allOrders: "All Orders", confirmedOnly: "Confirmed Only", pending: "Pending", rejected: "Rejected", unknownCategory: "Unknown",
         shoeSize: "Shoe Size", shoeSizeHint: "(e.g. 38, 39, 40, 41)",
         shoeSizePlaceholder: "e.g. 38, 39, 40",
         supplier: "Supplier / Factory",
@@ -1129,7 +1129,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       ar: {
         welcome: "مرحباً بكم في", welcomeBrand: "لوفارا", welcomeSub: "لوحة التحكم", adminPanel: "لوحة التحكم", signIn: "تسجيل الدخول", signInDesc: "أدخل بيانات الدخول لإدارة المنتجات",
         email: "البريد الإلكتروني", password: "كلمة المرور", signInBtn: "تسجيل الدخول", invalidCreds: "بيانات الدخول غير صحيحة",
-        productManager: "إدارة المنتجات", productManagerDesc: "أضف وادارة المنتجات في Firebase Firestore",
+        productManager: "إدارة المنتجات", productManagerDesc: "أضف وأدر المنتجات في قاعدة بيانات المنتجات",
         logout: "تسجيل الخروج", addNewProduct: "إضافة منتج جديد", productAdded: "تم إضافة المنتج إلى Firebase!",
         error: "خطأ", productName: "اسم المنتج *", price: "السعر (ج.م) *", dozenPrice: "سعر الدستة (ج.م)", dozenPriceHint: "(اختياري — البرالات والاندرات)", oldPrice: "السعر القديم (ج.م)",
         optional: "(اختياري)", category: "الفئة *", selectCategory: "اختر الفئة",
@@ -1152,24 +1152,24 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         bestsellerBadge: "الأكثر مبيعاً", limitedBadge: "محدود",
         comingSoonBadge: "سوف يتوفر قريباً", description: "الوصف", addProduct: "إضافة المنتج",
         products: "المنتجات", all: "الكل", loading: "جاري تحميل المنتجات...", noProducts: "لا توجد منتجات.",
-        deleteConfirm: "حذف هذا المنتج؟", firebaseNotLoaded: "Firebase لم يتم تحميله. تحقق من الإعدادات.",
+        deleteConfirm: "حذف هذا المنتج؟", firebaseNotLoaded: "لم يتم تحميل قاعدة البيانات. تحقق من الإعدادات.",
         enterEmailPass: "الرجاء إدخال البريد وكلمة المرور", selectImage: "الرجاء اختيار ملف صورة (JPG, PNG, WebP)",
         imageSize: "حجم الصورة يجب أن يكون أقل من 5 ميجا", failedAdd: "فشل في إضافة المنتج: ",
         failedDelete: "فشل في الحذف: ", errorLoading: "خطأ في تحميل المنتجات",
         visibility: "الظهور", visibilityHint: "(أين يظهر هذا المنتج)",
         showOnHome: "الصفحة الرئيسية", showOnCategory: "صفحة الفئة",
-        financialDashboard: "لوحة المالية", profitOverview: "نظرة عامة على الأرباح حسب القسم",
+        financialDashboard: "لوحة الأرباح", profitOverview: "ملخص الأرباح حسب القسم",
         allTime: "كل الوقت", thisMonth: "هذا الشهر", lastMonth: "الشهر الماضي",
-        totalProfit: "إجمالي الربح الصافي", profitMargin: "هامش الربح",
+        totalProfit: "إجمالي صافي الربح", profitMargin: "هامش الربح",
         cost: "التكلفة (ج.م)", costHint: "(سعر الشراء)", costLabelShort: "التكلفة", profitLabelShort: "الربح", noCostSet: "لم يتم تحديد التكلفة", stock: "الكمية في المخزن",
         categoryProfit: "ربح القسم", revenue: "الإيرادات", totalCost: "إجمالي التكلفة",
-        itemsSold: "القطع المباعة", avgProfit: "متوسط الربح/قطعة",
+        itemsSold: "القطع المباعة", avgProfit: "متوسط الربح/قطعة", allOrders: "كل الطلبات", confirmedOnly: "المؤكدة فقط", pending: "قيد الانتظار", rejected: "مرفوضة", unknownCategory: "غير محدد",
         shoeSize: "مقاس الكوتشي", shoeSizeHint: "(مثال: 38, 39, 40, 41)",
         shoeSizePlaceholder: "مثال: 38, 39, 40",
         supplier: "المصنع / المورد",
         volume: "الحجم / السعة", volumeHint: "(مثال: 50مل, 100مل, 200مل)",
         volumePlaceholder: "مثال: 50مل, 100مل",
-        colorsPlaceholder: "مثال: أسود, أبيض, أحمر, كحلي", done: "تم", ht: "داكن", themeDark: "فاتح",
+        colorsPlaceholder: "مثال: أسود، أبيض، أحمر، كحلي", done: "تم", langBtn: "English", themeLight: "داكن", themeDark: "فاتح",
         edit: "تعديل", editProduct: "تعديل المنتج", updateProduct: "تحديث المنتج", cancel: "إلغاء", editMode: "وضع التعديل", productUpdated: "تم تحديث المنتج بنجاح!"
       }
     };
@@ -1178,7 +1178,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
     // APP SETTINGS (Language & Theme)
     // ============================================
     const AppSettings = {
-      currentLang: 'en', currentTheme: 'light',
+      currentLang: 'ar', currentTheme: 'light',
       init() {
         const savedLang = localStorage.getItem('lovara_lang');
         const savedTheme = localStorage.getItem('lovara_theme');
@@ -2127,7 +2127,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           const profitLabel = t.profitLabelShort || 'Profit';
           const costLabel = t.costLabelShort || 'Cost';
           const profitHtml = cost > 0 
-            ? `<span class="profit-tag ${profit > 0 ? 'positive' : 'zero'}"><i class="fas fa-chart-line"></i> ${profitLabel}: EGP ${profit.toFixed(2)}</span>`
+            ? `<span class="profit-tag ${profit > 0 ? 'positive' : 'zero'}"><i class="fas fa-chart-line"></i> ${profitLabel}: ${profit.toFixed(2)} جنيه مصري</span>`
             : `<span class="profit-tag zero"><i class="fas fa-exclamation-circle"></i> ${t.noCostSet || 'No cost set'}</span>`;
           const catLabel = p.category ? (catMap[p.category] || p.category) : '';
 
@@ -2140,11 +2140,11 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               <p>${catLabel}${badgeLabel ? ' &bull; ' + badgeLabel : ''}${p.showOnHome ? ' &bull; 🏠' : ''}${p.showOnCategory ? ' &bull; 📁' : ''}</p>
               <div class="product-meta">${subcatHtml}${sizesHtml}${colorsHtml}${supplierHtml}${comingSoonHtml}</div>
               <div class="product-profit-info">
-                <span class="cost-tag"><i class="fas fa-industry"></i> ${costLabel}: EGP ${cost.toFixed(2)}</span>
+                <span class="cost-tag"><i class="fas fa-industry"></i> ${costLabel}: ${cost.toFixed(2)} جنيه مصري</span>
                 ${profitHtml}
               </div>
             </div>
-            <div class="product-item-price">Piece: EGP ${p.price}${p.priceDozen ? `<br><small>Dozen: EGP ${p.priceDozen}</small>` : ''}</div>
+            <div class="product-item-price">القطعة: ${p.price} جنيه مصري${p.priceDozen ? `<br><small>الدستة: ${p.priceDozen} جنيه مصري</small>` : ''}</div>
             <div class="product-item-actions">
               <a href="/${p.category}" class="btn-view">${viewText}</a>
               <button class="btn-edit" onclick="ProductManager.editProduct('${p.id}')" title="${t.edit || 'Edit'}">
@@ -2533,10 +2533,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         const filtered = this.filterByMonth(this.orders);
 
         if (filtered.length === 0) {
-          const statusLabel = this.currentStatus === 'confirmed' ? 'confirmed' : this.currentStatus === 'rejected' ? 'rejected' : this.currentStatus === 'pending' ? 'pending' : '';
-          content.innerHTML = '<div class="empty-products"><i class="fas fa-box-open"></i><p>No ' + statusLabel + ' orders found for this period.</p></div>';
-          document.getElementById('totalProfitAmount').textContent = 'EGP 0';
-          document.querySelector('.financial-total .total-label').textContent = (t.profitMargin || 'Profit Margin') + ': 0% | ' + (t.totalCost || 'Cost') + ': EGP 0';
+          const statusLabel = this.currentStatus === 'confirmed' ? t.confirmedOnly : this.currentStatus === 'rejected' ? t.rejected : this.currentStatus === 'pending' ? t.pending : t.allOrders;
+          content.innerHTML = '<div class="empty-products"><i class="fas fa-box-open"></i><p>لا توجد ' + statusLabel + ' في هذه الفترة.</p></div>';
+          document.getElementById('totalProfitAmount').textContent = '٠ جنيه مصري';
+          document.querySelector('.financial-total .total-label').textContent = (t.profitMargin || 'هامش الربح') + ': ٠٪ | ' + (t.totalCost || 'التكلفة') + ': ٠ جنيه مصري';
           return;
         }
 
@@ -2553,7 +2553,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
           if (order.items && Array.isArray(order.items)) {
             order.items.forEach(item => {
-              const cat = item.category || order.customer?.country || 'unknown';
+              const cat = item.category || 'unknown';
               if (!categories[cat]) {
                 categories[cat] = {
                   items: 0,
@@ -2609,11 +2609,14 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           'lingerie': t.lingerie || 'Lingerie',
           'sets': t.sets || 'Sets',
           'hijab': t.hijab || 'Hijab',
-          'winter': t.winter || 'Winter'
+          'winter': t.winter || 'شتوي',
+          'suits': t.suits || 'سوتات',
+          'pajamas': t.pajamas || 'بيجامات',
+          'unknown': t.unknownCategory || 'غير محدد'
         };
 
         Object.entries(categories).forEach(([cat, data]) => {
-          const catName = catNames[cat] || cat;
+          const catName = catNames[cat] || t.unknownCategory || 'غير محدد';
           const catMargin = data.totalRevenue > 0 ? ((data.totalProfit / data.totalRevenue) * 100).toFixed(1) : 0;
           const profitClass = data.totalProfit >= 0 ? 'positive' : 'negative';
           const profitIcon = data.totalProfit >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
@@ -2626,20 +2629,20 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               <span class="value">${data.items}</span>
             </div>
             <div class="financial-row">
-              <span class="label">${t.totalCost || 'Total Cost'}</span>
-              <span class="value">EGP ${data.totalCost.toLocaleString()}</span>
+              <span class="label">${t.totalCost || 'إجمالي التكلفة'}</span>
+              <span class="value">${data.totalCost.toLocaleString('ar-EG')} جنيه مصري</span>
             </div>
             <div class="financial-row">
-              <span class="label">${t.revenue || 'Revenue'}</span>
-              <span class="value">EGP ${data.totalRevenue.toLocaleString()}</span>
+              <span class="label">${t.revenue || 'الإيرادات'}</span>
+              <span class="value">${data.totalRevenue.toLocaleString('ar-EG')} جنيه مصري</span>
             </div>
             <div class="financial-row">
-              <span class="label">${t.categoryProfit || 'Profit'}</span>
-              <span class="value ${profitClass}"><i class="fas ${profitIcon}"></i> EGP ${data.totalProfit.toLocaleString()}</span>
+              <span class="label">${t.categoryProfit || 'ربح القسم'}</span>
+              <span class="value ${profitClass}"><i class="fas ${profitIcon}"></i> ${data.totalProfit.toLocaleString('ar-EG')} جنيه مصري</span>
             </div>
             <div class="financial-row">
-              <span class="label">${t.totalCost || 'Cost'}</span>
-              <span class="value">EGP ${data.totalCost.toLocaleString()}</span>
+              <span class="label">${t.costLabelShort || 'التكلفة'}</span>
+              <span class="value">${data.totalCost.toLocaleString('ar-EG')} جنيه مصري</span>
             </div>
           </div>`;
         });
@@ -2647,10 +2650,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         content.innerHTML = html;
 
         // Update total
-        document.getElementById('totalProfitAmount').textContent = 'EGP ' + grandTotalProfit.toLocaleString();
+        document.getElementById('totalProfitAmount').textContent = grandTotalProfit.toLocaleString('ar-EG') + ' جنيه مصري';
         document.getElementById('totalProfitAmount').style.color = grandTotalProfit >= 0 ? '#fff' : '#ff9999';
         document.querySelector('.financial-total .total-label').textContent = 
-          'Cost: EGP ' + totalCost.toLocaleString() + ' | Revenue: EGP ' + grandTotalRevenue.toLocaleString() + ' | Orders: ' + filtered.length;
+          'التكلفة: ' + totalCost.toLocaleString('ar-EG') + ' جنيه مصري | الإيرادات: ' + grandTotalRevenue.toLocaleString('ar-EG') + ' جنيه مصري | عدد الطلبات: ' + filtered.length;
       }
     };
 
@@ -2673,15 +2676,15 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         <i class="fas fa-times"></i>
       </button>
       <h3><i class="fas fa-chart-pie"></i> <span data-i18n="financialDashboard">Financial Dashboard</span></h3>
-      <p data-i18n="profitOverview">Profit Overview by Category</p>
+      <p data-i18n="profitOverview">ملخص الأرباح حسب القسم</p>
     </div>
 
     <!-- Status Filter -->
     <div class="status-filter" id="statusFilter">
-      <button class="status-filter-btn active" data-status="all" onclick="FinancialDashboard.setStatus('all')">All Orders</button>
-      <button class="status-filter-btn" data-status="confirmed" onclick="FinancialDashboard.setStatus('confirmed')">Confirmed Only</button>
-      <button class="status-filter-btn" data-status="pending" onclick="FinancialDashboard.setStatus('pending')">Pending</button>
-      <button class="status-filter-btn" data-status="rejected" onclick="FinancialDashboard.setStatus('rejected')">Rejected</button>
+      <button class="status-filter-btn active" data-status="all" onclick="FinancialDashboard.setStatus('all')" data-i18n="allOrders">كل الطلبات</button>
+      <button class="status-filter-btn" data-status="confirmed" onclick="FinancialDashboard.setStatus('confirmed')" data-i18n="confirmedOnly">المؤكدة فقط</button>
+      <button class="status-filter-btn" data-status="pending" onclick="FinancialDashboard.setStatus('pending')" data-i18n="pending">قيد الانتظار</button>
+      <button class="status-filter-btn" data-status="rejected" onclick="FinancialDashboard.setStatus('rejected')" data-i18n="rejected">مرفوضة</button>
     </div>
 
     <!-- Month Selector -->
@@ -2701,9 +2704,9 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
     <!-- Total Profit -->
     <div class="financial-total" id="financialTotal">
-      <h4 data-i18n="totalProfit">Total Net Profit</h4>
-      <div class="total-amount" id="totalProfitAmount">EGP 0</div>
-      <div class="total-label" data-i18n="profitMargin">Profit Margin: 0%</div>
+      <h4 data-i18n="totalProfit">إجمالي صافي الربح</h4>
+      <div class="total-amount" id="totalProfitAmount">٠ جنيه مصري</div>
+      <div class="total-label" data-i18n="profitMargin">هامش الربح: ٠٪</div>
     </div>
   </div>
 
