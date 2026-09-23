@@ -29,11 +29,13 @@
   function getCartPricing(items) {
     const cart = Array.isArray(items) ? items : [];
     const totalQuantity = cart.reduce((sum, item) => sum + quantityOf(item), 0);
-    const discount = discountPerPiece(totalQuantity);
     const lines = cart.map(item => {
       const quantity = quantityOf(item);
       const basePrice = baseUnitPrice(item);
-      const discountPerItem = isEligible(item) ? discount : 0;
+      // A discount is activated only when this line was added with quantity > 1
+      // from the product preview. Cart +/- changes do not activate it.
+      const previewQuantity = item?.quantityDiscountEnabled ? quantity : 0;
+      const discountPerItem = isEligible(item) ? discountPerPiece(previewQuantity) : 0;
       const unitPrice = Math.max(0, basePrice - discountPerItem);
       return {
         item,
@@ -47,7 +49,7 @@
     });
     return {
       totalQuantity,
-      discountPerPiece: discount,
+      discountPerPiece: lines.reduce((max, line) => Math.max(max, line.discountPerPiece), 0),
       lines,
       subtotal: lines.reduce((sum, line) => sum + line.total, 0),
       totalDiscount: lines.reduce((sum, line) => sum + line.totalDiscount, 0)

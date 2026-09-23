@@ -572,11 +572,13 @@ const CategoryApp = {
   addToCart(product, size, color, quantity = 1, pricingUnit = 'piece') {
     const unit = pricingUnit === 'dozen' ? 'dozen' : 'piece';
     const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0);
+    const selectedQuantity = Math.max(1, Number(quantity) || 1);
     const colorKey = Array.isArray(color) ? JSON.stringify(color) : color;
     const existing = this.cart.find(item => item.id === product.id && item.size === size && (Array.isArray(item.color) ? JSON.stringify(item.color) : item.color) === colorKey && (item.pricingUnit || 'piece') === unit);
     if (existing) {
-      existing.quantity = ((existing.qty ?? existing.quantity) || 1) + quantity;
+      existing.quantity = ((existing.qty ?? existing.quantity) || 1) + selectedQuantity;
       existing.qty = existing.quantity;
+      existing.quantityDiscountEnabled = existing.quantityDiscountEnabled === true || selectedQuantity > 1;
     } else {
       this.cart.push({
         id: product.id,
@@ -597,8 +599,9 @@ const CategoryApp = {
         colors: product.colors || [],
         size: size,
         color: color,
-        quantity: quantity,
-        qty: quantity
+        quantity: selectedQuantity,
+        qty: selectedQuantity,
+        quantityDiscountEnabled: selectedQuantity > 1
       });
     }
     this.saveCart();
@@ -1257,7 +1260,7 @@ const CategoryApp = {
     if (modal) { modal.classList.remove('show'); setTimeout(() => modal.remove(), 300); }
   },
 
-  startDirectCheckout(product, size, color, quantity = 1, pricingUnit = 'piece') { const unit = pricingUnit === 'dozen' ? 'dozen' : 'piece'; const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0); localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, category: product.category || product.categoryName || '', subcategory: product.subcategory || product.subCategory || '', productType: product.productType || product.type || '', price, pricePiece: parseFloat(product.pricePiece ?? product.price) || 0, priceDozen: parseFloat(product.priceDozen) || 0, pricingUnit: unit, unitLabel: unit === 'dozen' ? 'Dozen / دستة' : 'Piece / قطعة', size: size || null, color: color || null, quantity, qty: quantity })); window.location.assign('/checkout.html'); },
+  startDirectCheckout(product, size, color, quantity = 1, pricingUnit = 'piece') { const unit = pricingUnit === 'dozen' ? 'dozen' : 'piece'; const selectedQuantity = Math.max(1, Number(quantity) || 1); const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0); localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, category: product.category || product.categoryName || '', subcategory: product.subcategory || product.subCategory || '', productType: product.productType || product.type || '', price, pricePiece: parseFloat(product.pricePiece ?? product.price) || 0, priceDozen: parseFloat(product.priceDozen) || 0, pricingUnit: unit, unitLabel: unit === 'dozen' ? 'Dozen / دستة' : 'Piece / قطعة', size: size || null, color: color || null, quantity: selectedQuantity, qty: selectedQuantity, quantityDiscountEnabled: selectedQuantity > 1 })); window.location.assign('/checkout.html'); },
   confirmBuyNow(productId, isDirectBuy) {
     const product = this.products.find(p => p.id === productId);
     if (!product) return;

@@ -2171,7 +2171,8 @@
         ...pmCurrentProduct,
         size: pmSelectedSize,
         color: pmQty > 1 ? pmSelectedColors : pmSelectedColor,
-        quantity: pmQty
+        quantity: pmQty,
+        quantityDiscountEnabled: pmQty > 1
       };
       if (window.CategoryApp) {
         CategoryApp.addToCart(item, pmSelectedSize, item.color, pmQty);
@@ -2193,7 +2194,8 @@
         size: pmSelectedSize,
         color: pmQty > 1 ? pmSelectedColors : pmSelectedColor,
         qty: pmQty,
-        quantity: pmQty
+        quantity: pmQty,
+        quantityDiscountEnabled: pmQty > 1
       };
       try {
         localStorage.setItem('lovara_direct_buy', JSON.stringify(item));
