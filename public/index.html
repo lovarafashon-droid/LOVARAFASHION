@@ -1076,6 +1076,7 @@
   <button class="back-to-top" id="backToTop" aria-label="Back to top"><i class="fas fa-chevron-up"></i></button>
 
   <!-- ===================== SCRIPTS ===================== -->
+  <script src="js/pricing.js?v=quantity-discount1"></script>
   <script src="categories-shared.js?v=checkout-preview1"></script>
   <script src="js/main.js"></script>
   <script src="js/products-loader.js?v=shared-product1"></script>
@@ -1698,12 +1699,13 @@
         container.style.display = 'block';
         if (empty) empty.style.display = 'none';
         if (footer) footer.style.display = 'block';
-        const total = items.reduce((s, i) => s + ((parseFloat(i.price)||0) * (i.qty || i.quantity || 1)), 0);
-        if (totalEl) totalEl.textContent = total.toFixed(2);
+        const pricing = window.LovaraPricing ? LovaraPricing.getCartPricing(items) : { subtotal: items.reduce((s, i) => s + ((parseFloat(i.price)||0) * (i.qty || i.quantity || 1)), 0), lines: items.map(item => ({ unitPrice: parseFloat(item.price) || 0 })) };
+        if (totalEl) totalEl.textContent = pricing.subtotal.toFixed(2);
         container.innerHTML = items.map((item, idx) => {
           const image = item.imageUrl || item.image || '';
           const qty = item.qty || item.quantity || 1;
-          return `<div class="cart-item"><button type="button" class="cart-preview-trigger" onclick="CartApp.previewCartItem(${idx})" aria-label="Preview ${item.name}"><img src="${image}" alt="${item.name}" class="cart-item-img" onerror="this.style.display='none'"><span class="cart-item-name">${item.name}</span></button><div class="cart-item-info"><p class="cart-item-price">EGP ${(parseFloat(item.price)||0).toFixed(2)}</p><div class="cart-item-qty"><button class="qty-btn" onclick="CartApp.updateQty(${idx}, -1)">-</button><span>${qty}</span><button class="qty-btn" onclick="CartApp.updateQty(${idx}, 1)">+</button></div><button class="cart-item-buy" onclick="CartApp.buyNow(${idx})"><i class="fas fa-bolt"></i> Buy Now</button></div><button class="cart-item-remove" onclick="CartApp.remove(${idx})"><i class="fas fa-trash"></i></button></div>`;
+          const line = pricing.lines[idx];
+          return `<div class="cart-item"><button type="button" class="cart-preview-trigger" onclick="CartApp.previewCartItem(${idx})" aria-label="Preview ${item.name}"><img src="${image}" alt="${item.name}" class="cart-item-img" onerror="this.style.display='none'"><span class="cart-item-name">${item.name}</span></button><div class="cart-item-info"><p class="cart-item-price">EGP ${line.unitPrice.toFixed(2)}${line.discountPerPiece ? ` <small>(خصم ${line.discountPerPiece})</small>` : ''}</p><div class="cart-item-qty"><button class="qty-btn" onclick="CartApp.updateQty(${idx}, -1)">-</button><span>${qty}</span><button class="qty-btn" onclick="CartApp.updateQty(${idx}, 1)">+</button></div><button class="cart-item-buy" onclick="CartApp.buyNow(${idx})"><i class="fas fa-bolt"></i> Buy Now</button></div><button class="cart-item-remove" onclick="CartApp.remove(${idx})"><i class="fas fa-trash"></i></button></div>`;
         }).join('');
       },
       add(item) {
@@ -2046,7 +2048,7 @@
       document.getElementById('pmImage').alt = product.name || 'Product';
       pmRenderImage();
       document.getElementById('pmName').textContent = product.name || 'Product';
-      document.getElementById('pmPrice').textContent = 'EGP ' + (parseFloat(product.price) || 0).toFixed(2);
+      pmRenderPrice();
 
       const oldPriceEl = document.getElementById('pmOldPrice');
       if (product.oldPrice) {
@@ -2144,10 +2146,20 @@
       pmSelectedColor = pmSelectedColors[0] || color;
     }
 
+    function pmRenderPrice() {
+      const priceEl = document.getElementById('pmPrice');
+      if (!priceEl || !pmCurrentProduct) return;
+      const basePrice = parseFloat(pmCurrentProduct.price) || 0;
+      const existingItems = CartApp?.items || [];
+      const pricing = window.LovaraPricing ? LovaraPricing.getCartPricing([...existingItems, { ...pmCurrentProduct, price: basePrice, quantity: pmQty, qty: pmQty }]) : null;
+      const line = pricing?.lines?.[pricing.lines.length - 1];
+      priceEl.textContent = 'EGP ' + (line ? line.unitPrice : basePrice).toFixed(2);
+    }
     function pmChangeQty(delta) {
       pmQty = Math.max(1, pmQty + delta);
       document.getElementById('pmQty').textContent = pmQty;
       pmRenderColorSelectors();
+      pmRenderPrice();
     }
 
     function pmAddToCart() {

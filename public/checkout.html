@@ -407,6 +407,7 @@
     @media(max-width:640px){.promo-row{flex-direction:column}.promo-row button{width:100%}}
 </style>
 
+  <script src="js/pricing.js?v=quantity-discount1"></script>
 </head>
 <body>
   <header class="navbar" id="navbar">
@@ -757,7 +758,8 @@
 
       renderCartItems() {
         const container = document.getElementById('orderItems');
-        let subtotal = 0;
+        const cartPricing = window.LovaraPricing ? LovaraPricing.getCartPricing(this.cart) : null;
+        let subtotal = cartPricing ? cartPricing.subtotal : 0;
         const defaultSizes = ['XS','S','M','L','XL','XXL','One Size'];
 
         // DEBUG: log cart items
@@ -772,10 +774,10 @@
         if (cartModified) this.saveCart();
 
         container.innerHTML = this.cart.map((item, index) => {
-          const price = parseFloat(item.price) || 0;
+          const linePricing = cartPricing?.lines?.[index] || { unitPrice: parseFloat(item.price) || 0, total: (parseFloat(item.price) || 0) * (item.quantity || 1), discountPerPiece: 0 };
+          const price = linePricing.unitPrice;
           const qty = item.quantity || 1;
-          const itemTotal = price * qty;
-          subtotal += itemTotal;
+          const itemTotal = linePricing.total;
 
           const currentSize = item.size || 'M';
           const currentColors = Array.isArray(item.color) ? item.color : [item.color || 'Black'];
@@ -841,7 +843,7 @@
               <div class="order-item-info">
                 <h4>${item.name || 'Product'}</h4>
                 ${descHtml}
-                <p class="item-meta">EGP ${price.toFixed(2)} ${item.pricingUnit ? `<strong> / ${item.unitLabel || (item.pricingUnit === 'dozen' ? 'دستة' : 'قطعة')}</strong>` : ''}</p>
+                <p class="item-meta">EGP ${price.toFixed(2)}${linePricing.discountPerPiece ? ` <strong>(خصم ${linePricing.discountPerPiece} جنيه)</strong>` : ''} ${item.pricingUnit ? `<strong> / ${item.unitLabel || (item.pricingUnit === 'dozen' ? 'دستة' : 'قطعة')}</strong>` : ''}</p>
                 <div class="item-options">
                   <div class="item-option">
                     <label>${this.t('size') || 'Size'}:</label>
@@ -948,12 +950,12 @@
         const percentValue = this.promo.commissionPercent ?? this.promo.employeeProfitPercent;
         if (percentValue !== undefined && percentValue !== null && percentValue !== '') {
           const percent = Math.max(0, Number(percentValue) || 0);
-          const sales = (this.cart || []).reduce((sum, item) => sum + (Number(item.price) || 0) * Math.max(1, Number(item.quantity || item.qty) || 1), 0);
+          const sales = window.LovaraPricing ? LovaraPricing.getCartPricing(this.cart || []).subtotal : (this.cart || []).reduce((sum, item) => sum + (Number(item.price) || 0) * Math.max(1, Number(item.quantity || item.qty) || 1), 0);
           return sales * percent / 100;
         }
         // Legacy codes now use their commission value as a percentage too.
         const percent = Math.max(0, Number(this.promo.commission ?? 10) || 10);
-        const sales = (this.cart || []).reduce((sum, item) => sum + (Number(item.price) || 0) * Math.max(1, Number(item.quantity || item.qty) || 1), 0);
+        const sales = window.LovaraPricing ? LovaraPricing.getCartPricing(this.cart || []).subtotal : (this.cart || []).reduce((sum, item) => sum + (Number(item.price) || 0) * Math.max(1, Number(item.quantity || item.qty) || 1), 0);
         return sales * percent / 100;
       },
       calculateShipping(subtotal) {
@@ -1001,7 +1003,8 @@
 
       calculateProfit() {
         return this.cart.reduce((sum, item) => {
-          const price = parseFloat(item.price) || 0;
+          const line = window.LovaraPricing ? LovaraPricing.getCartPricing(this.cart).lines.find(entry => entry.item === item) : null;
+          const price = line ? line.unitPrice : (parseFloat(item.price) || 0);
           const cost = parseFloat(item.cost) || parseFloat(item.originalPrice) || 0;
           const qty = item.quantity || 1;
           return sum + ((price - cost) * qty);
@@ -1080,7 +1083,7 @@
             transactionError.classList.remove('show');
             visaDetails.style.display = e.target.value === 'visa' ? 'block' : 'none';
             this.updateSteps(2);
-            const subtotal = this.cart.reduce((sum, item) => sum + (parseFloat(item.price) || 0) * (Number(item.quantity || item.qty) || 1), 0);
+            const subtotal = window.LovaraPricing ? LovaraPricing.getCartPricing(this.cart).subtotal : this.cart.reduce((sum, item) => sum + (parseFloat(item.price) || 0) * (Number(item.quantity || item.qty) || 1), 0);
             this.calculateShipping(subtotal);
             if (e.target.value === 'cod') {
               // If the customer switched away from Visa, discard the old
@@ -1205,7 +1208,7 @@
             notes: document.getElementById('orderNotes').value.trim()
           },
           payment: { method: 'visa', transactionId: '', methodName: this.getPaymentMethodName('visa'), status: 'awaiting_payment' },
-          items: this.cart.map(item => ({ productId: item.id || '', name: item.name || 'Product', category: item.category || item.categoryName || '', subcategory: item.subcategory || item.subCategory || '', productType: item.productType || item.type || '', sizes: Array.isArray(item.sizes) ? item.sizes : [], colors: Array.isArray(item.colors) ? item.colors : [], price: parseFloat(item.price) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
+          items: this.cart.map(item => ({ productId: item.id || '', name: item.name || 'Product', category: item.category || item.categoryName || '', subcategory: item.subcategory || item.subCategory || '', productType: item.productType || item.type || '', sizes: Array.isArray(item.sizes) ? item.sizes : [], colors: Array.isArray(item.colors) ? item.colors : [], price: (window.LovaraPricing ? LovaraPricing.getCartPricing(this.cart).lines.find(entry => entry.item === item)?.unitPrice : parseFloat(item.price)) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
           totals: { subtotal: document.getElementById('subtotal').textContent, shipping: document.getElementById('shipping').textContent, shippingBase: 'EGP ' + (this.currentShippingBreakdown?.base || 0).toFixed(2), postalFee: 'EGP 0.00', vat: 'EGP ' + (this.currentShippingBreakdown?.vat || 0).toFixed(2), codFee: 'EGP ' + (this.currentShippingBreakdown?.codFee || 0).toFixed(2), visaDiscount: 'EGP ' + (this.currentShippingBreakdown?.visaDiscount || 0).toFixed(2), discount: this.promo ? ('EGP ' + this.getPromoDiscountTotal().toFixed(2)) : 'EGP 0.00', total: totalText },
           promoCode: this.promo ? this.promo.code : '',
           promoId: this.promo ? this.promo.id : '',
@@ -1319,7 +1322,7 @@
             methodName: this.getPaymentMethodName(paymentMethod),
             status: paymentMethod === 'cod' ? 'cash_on_delivery' : 'awaiting_payment'
           },
-          items: this.cart.map(item => ({ productId: item.id || '', name: item.name || 'Product', category: item.category || item.categoryName || '', subcategory: item.subcategory || item.subCategory || '', productType: item.productType || item.type || '', sizes: Array.isArray(item.sizes) ? item.sizes : [], colors: Array.isArray(item.colors) ? item.colors : [], price: parseFloat(item.price) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
+          items: this.cart.map(item => ({ productId: item.id || '', name: item.name || 'Product', category: item.category || item.categoryName || '', subcategory: item.subcategory || item.subCategory || '', productType: item.productType || item.type || '', sizes: Array.isArray(item.sizes) ? item.sizes : [], colors: Array.isArray(item.colors) ? item.colors : [], price: (window.LovaraPricing ? LovaraPricing.getCartPricing(this.cart).lines.find(entry => entry.item === item)?.unitPrice : parseFloat(item.price)) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
           totals: { subtotal: subtotalText, shipping: shippingText, shippingBase: 'EGP ' + (this.currentShippingBreakdown?.base || 0).toFixed(2), postalFee: 'EGP 0.00', vat: 'EGP ' + (this.currentShippingBreakdown?.vat || 0).toFixed(2), codFee: 'EGP ' + (this.currentShippingBreakdown?.codFee || 0).toFixed(2), visaDiscount: 'EGP ' + (this.currentShippingBreakdown?.visaDiscount || 0).toFixed(2), discount: this.promo ? ('EGP ' + this.getPromoDiscountTotal().toFixed(2)) : 'EGP 0.00', total: totalText },
           promoCode: this.promo ? this.promo.code : '',
           promoId: this.promo ? this.promo.id : '',

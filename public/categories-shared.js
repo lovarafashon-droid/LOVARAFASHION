@@ -656,9 +656,11 @@ const CategoryApp = {
     cartItems.style.display = 'block';
     if (cartEmpty) cartEmpty.style.display = 'none';
     if (cartFooter) cartFooter.style.display = 'block';
-    let total = 0;
+    const pricing = window.LovaraPricing ? LovaraPricing.getCartPricing(this.cart) : { subtotal: 0, lines: [] };
+    let total = pricing.subtotal;
     cartItems.innerHTML = this.cart.map((item, index) => {
-      const price = parseFloat(item.price) || 0;
+      const line = pricing.lines[index] || { unitPrice: parseFloat(item.price) || 0, total: (parseFloat(item.price) || 0) * ((item.qty ?? item.quantity) || 1), discountPerPiece: 0 };
+      const price = line.unitPrice;
       const qty = (item.qty ?? item.quantity) || 1;
       const image = item.imageUrl || item.image || 'https://via.placeholder.com/80x100?text=LOVARA';
       const name = item.name || 'Unknown Product';
@@ -666,8 +668,7 @@ const CategoryApp = {
       const color = item.color;
       const unitHtml = item.pricingUnit ? `<span class="v-label">Unit:</span> <span class="v-val">${item.unitLabel || (item.pricingUnit === 'dozen' ? 'Dozen / دستة' : 'Piece / قطعة')}</span>` : '';
       const variantHtml = (size || color || unitHtml) ? `<p class="cart-item-variant">${size ? '<span class="v-label">Size:</span> <span class="v-val">' + size + '</span>' : ''}${size && color ? '<span class="v-sep">|</span>' : ''}${color ? '<span class="v-label">Color:</span> <span class="v-val">' + color + '</span>' : ''}${(size || color) && unitHtml ? '<span class="v-sep">|</span>' : ''}${unitHtml}</p>` : '';
-      total += price * qty;
-      return `<div class="cart-item" data-cart-index="${index}"><button type="button" class="cart-preview-trigger" onclick="CategoryApp.previewCart(${index})" aria-label="Preview ${name}"><img src="${image}" alt="${name}" class="cart-item-img" onerror="this.src='https://via.placeholder.com/80x100?text=LOVARA'"><span class="cart-item-name">${name}</span></button><div class="cart-item-info">${variantHtml}<p class="cart-item-price">EGP ${price.toFixed(2)}</p><div class="cart-item-qty"><button class="qty-btn" data-action="minus" data-index="${index}" type="button">-</button><span>${qty}</span><button class="qty-btn" data-action="plus" data-index="${index}" type="button">+</button></div><button class="cart-item-buy" data-action="buy" data-index="${index}" type="button"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button></div><button class="cart-item-remove" data-action="remove" data-index="${index}" type="button"><i class="fas fa-trash"></i></button></div>`;
+      return `<div class="cart-item" data-cart-index="${index}"><button type="button" class="cart-preview-trigger" onclick="CategoryApp.previewCart(${index})" aria-label="Preview ${name}"><img src="${image}" alt="${name}" class="cart-item-img" onerror="this.src='https://via.placeholder.com/80x100?text=LOVARA'"><span class="cart-item-name">${name}</span></button><div class="cart-item-info">${variantHtml}<p class="cart-item-price">EGP ${price.toFixed(2)}${line.discountPerPiece ? ` <small>(خصم ${line.discountPerPiece})</small>` : ''}</p><div class="cart-item-qty"><button class="qty-btn" data-action="minus" data-index="${index}" type="button">-</button><span>${qty}</span><button class="qty-btn" data-action="plus" data-index="${index}" type="button">+</button></div><button class="cart-item-buy" data-action="buy" data-index="${index}" type="button"><i class="fas fa-bolt"></i> ${this.t('buyNow')}</button></div><button class="cart-item-remove" data-action="remove" data-index="${index}" type="button"><i class="fas fa-trash"></i></button></div>`;
     }).join('');
     if (cartTotal) cartTotal.textContent = total.toFixed(2);
   },
@@ -1151,7 +1152,14 @@ const CategoryApp = {
       modal.querySelector('.category-preview-next').disabled = this.previewImages.length < 2;
     };
     modal.querySelector('h2').textContent = product.name || 'Product';
-    const updatePrice = () => { const unit = selectedUnit(); const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0); modal.querySelector('.category-preview-price').textContent = `EGP ${price.toFixed(2)} / ${unit === 'dozen' ? 'دستة' : 'قطعة'}`; };
+    const updatePrice = () => {
+      const unit = selectedUnit();
+      const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0);
+      const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1;
+      const pricing = window.LovaraPricing ? LovaraPricing.getCartPricing([...this.cart, { ...product, price, quantity, qty: quantity, pricingUnit: unit }]) : null;
+      const line = pricing?.lines?.[pricing.lines.length - 1];
+      modal.querySelector('.category-preview-price').textContent = `EGP ${(line ? line.unitPrice : price).toFixed(2)} / ${unit === 'dozen' ? 'دستة' : 'قطعة'}`;
+    };
     updatePrice();
     renderColorSelectors(1);
     modal.querySelector('.category-preview-old').textContent = product.oldPrice ? `EGP ${parseFloat(product.oldPrice).toFixed(2)}` : '';
@@ -1169,6 +1177,7 @@ const CategoryApp = {
       const nextQuantity = Math.max(1, parseInt(qty.textContent, 10) + parseInt(button.dataset.qty, 10));
       qty.textContent = String(nextQuantity);
       renderColorSelectors(nextQuantity);
+      updatePrice();
     }));
     const getSelectedColorValue = quantity => {
       const colorsForPieces = selectedColors();
