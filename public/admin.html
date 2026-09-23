@@ -24,6 +24,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" integrity="sha384-nwX2Qpkhc2sv6L0ZPkLefLGguao67toSowvePuQvGF6cG+8MUphGI2uI94Ls3JF7" crossorigin="anonymous"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js" integrity="sha384-oze9siCpFoiDBZ37lLpZmOMO+je1j5V9da" crossorigin="anonymous"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="js/firebase-config.js"></script><script src="js/push-notifications.js"></script><script src="js/visitor-tracker.js"></script><script src="js/user-data-sync.js"></script>
 
   <style>
@@ -168,6 +169,19 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 .btn-notify { padding: 8px 14px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; transition: var(--transition); }
 .btn-notify:hover { background: var(--primary-dark); }
 .push-status { display: block; font-size: 11px; color: var(--text-light); margin-top: 4px; text-align: center; }
+.excel-import-panel { margin: 0 0 22px; padding: 18px; border: 1px dashed var(--primary); border-radius: 10px; background: var(--hover-bg); }
+.excel-import-panel h3 { margin: 0 0 8px; font-size: 17px; color: var(--secondary); }
+.excel-import-panel p { margin: 0 0 12px; color: var(--text-light); font-size: 13px; line-height: 1.6; }
+.excel-import-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.excel-import-actions input[type="file"] { max-width: 100%; font-size: 13px; }
+.excel-import-btn { padding: 10px 14px; border: 0; border-radius: 7px; background: var(--primary); color: #fff; cursor: pointer; font-weight: 600; }
+.excel-import-btn.secondary { background: var(--secondary); }
+.excel-import-btn:disabled { opacity: .55; cursor: not-allowed; }
+.excel-import-status { margin-top: 12px; font-size: 13px; white-space: pre-line; }
+.excel-import-preview { margin-top: 12px; max-height: 220px; overflow: auto; font-size: 12px; }
+.excel-import-preview table { width: 100%; border-collapse: collapse; background: var(--card-bg); }
+.excel-import-preview th, .excel-import-preview td { padding: 7px; border: 1px solid var(--border); text-align: start; }
+.excel-import-preview th { color: var(--primary-dark); }
 
 /* ===== PRODUCTS LIST ===== */
 .products-list { background: var(--card-bg); padding: 35px; border-radius: 16px; box-shadow: var(--shadow); }
@@ -1049,6 +1063,19 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         <!-- Products List -->
         <div class="products-list">
           <h2><span data-i18n="products">Products</span> <span id="productCount">(0)</span></h2>
+
+          <div class="excel-import-panel" id="excelImportPanel">
+            <h3><i class="fas fa-file-excel"></i> استيراد المنتجات من Excel</h3>
+            <p>ارفع ملف <strong>.xlsx</strong> أو <strong>.xls</strong>. الأعمدة المطلوبة: <strong>اسم المنتج</strong>، <strong>السعر</strong>، <strong>التصنيف</strong>. يمكن إضافة التكلفة، المخزون، المقاس، اللون، الصور كرابط، والوصف. ستظهر معاينة قبل الحفظ.</p>
+            <div class="excel-import-actions">
+              <input type="file" id="excelProductFile" accept=".xlsx,.xls,.csv">
+              <button type="button" class="excel-import-btn" id="previewExcelBtn"><i class="fas fa-eye"></i> معاينة الملف</button>
+              <button type="button" class="excel-import-btn secondary" id="downloadExcelTemplateBtn"><i class="fas fa-download"></i> تحميل نموذج</button>
+              <button type="button" class="excel-import-btn hidden" id="importExcelBtn"><i class="fas fa-upload"></i> حفظ المنتجات</button>
+            </div>
+            <div class="excel-import-status" id="excelImportStatus"></div>
+            <div class="excel-import-preview" id="excelImportPreview"></div>
+          </div>
 
           <div class="category-filter">
             <button class="filter-pill active" data-filter="all" onclick="ProductManager.setFilter('all')" data-i18n="all">All</button>
@@ -2079,6 +2106,129 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         this.renderProducts();
       },
 
+      excelState: { products: [], fileName: '' },
+
+      normalizeExcelHeader(value) {
+        return String(value ?? '').trim().toLowerCase().replace(/[\s_\-\/\\]+/g, '').replace(/[()\[\]{}]/g, '');
+      },
+      excelValue(row, aliases) {
+        const wanted = aliases.map(alias => this.normalizeExcelHeader(alias));
+        const key = Object.keys(row).find(header => wanted.includes(this.normalizeExcelHeader(header)));
+        return key === undefined ? '' : row[key];
+      },
+      excelList(value) {
+        return String(value ?? '').split(/[,،;|\n]+/).map(item => item.trim()).filter(Boolean);
+      },
+      excelNumber(value, fallback = 0) {
+        const number = Number(String(value ?? '').replace(/,/g, '').trim());
+        return Number.isFinite(number) ? number : fallback;
+      },
+      excelBoolean(value, fallback = true) {
+        if (value === '' || value === null || value === undefined) return fallback;
+        return !['false', '0', 'no', 'لا', 'غلط', 'غير متاح'].includes(String(value).trim().toLowerCase());
+      },
+      normalizeExcelCategory(value) {
+        const text = String(value ?? '').trim().toLowerCase();
+        const map = { 'فساتين': 'dresses', 'توب': 'tops', 'توبات': 'tops', 'بناطيل': 'pants', 'اكسسوارات': 'accessories', 'إكسسوارات': 'accessories', 'ملابس داخلية': 'lingerie', 'لانجري': 'lingerie', 'طقم': 'sets', 'اطقم': 'sets', 'بدل': 'suits', 'بيجامات': 'pajamas', 'حجاب': 'hijab', 'شتوي': 'winter' };
+        return map[text] || text;
+      },
+      buildProductFromExcelRow(row, rowNumber) {
+        const name = String(this.excelValue(row, ['name', 'product name', 'اسم المنتج', 'المنتج']) ?? '').trim();
+        const priceRaw = this.excelValue(row, ['price', 'piece price', 'السعر', 'سعر القطعة']);
+        const category = this.normalizeExcelCategory(this.excelValue(row, ['category', 'التصنيف', 'الفئة', 'القسم']));
+        const price = this.excelNumber(priceRaw, NaN);
+        const validCategories = ['dresses', 'tops', 'pants', 'accessories', 'lingerie', 'sets', 'suits', 'pajamas', 'hijab', 'winter'];
+        const errors = [];
+        if (!name) errors.push('اسم المنتج فارغ');
+        if (!Number.isFinite(price) || price < 0) errors.push('السعر غير صحيح');
+        if (!validCategories.includes(category)) errors.push('التصنيف غير صحيح');
+        if (errors.length) return { errors: `صف ${rowNumber}: ${errors.join('، ')}` };
+
+        const imageValues = this.excelList(this.excelValue(row, ['images', 'image urls', 'imageurl', 'image', 'الصور', 'رابط الصورة'])).filter(url => /^https?:\/\//i.test(url));
+        const images = imageValues.length ? imageValues.slice(0, 3) : ['https://via.placeholder.com/300x400/c9a87c/ffffff?text=LOVARA'];
+        const badge = String(this.excelValue(row, ['badge', 'الشارة', 'العلامة']) ?? '').trim();
+        return {
+          name, price, pricePiece: price,
+          priceDozen: this.excelValue(row, ['price dozen', 'dozen price', 'سعر الدستة']) === '' ? null : this.excelNumber(this.excelValue(row, ['price dozen', 'dozen price', 'سعر الدستة']), null),
+          oldPrice: this.excelValue(row, ['old price', 'السعر القديم']) === '' ? null : this.excelNumber(this.excelValue(row, ['old price', 'السعر القديم']), null),
+          supplier: String(this.excelValue(row, ['supplier', 'factory', 'المورد', 'المصنع']) ?? '').trim(),
+          category,
+          subcategory: String(this.excelValue(row, ['subcategory', 'sub category', 'التصنيف الفرعي', 'القسم الفرعي']) ?? '').trim().toLowerCase(),
+          sizes: this.excelList(this.excelValue(row, ['sizes', 'size', 'المقاسات', 'المقاس'])),
+          colors: this.excelList(this.excelValue(row, ['colors', 'color', 'الألوان', 'الالوان', 'اللون'])),
+          images, imageUrl: images[0], badge, comingSoon: badge === 'Coming Soon',
+          description: String(this.excelValue(row, ['description', 'الوصف']) ?? '').trim(),
+          showOnHome: this.excelBoolean(this.excelValue(row, ['show on home', 'showonhome', 'الرئيسية']), true),
+          showOnCategory: this.excelBoolean(this.excelValue(row, ['show on category', 'showoncategory', 'صفحة التصنيف']), true),
+          cost: this.excelNumber(this.excelValue(row, ['cost', 'التكلفة']), 0),
+          stock: Math.max(0, Math.floor(this.excelNumber(this.excelValue(row, ['stock', 'quantity', 'المخزون', 'الكمية']), 1))),
+          createdAt: Date.now() + rowNumber
+        };
+      },
+      renderExcelPreview(products, errors) {
+        const status = document.getElementById('excelImportStatus');
+        const preview = document.getElementById('excelImportPreview');
+        const importButton = document.getElementById('importExcelBtn');
+        if (status) status.textContent = `تمت قراءة ${products.length + errors.length} صفًا: ${products.length} صالح، ${errors.length} به أخطاء.` + (errors.length ? `\n${errors.slice(0, 8).join('\n')}${errors.length > 8 ? '\n...' : ''}` : '');
+        if (importButton) importButton.classList.toggle('hidden', products.length === 0);
+        if (preview) {
+          preview.innerHTML = products.length ? `<table><thead><tr><th>المنتج</th><th>السعر</th><th>التصنيف</th><th>المخزون</th></tr></thead><tbody>${products.slice(0, 12).map(product => `<tr><td>${this.escapeHtml(product.name)}</td><td>EGP ${product.price.toFixed(2)}</td><td>${this.escapeHtml(product.category)}</td><td>${product.stock}</td></tr>`).join('')}</tbody></table>${products.length > 12 ? '<p>يتم عرض أول 12 صفًا فقط في المعاينة.</p>' : ''}` : '';
+        }
+      },
+      escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+      },
+      async previewExcelFile() {
+        const input = document.getElementById('excelProductFile');
+        const file = input?.files?.[0];
+        if (!file) return AdminApp.showError('اختاري ملف Excel أولًا.');
+        if (typeof XLSX === 'undefined') return AdminApp.showError('تعذر تحميل قارئ Excel. تحقق من الاتصال ثم أعد المحاولة.');
+        try {
+          const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '', raw: false, blankrows: false });
+          if (!rows.length) throw new Error('الملف لا يحتوي على صفوف بيانات.');
+          const products = [], errors = [];
+          rows.forEach((row, index) => { const product = this.buildProductFromExcelRow(row, index + 2); product.errors ? errors.push(product.errors) : products.push(product); });
+          this.excelState = { products, fileName: file.name };
+          this.renderExcelPreview(products, errors);
+        } catch (error) {
+          this.excelState = { products: [], fileName: '' };
+          this.renderExcelPreview([], [error.message]);
+        }
+      },
+      downloadExcelTemplate() {
+        if (typeof XLSX === 'undefined') return AdminApp.showError('تعذر تحميل قارئ Excel. تحقق من الاتصال ثم أعد المحاولة.');
+        const headers = [['اسم المنتج', 'السعر', 'التصنيف', 'التكلفة', 'المخزون', 'التصنيف الفرعي', 'المقاسات', 'الألوان', 'رابط الصورة', 'سعر الدستة', 'السعر القديم', 'المورد', 'الشارة', 'الوصف', 'الرئيسية', 'صفحة التصنيف']];
+        const sheet = XLSX.utils.aoa_to_sheet(headers.concat([['مثال فستان', 500, 'dresses', 250, 10, '', 'M,L', 'Black,White', 'https://example.com/image.jpg', '', '', '', 'New', 'وصف المنتج', 'نعم', 'نعم']]));
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, sheet, 'Products');
+        XLSX.writeFile(workbook, 'lovara-products-template.xlsx');
+      },
+      async importExcelProducts() {
+        const products = this.excelState.products || [];
+        const button = document.getElementById('importExcelBtn');
+        if (!products.length) return AdminApp.showError('اعملي معاينة لملف صحيح قبل الحفظ.');
+        if (!AdminApp.db || !firebase.auth().currentUser) return AdminApp.showError('يجب تسجيل الدخول كأدمن قبل الاستيراد.');
+        if (button) { button.disabled = true; button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...'; }
+        try {
+          for (let start = 0; start < products.length; start += 400) {
+            const batch = AdminApp.db.batch();
+            products.slice(start, start + 400).forEach(product => batch.set(AdminApp.db.collection('products').doc(), product));
+            await batch.commit();
+          }
+          this.excelState = { products: [], fileName: '' };
+          document.getElementById('excelProductFile').value = '';
+          document.getElementById('excelImportPreview').innerHTML = '';
+          document.getElementById('excelImportStatus').textContent = `تم استيراد ${products.length} منتج بنجاح.`;
+          if (button) { button.classList.add('hidden'); button.disabled = false; button.innerHTML = '<i class="fas fa-upload"></i> حفظ المنتجات'; }
+          await this.loadProducts({ silent: true });
+        } catch (error) {
+          if (button) { button.disabled = false; button.innerHTML = '<i class="fas fa-upload"></i> حفظ المنتجات'; }
+          AdminApp.showError('فشل استيراد المنتجات: ' + error.message);
+        }
+      },
+
       renderProducts() {
         const container = document.getElementById('productsContainer');
         const filtered = this.currentFilter === 'all'
@@ -2314,6 +2464,11 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         return false;
       });
     }
+
+    // Excel product import controls
+    document.getElementById('previewExcelBtn')?.addEventListener('click', () => ProductManager.previewExcelFile());
+    document.getElementById('downloadExcelTemplateBtn')?.addEventListener('click', () => ProductManager.downloadExcelTemplate());
+    document.getElementById('importExcelBtn')?.addEventListener('click', () => ProductManager.importExcelProducts());
 
     // Setup color input Enter key
     (function setupColorInput() {
