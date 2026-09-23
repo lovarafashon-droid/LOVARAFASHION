@@ -2150,10 +2150,8 @@
       const priceEl = document.getElementById('pmPrice');
       if (!priceEl || !pmCurrentProduct) return;
       const basePrice = parseFloat(pmCurrentProduct.price) || 0;
-      const existingItems = CartApp?.items || [];
-      const pricing = window.LovaraPricing ? LovaraPricing.getCartPricing([...existingItems, { ...pmCurrentProduct, price: basePrice, quantity: pmQty, qty: pmQty }]) : null;
-      const line = pricing?.lines?.[pricing.lines.length - 1];
-      priceEl.textContent = 'EGP ' + (line ? line.unitPrice : basePrice).toFixed(2);
+      // Quantity discounts are calculated only after the item enters the cart.
+      priceEl.textContent = 'EGP ' + basePrice.toFixed(2);
     }
     function pmChangeQty(delta) {
       pmQty = Math.max(1, pmQty + delta);

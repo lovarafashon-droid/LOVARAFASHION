@@ -1155,10 +1155,8 @@ const CategoryApp = {
     const updatePrice = () => {
       const unit = selectedUnit();
       const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0);
-      const quantity = parseInt(modal.querySelector('.category-preview-qty span').textContent, 10) || 1;
-      const pricing = window.LovaraPricing ? LovaraPricing.getCartPricing([...this.cart, { ...product, price, quantity, qty: quantity, pricingUnit: unit }]) : null;
-      const line = pricing?.lines?.[pricing.lines.length - 1];
-      modal.querySelector('.category-preview-price').textContent = `EGP ${(line ? line.unitPrice : price).toFixed(2)} / ${unit === 'dozen' ? 'دستة' : 'قطعة'}`;
+      // Quantity discounts are calculated only after the item enters the cart.
+      modal.querySelector('.category-preview-price').textContent = `EGP ${price.toFixed(2)} / ${unit === 'dozen' ? 'دستة' : 'قطعة'}`;
     };
     updatePrice();
     renderColorSelectors(1);
