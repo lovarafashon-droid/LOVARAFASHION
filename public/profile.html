@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" id="htmlRoot">
+<script>(function(){var l=localStorage.getItem('lovara_lang')||'ar';if(l!=='ar'&&l!=='en')l='ar';var r=document.documentElement;r.lang=l;r.dir=l==='ar'?'rtl':'ltr';r.style.visibility='hidden';window.setTimeout(function(){r.style.visibility='visible'},1500)})();</script>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -360,11 +361,12 @@
         statusPending:"معلق", statusProcessing:"جاري التجهيز", statusShipped:"تم الشحن", statusDelivered:"تم التوصيل", statusCancelled:"ملغي"
       }
     };
-    let currentLang = localStorage.getItem('lovara_lang') || 'en';
+    let currentLang = localStorage.getItem('lovara_lang') || 'ar';
     function t(key){ return translations[currentLang][key] || key; }
     function applyLang(){
       document.body.className = 'lang-'+currentLang;
       document.documentElement.dir = currentLang==='ar'?'rtl':'ltr';
+      document.documentElement.style.visibility='visible';
       document.querySelectorAll('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(translations[currentLang][k]) el.textContent=translations[currentLang][k]; });
     }
     function toggleLang(){ currentLang = currentLang==='en'?'ar':'en'; localStorage.setItem('lovara_lang',currentLang); applyLang(); location.reload(); }

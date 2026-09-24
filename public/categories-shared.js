@@ -16,7 +16,7 @@ const CategoryApp = {
   },
 
 
-  currentLang: localStorage.getItem('lovara_lang') || 'en',
+  currentLang: localStorage.getItem('lovara_lang') || 'ar',
   cart: JSON.parse(localStorage.getItem('lovara_cart') || '[]'),
   wishlist: JSON.parse(localStorage.getItem('lovara_wishlist') || '[]'),
   currentUser: null,
@@ -518,6 +518,7 @@ const CategoryApp = {
     const langLabel = document.getElementById('langLabel');
     if (html) { html.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr'); html.setAttribute('lang', lang); }
     if (langLabel) langLabel.textContent = lang === 'ar' ? 'AR' : 'EN';
+    document.documentElement.style.visibility = 'visible';
     if (lang === 'ar') { body.classList.add('lang-ar'); body.classList.remove('lang-en'); }
     else { body.classList.add('lang-en'); body.classList.remove('lang-ar'); }
     document.querySelectorAll('[data-i18n]').forEach(el => {

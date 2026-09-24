@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" id="htmlRoot">
+<script>(function(){var l=localStorage.getItem('lovara_lang')||'ar';if(l!=='ar'&&l!=='en')l='ar';var r=document.documentElement;r.lang=l;r.dir=l==='ar'?'rtl':'ltr';r.style.visibility='hidden';window.setTimeout(function(){r.style.visibility='visible'},1500)})();</script>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -1197,6 +1198,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         this.applyTheme();
       },
       applyLanguage() {
+        document.documentElement.style.visibility = 'visible';
         const html = document.getElementById('htmlRoot');
         const langBtn = document.getElementById('langText');
         const t = translations[this.currentLang];

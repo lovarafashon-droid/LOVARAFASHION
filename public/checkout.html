@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" id="htmlRoot">
+<script>(function(){var l=localStorage.getItem('lovara_lang')||'ar';if(l!=='ar'&&l!=='en')l='ar';var r=document.documentElement;r.lang=l;r.dir=l==='ar'?'rtl':'ltr';r.style.visibility='hidden';window.setTimeout(function(){r.style.visibility='visible'},1500)})();</script>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1537,6 +1538,7 @@
         const html = document.documentElement;
         html.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
         html.setAttribute('lang', lang);
+        document.documentElement.style.visibility = 'visible';
       },
 
 

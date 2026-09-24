@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" id="htmlRoot">
+<script>(function(){var l=localStorage.getItem('lovara_lang')||'ar';if(l!=='ar'&&l!=='en')l='ar';var r=document.documentElement;r.lang=l;r.dir=l==='ar'?'rtl':'ltr';r.style.visibility='hidden';window.setTimeout(function(){r.style.visibility='visible'},1500)})();</script>
 <head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-VNJ625PH85" integrity="sha384-y7p9AJ55x+QJZ2KvgXtPyqR65EW+hWTKtjOzjcVgW1DKvZDKNmoW8BuJ7pQHTLAa" crossorigin="anonymous"></script>
@@ -1251,7 +1252,7 @@
     };
 
     const i18n = {
-      currentLang: localStorage.getItem('lovara_lang') || 'en',
+      currentLang: localStorage.getItem('lovara_lang') || 'ar',
       init() { this.apply(this.currentLang); this.setupEvents(); },
       setLang(lang) { this.currentLang = lang; localStorage.setItem('lovara_lang', lang); this.apply(lang); },
       apply(lang) {
@@ -1262,6 +1263,7 @@
         html.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
         html.setAttribute('lang', lang);
         if (langLabel) langLabel.textContent = lang === 'ar' ? 'AR' : 'EN';
+        document.documentElement.style.visibility = 'visible';
         body.classList.toggle('lang-ar', lang === 'ar');
         body.classList.toggle('lang-en', lang !== 'ar');
         document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -2279,7 +2281,7 @@
   };
 
   function getLang() {
-    return localStorage.getItem('lovara_lang') || 'en';
+    return localStorage.getItem('lovara_lang') || 'ar';
   }
 
   function validatePhone(countrySelectId, phoneInputId, errorId) {
