@@ -572,8 +572,11 @@
               <div class="order-totals">
                 <div class="order-total-row"><span data-i18n="subtotal">Subtotal</span><span id="subtotal">EGP 0.00</span></div>
                 <div class="order-total-row"><span data-i18n="shipping">Shipping</span><span id="shipping">EGP 0.00</span></div>
-              <div class="order-total-row shipping-detail-row" id="codFeeRow" style="display:none"><span>رسوم الدفع عند الاستلام</span><span id="codFee">EGP 0.00</span></div>
-              <div class="order-total-row shipping-detail-row" id="visaDiscountRow" style="display:none"><span>خصم الدفع بالفيزا</span><span id="visaDiscount">- EGP 10.00</span></div>
+                <div class="order-total-row shipping-detail-row" id="shippingBaseRow" style="display:none"><span>سعر الشحن الأساسي</span><span id="shippingBase">EGP 0.00</span></div>
+                <div class="order-total-row shipping-detail-row" id="postalFeeRow" style="display:none"><span>رسوم البريد 10%</span><span id="postalFee">EGP 0.00</span></div>
+                <div class="order-total-row shipping-detail-row" id="vatRow" style="display:none"><span>القيمة المضافة 14%</span><span id="vat">EGP 0.00</span></div>
+                <div class="order-total-row shipping-detail-row" id="codFeeRow" style="display:none"><span>رسوم الدفع عند الاستلام</span><span id="codFee">EGP 0.00</span></div>
+                <div class="order-total-row shipping-detail-row" id="visaDiscountRow" style="display:none"><span>خصم الدفع بالفيزا</span><span id="visaDiscount">- EGP 10.00</span></div>
                 <div class="order-total-row discount-row" id="discountRow" style="display:none"><span>خصم الموظف</span><span id="discount">- EGP 0.00</span></div>
                 <div class="order-total-row total"><span data-i18n="total">Total</span><span id="total">EGP 0.00</span></div>
               </div>
@@ -983,7 +986,7 @@
           shipEl.textContent = 'EGP ' + shipping.toFixed(2);
           shipEl.className = '';
         }
-        [['vatRow', 'vat', breakdown.vat], ['codFeeRow', 'codFee', breakdown.codFee], ['visaDiscountRow', 'visaDiscount', breakdown.visaDiscount]].forEach(([rowId, valueId, value]) => {
+        [['shippingBaseRow', 'shippingBase', breakdown.base], ['postalFeeRow', 'postalFee', breakdown.postalFee], ['vatRow', 'vat', breakdown.vat], ['codFeeRow', 'codFee', breakdown.codFee], ['visaDiscountRow', 'visaDiscount', breakdown.visaDiscount]].forEach(([rowId, valueId, value]) => {
           const row = document.getElementById(rowId); const valueEl = document.getElementById(valueId);
           if (row && valueEl) { row.style.display = value > 0 ? 'flex' : 'none'; valueEl.textContent = valueId === 'visaDiscount' ? '- EGP ' + value.toFixed(2) : 'EGP ' + value.toFixed(2); }
         });
