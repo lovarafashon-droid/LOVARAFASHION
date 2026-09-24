@@ -58,7 +58,7 @@ async function fetchProductsViaRest(limit = 0) {
   const structuredQuery = {
     from: [{ collectionId: 'products' }],
     select: { fields: [
-      'showOnHome', 'name', 'price', 'oldPrice', 'category', 'badge',
+      'showOnHome', 'name', 'nameEn', 'englishName', 'titleEn', 'names', 'price', 'oldPrice', 'category', 'badge',
       'sizes', 'colors', 'comingSoon', 'imageUrl', 'image', 'imageURL',
       'photo', 'img', 'thumbnail', 'images', 'createdAt'
     ].map(fieldPath => ({ fieldPath })) }
@@ -142,8 +142,16 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 });
 
+window.getLocalizedProductName = function(product) {
+  const lang = window.i18n?.currentLang || localStorage.getItem('lovara_lang') || 'ar';
+  if (lang === 'en') return product?.nameEn || product?.englishName || product?.titleEn || product?.names?.en || 'Top selling product';
+  return product?.name || product?.nameAr || 'الأكثر مبيعاً';
+};
+
 async function loadHomepageBestseller(products) {
   const fallback = products.find(product => product.badge === 'Bestseller') || products[0];
+  // Paint a useful bestseller immediately; the sales ranking refines it in the background.
+  if (fallback) renderHomepageBestseller(fallback);
   try {
     const response = await fetch('/api/bestsellers', { cache: 'no-store' });
     if (!response.ok) throw new Error('Bestseller request failed');
@@ -171,12 +179,27 @@ function renderHomepageBestseller(product, soldQuantity) {
   image.alt = product.name || 'LOVARA bestseller';
   image.hidden = false;
   placeholder.style.display = 'none';
-  document.getElementById('heroBestsellerName').textContent = product.name || 'LOVARA bestseller';
-  document.getElementById('heroBestsellerPrice').textContent = `EGP ${(parseFloat(product.price) || 0).toFixed(2)}${soldQuantity ? ` · ${soldQuantity} sold` : ''}`;
+  const lang = window.i18n?.currentLang || localStorage.getItem('lovara_lang') || 'ar';
+  const localizedName = window.getLocalizedProductName(product);
+  document.getElementById('heroBestsellerName').textContent = localizedName;
+  document.getElementById('heroBestsellerPrice').textContent = `EGP ${(parseFloat(product.price) || 0).toFixed(2)}${soldQuantity ? ` · ${soldQuantity} ${lang === 'ar' ? 'مبيعات' : 'sold'}` : ''}`;
   info.hidden = false;
   card.classList.add('has-bestseller');
   window.heroBestsellerProduct = product;
 }
+
+window.refreshHeroBestsellerLanguage = function(lang) {
+  const product = window.heroBestsellerProduct;
+  if (!product) return;
+  const nameEl = document.getElementById('heroBestsellerName');
+  if (!nameEl) return;
+  nameEl.textContent = window.getLocalizedProductName(product);
+  const priceEl = document.getElementById('heroBestsellerPrice');
+  if (priceEl) {
+    const soldText = priceEl.textContent.match(/(?:·|•)\s*([0-9]+)\s*(?:sold|مبيعات)/i)?.[1];
+    priceEl.textContent = `EGP ${(parseFloat(product.price) || 0).toFixed(2)}${soldText ? ` · ${soldText} ${lang === 'ar' ? 'مبيعات' : 'sold'}` : ''}`;
+  }
+};
 
 window.openHeroBestseller = function(action) {
   const product = window.heroBestsellerProduct;

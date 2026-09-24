@@ -1290,6 +1290,7 @@
         const titleEl = document.querySelector('title[data-i18n]');
         if (titleEl && t[titleEl.getAttribute('data-i18n')]) document.title = t[titleEl.getAttribute('data-i18n')];
         this.updateMarquee(lang);
+        window.refreshHeroBestsellerLanguage?.(lang);
       },
       updateMarquee(lang) {
         const t = translations[lang];
@@ -2062,7 +2063,7 @@
 
       document.getElementById('pmImage').alt = product.name || 'Product';
       pmRenderImage();
-      document.getElementById('pmName').textContent = product.name || 'Product';
+      document.getElementById('pmName').textContent = window.getLocalizedProductName?.(product) || product.name || 'Product';
       pmRenderPrice();
 
       const oldPriceEl = document.getElementById('pmOldPrice');
