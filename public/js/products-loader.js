@@ -122,6 +122,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     initProductCarousel(grid, productsToRender);
+    loadHomepageBestseller(productsToRender);
     const sharedProductId = new URLSearchParams(window.location.search).get('product');
     if (sharedProductId) {
       setTimeout(() => {
@@ -140,6 +141,51 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }
 });
+
+async function loadHomepageBestseller(products) {
+  const fallback = products.find(product => product.badge === 'Bestseller') || products[0];
+  try {
+    const response = await fetch('/api/bestsellers', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Bestseller request failed');
+    const payload = await response.json();
+    const ranked = Array.isArray(payload.bestsellers) ? payload.bestsellers : [];
+    const top = ranked.map(row => products.find(product =>
+      (row.productId && product.id === row.productId) ||
+      (row.name && String(product.name || '').toLowerCase() === String(row.name).toLowerCase())
+    )).find(Boolean) || fallback;
+    if (top) renderHomepageBestseller(top, ranked.find(row => row.productId === top.id || String(row.name || '').toLowerCase() === String(top.name || '').toLowerCase())?.quantity);
+  } catch (error) {
+    if (fallback) renderHomepageBestseller(fallback);
+    console.warn('[LOVARA] Bestseller widget unavailable:', error.message);
+  }
+}
+
+function renderHomepageBestseller(product, soldQuantity) {
+  const card = document.querySelector('.hero-card-main');
+  const image = document.getElementById('heroBestsellerImage');
+  const placeholder = document.getElementById('heroBestsellerPlaceholder');
+  const info = document.getElementById('heroBestsellerInfo');
+  if (!card || !image || !placeholder || !info || !product) return;
+  const source = product.imageUrl || product.image || product.imageURL || product.photo || product.img || product.thumbnail || product.images?.[0] || '';
+  image.src = optimizeHomepageImageUrl(source || 'https://via.placeholder.com/300x420?text=LOVARA', 700);
+  image.alt = product.name || 'LOVARA bestseller';
+  image.hidden = false;
+  placeholder.style.display = 'none';
+  document.getElementById('heroBestsellerName').textContent = product.name || 'LOVARA bestseller';
+  document.getElementById('heroBestsellerPrice').textContent = `EGP ${(parseFloat(product.price) || 0).toFixed(2)}${soldQuantity ? ` · ${soldQuantity} sold` : ''}`;
+  info.hidden = false;
+  card.classList.add('has-bestseller');
+  window.heroBestsellerProduct = product;
+}
+
+window.openHeroBestseller = function(action) {
+  const product = window.heroBestsellerProduct;
+  if (!product || typeof window.openProductModal !== 'function') return;
+  window.openProductModal(product);
+  // Both actions open the existing product preview, where the customer can
+  // choose variants and use Buy Now or Add to Cart safely.
+  if (action === 'buy') setTimeout(() => document.getElementById('pmBuyNow')?.focus(), 80);
+};
 
 // ============================================
 // CAROUSEL LOGIC

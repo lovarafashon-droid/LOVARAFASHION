@@ -609,6 +609,20 @@ input, select, textarea {
   clip-path: polygon(35% 0%, 65% 0%, 72% 15%, 68% 35%, 80% 50%, 75% 100%, 25% 100%, 20% 50%, 32% 35%, 28% 15%);
   border-radius: 4px;
 }
+.hero-bestseller-image {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.hero-bestseller-info {
+  position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 3;
+  padding: 10px; border-radius: 12px; background: rgba(20,17,18,.78);
+  backdrop-filter: blur(8px); color: #fff; display: flex; flex-direction: column; gap: 3px;
+}
+.hero-bestseller-info strong { font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-bestseller-info span { color: var(--pink); font-size: .78rem; font-weight: 600; }
+.hero-bestseller-actions { display: flex; gap: 6px; margin-top: 5px; }
+.hero-bestseller-actions button { flex: 1; border: 1px solid rgba(255,255,255,.55); border-radius: 999px; padding: 5px 6px; background: transparent; color: #fff; cursor: pointer; font: inherit; font-size: .68rem; }
+.hero-bestseller-actions button:last-child { background: var(--pink-dark); border-color: var(--pink-dark); }
+.hero-card-main.has-bestseller .hero-card-badge { z-index: 4; top: 14px; bottom: auto; }
 .hero-card-badge {
   position: absolute;
   bottom: 16px; left: 16px;

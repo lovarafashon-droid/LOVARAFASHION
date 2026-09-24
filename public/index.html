@@ -518,8 +518,17 @@
     <div class="hero-visual">
       <div class="hero-card hero-card-main">
         <div class="hero-card-img">
-          <div class="hero-model-placeholder">
+          <div class="hero-model-placeholder" id="heroBestsellerPlaceholder">
             <div class="model-silhouette"></div>
+          </div>
+          <img id="heroBestsellerImage" class="hero-bestseller-image" alt="" hidden>
+        </div>
+        <div class="hero-bestseller-info" id="heroBestsellerInfo" hidden>
+          <strong id="heroBestsellerName"></strong>
+          <span id="heroBestsellerPrice"></span>
+          <div class="hero-bestseller-actions">
+            <button type="button" onclick="window.openHeroBestseller('preview')" data-i18n="heroPreview">معاينة</button>
+            <button type="button" onclick="window.openHeroBestseller('buy')" data-i18n="heroBuy">شراء الآن</button>
           </div>
         </div>
         <div class="hero-card-badge" data-i18n="heroBadge">Bestseller</div>
@@ -1094,7 +1103,7 @@
         heroSub: "Curated luxury fashion for the modern woman —<br>timeless elegance, effortless style.",
         heroBtnShop: "Shop Now", heroBtnStory: "Our Story",
         statStyles: "Styles", statClients: "Happy Clients", statRating: "Rating",
-        heroBadge: "Bestseller",
+        heroBadge: "Bestseller", heroPreview: "Preview", heroBuy: "Buy now",
         heroCard1Title: "Premium Quality", heroCard1Sub: "Luxury fabrics",
         heroCard2Title: "Free Shipping", heroCard2Sub: "Orders over EGP 2500", adminPortal: "Admin Portal",
         heroScroll: "Scroll",
@@ -1176,7 +1185,7 @@
         heroSub: "أزياء فاخرة مختارة للمرأة العصرية —<br>أناقة خالدة، أسلوب بلا جهد.",
         heroBtnShop: "تسوقي الآن", heroBtnStory: "قصتنا",
         statStyles: "تصميم", statClients: "عميلة سعيدة", statRating: "تقييم",
-        heroBadge: "الأكثر مبيعاً",
+        heroBadge: "الأكثر مبيعاً", heroPreview: "معاينة", heroBuy: "شراء الآن",
         heroCard1Title: "جودة ممتازة", heroCard1Sub: "أقمشة فاخرة",
         heroCard2Title: "شحن مجاني", heroCard2Sub: "للطلبات فوق 2500 جنيه", adminPortal: "بوابة الأدمن",
         heroScroll: "اسحبي للأسفل",
