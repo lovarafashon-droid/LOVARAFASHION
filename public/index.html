@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" id="htmlRoot">
-<script>(function(){var l=localStorage.getItem('lovara_lang')||'ar';if(l!=='ar'&&l!=='en')l='ar';var r=document.documentElement;r.lang=l;r.dir=l==='ar'?'rtl':'ltr';r.style.visibility='hidden';window.setTimeout(function(){r.style.visibility='visible'},1500)})();</script>
+<script>(function(){var l=localStorage.getItem('lovara_lang')||'ar';if(l!=='ar'&&l!=='en')l='ar';var r=document.documentElement;r.lang=l;r.dir=l==='ar'?'rtl':'ltr';r.style.visibility='hidden';window.setTimeout(function(){r.style.visibility='visible'},300)})();</script>
 <head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-VNJ625PH85" integrity="sha384-y7p9AJ55x+QJZ2KvgXtPyqR65EW+hWTKtjOzjcVgW1DKvZDKNmoW8BuJ7pQHTLAa" crossorigin="anonymous"></script>
@@ -50,13 +50,13 @@
 
 
   <!-- Firebase SDK (Compat) -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" integrity="sha384-yuGdyIzzYtOBlBG6JOWn+Ey9kpq7HocusNuxEGyyohr1eEyXpeEyehIIXC/hznw4" crossorigin="anonymous"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js" integrity="sha384-lI+CxEx/bCvWP1b0OK13j5HTrTZP7yf1xle8TVOFq2smz6KC1RChTarRV/RHP5PP" crossorigin="anonymous"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" integrity="sha384-nwX2Qpkhc2sv6L0ZPkLefLGguao67toSowvePuQvGF6cG+8MUphGI2uI94Ls3JF7" crossorigin="anonymous"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js" integrity="sha384-oze9siCpFoiDBZ37lLp99ZmOMO+je1s/xtvwtbNv3NXQXLpbpfPSzZSpbT3xV9da" crossorigin="anonymous"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" integrity="sha384-yuGdyIzzYtOBlBG6JOWn+Ey9kpq7HocusNuxEGyyohr1eEyXpeEyehIIXC/hznw4" crossorigin="anonymous"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js" integrity="sha384-lI+CxEx/bCvWP1b0OK13j5HTrTZP7yf1xle8TVOFq2smz6KC1RChTarRV/RHP5PP" crossorigin="anonymous"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" integrity="sha384-nwX2Qpkhc2sv6L0ZPkLefLGguao67toSowvePuQvGF6cG+8MUphGI2uI94Ls3JF7" crossorigin="anonymous"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js" integrity="sha384-oze9siCpFoiDBZ37lLp99ZmOMO+je1s/xtvwtbNv3NXQXLpbpfPSzZSpbT3xV9da" crossorigin="anonymous"></script>
 
   <!-- Firebase Config -->
-  <script src="js/firebase-config.js"></script><script src="js/visitor-tracker.js"></script><script src="js/user-data-sync.js"></script>
+  <script defer src="js/firebase-config.js"></script><script defer src="js/visitor-tracker.js"></script><script defer src="js/user-data-sync.js"></script>
 
 <style>
   .auth-required-dot {
@@ -566,7 +566,7 @@
       <div class="categories-grid">
         <div class="category-card" onclick="window.location.href='/dresses'" style="cursor:pointer">
           <div class="category-img">
-            <img src="المعارض/دريس.jpg" alt="Dresses" class="cat-img" loading="lazy">
+            <img src="المعارض/دريس.webp" alt="Dresses" class="cat-img" loading="eager" fetchpriority="high">
             <div class="cat-icon-wrap cat-dresses"><i class="fas fa-person-dress"></i></div>
             <div class="cat-overlay"></div>
           </div>
@@ -579,7 +579,7 @@
 
         <div class="category-card" onclick="window.location.href='/tops'" style="cursor:pointer">
           <div class="category-img">
-            <img src="المعارض/توب.jpg" alt="Tops" class="cat-img" loading="lazy">
+            <img src="المعارض/توب.webp" alt="Tops" class="cat-img" loading="eager" fetchpriority="high">
             <div class="cat-icon-wrap cat-tops"><i class="fas fa-shirt"></i></div>
             <div class="cat-overlay"></div>
           </div>
@@ -597,7 +597,7 @@
 
         <div class="category-card" onclick="window.location.href='/pants'" style="cursor:pointer">
           <div class="category-img">
-            <img src="المعارض/بناطيل.jpg" alt="Pants" class="cat-img" loading="lazy">
+            <img src="المعارض/بناطيل.webp" alt="Pants" class="cat-img" loading="lazy" decoding="async">
             <div class="cat-icon-wrap cat-pants"><i class="fas fa-star-of-life"></i></div>
             <div class="cat-overlay"></div>
           </div>
@@ -610,7 +610,7 @@
 
         <div class="category-card" onclick="window.location.href='/accessories'" style="cursor:pointer">
           <div class="category-img">
-            <img src="المعارض/اكسورات.jpg" alt="Accessories" class="cat-img" loading="lazy">
+            <img src="المعارض/اكسورات.webp" alt="Accessories" class="cat-img" loading="lazy" decoding="async">
             <div class="cat-icon-wrap cat-accessories"><i class="fas fa-gem"></i></div>
             <div class="cat-overlay"></div>
           </div>
@@ -623,7 +623,7 @@
 
         <div class="category-card" onclick="window.location.href='/lingerie'" style="cursor:pointer">
           <div class="category-img">
-            <img src="المعارض/داخلي.jpg" alt="Lingerie" class="cat-img" loading="lazy">
+            <img src="المعارض/داخلي.webp" alt="Lingerie" class="cat-img" loading="lazy" decoding="async">
             <div class="cat-icon-wrap cat-lingerie"><i class="fas fa-venus"></i></div>
             <div class="cat-overlay"></div>
           </div>
@@ -636,7 +636,7 @@
 
         <div class="category-card" onclick="window.location.href='/sets'" style="cursor:pointer">
           <div class="category-img">
-            <img src="المعارض/اطقم.jpg" alt="Sets" class="cat-img" loading="lazy">
+            <img src="المعارض/اطقم.webp" alt="Sets" class="cat-img" loading="lazy" decoding="async">
             <div class="cat-icon-wrap cat-sets"><i class="fas fa-layer-group"></i></div>
             <div class="cat-overlay"></div>
           </div>
@@ -649,7 +649,7 @@
 
         <div class="category-card" onclick="window.location.href='/pajamas'" style="cursor:pointer">
           <div class="category-img">
-            <img src="المعارض/بجامات.png" alt="Pajamas" class="cat-img" loading="lazy">
+            <img src="المعارض/بجامات.webp" alt="Pajamas" class="cat-img" loading="lazy" decoding="async">
             <div class="cat-icon-wrap cat-sets"><i class="fas fa-moon"></i></div>
             <div class="cat-overlay"></div>
           </div>
@@ -657,7 +657,7 @@
         </div>
         <div class="category-card" onclick="window.location.href='/suits'" style="cursor:pointer">
           <div class="category-img">
-            <img src="المعارض/سوتات.png" alt="Suits" class="cat-img" loading="lazy">
+            <img src="المعارض/سوتات.webp" alt="Suits" class="cat-img" loading="lazy" decoding="async">
             <div class="cat-icon-wrap cat-sets"><i class="fas fa-layer-group"></i></div>
             <div class="cat-overlay"></div>
           </div>
@@ -675,7 +675,7 @@
 
         <div class="category-card" onclick="window.location.href='/winter'" style="cursor:pointer">
           <div class="category-img">
-            <img src="المعارض/شتوي.png" alt="Winter" class="cat-img" loading="lazy">
+            <img src="المعارض/شتوي.webp" alt="Winter" class="cat-img" loading="lazy" decoding="async">
             <div class="cat-icon-wrap cat-sets"><i class="fas fa-snowflake"></i></div>
             <div class="cat-overlay"></div>
           </div>
@@ -688,7 +688,7 @@
 
         <div class="category-card" onclick="window.location.href='/hijab'" style="cursor:pointer">
           <div class="category-img">
-            <img src="المعارض/HAJAP.jpg" alt="Hijab" class="cat-img" loading="lazy">
+            <img src="المعارض/HAJAP.webp" alt="Hijab" class="cat-img" loading="lazy" decoding="async">
             <div class="cat-icon-wrap cat-hijab"><i class="fas fa-headscarf"></i></div>
             <div class="cat-overlay"></div>
           </div>
