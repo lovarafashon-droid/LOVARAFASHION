@@ -36,6 +36,12 @@
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Jost', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    html[dir=rtl] body { direction: rtl; }
+    html[dir=rtl] .nav-actions { flex-direction: row-reverse; }
+    html[dir=rtl] .page-header, html[dir=rtl] .order-header, html[dir=rtl] .return-head { text-align: right; }
+    html[dir=rtl] .order-header-left { flex-direction: row-reverse; }
+    html[dir=rtl] .location-label i { margin-right: 0; margin-left: 6px; }
+    .language-toggle { min-width: 82px; justify-content: center; background: var(--secondary); }
     .container { max-width: 920px; margin: 0 auto; padding: 0 16px; }
     .navbar { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
     .nav-container { max-width: 920px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
@@ -320,21 +326,22 @@
     <div class="nav-container">
       <a href="/" class="logo">LOVARA</a>
       <div class="nav-actions">
-        <a href="/" class="nav-btn outline"><i class="fas fa-home"></i> Home</a>
-        <a href="/checkout" class="nav-btn"><i class="fas fa-shopping-bag"></i> New Order</a>
-        <a href="/returns" class="nav-btn outline"><i class="fas fa-rotate-left"></i> Returns Form</a>
+        <a href="/" class="nav-btn outline"><i class="fas fa-home"></i> <span data-i18n="home">Home</span></a>
+        <a href="/checkout" class="nav-btn"><i class="fas fa-shopping-bag"></i> <span data-i18n="newOrder">New Order</span></a>
+        <a href="/returns" class="nav-btn outline"><i class="fas fa-rotate-left"></i> <span data-i18n="returnsForm">Returns Form</span></a>
+        <button type="button" class="nav-btn language-toggle" id="languageToggle" onclick="OrdersApp.toggleLanguage()"><i class="fas fa-globe"></i> <span id="languageLabel">EN</span></button>
         <button class="nav-btn" style="background:var(--secondary);color:#fff;" onclick="logout()">
-          <i class="fas fa-sign-out-alt"></i> Logout
+          <i class="fas fa-sign-out-alt"></i> <span data-i18n="logout">Logout</span>
         </button>
       </div>
     </div>
       <div class="navbar-status-bar">
         <div class="order-status-nav" aria-label="Order status filters">
-          <button type="button" class="status-filter pending active" data-filter="pending" onclick="OrdersApp.filterOrders('pending')"><i class="fas fa-clock"></i> Unconfirmed <span class="filter-count" id="pendingCount">0</span></button>
-          <button type="button" class="status-filter confirmed" data-filter="confirmed" onclick="OrdersApp.filterOrders('confirmed')"><i class="fas fa-circle-check"></i> Confirmed <span class="filter-count" id="confirmedCount">0</span></button>
-          <button type="button" class="status-filter shipped" data-filter="shipped" onclick="OrdersApp.filterOrders('shipped')"><i class="fas fa-truck-fast"></i> مع شركة الشحن <span class="filter-count" id="shippedCount">0</span></button>
-          <button type="button" class="status-filter delivered" data-filter="delivered" onclick="OrdersApp.filterOrders('delivered')"><i class="fas fa-person-walking-luggage"></i> Delivered <span class="filter-count" id="deliveredCount">0</span></button>
-          <button type="button" class="status-filter rejected" data-filter="rejected" onclick="OrdersApp.filterOrders('rejected')"><i class="fas fa-circle-xmark"></i> Cancelled <span class="filter-count" id="rejectedCount">0</span></button>
+          <button type="button" class="status-filter pending active" data-filter="pending" onclick="OrdersApp.filterOrders('pending')"><i class="fas fa-clock"></i> <span data-i18n="unconfirmed">Unconfirmed</span> <span class="filter-count" id="pendingCount">0</span></button>
+          <button type="button" class="status-filter confirmed" data-filter="confirmed" onclick="OrdersApp.filterOrders('confirmed')"><i class="fas fa-circle-check"></i> <span data-i18n="confirmed">Confirmed</span> <span class="filter-count" id="confirmedCount">0</span></button>
+          <button type="button" class="status-filter shipped" data-filter="shipped" onclick="OrdersApp.filterOrders('shipped')"><i class="fas fa-truck-fast"></i> <span data-i18n="withCourier">مع شركة الشحن</span> <span class="filter-count" id="shippedCount">0</span></button>
+          <button type="button" class="status-filter delivered" data-filter="delivered" onclick="OrdersApp.filterOrders('delivered')"><i class="fas fa-person-walking-luggage"></i> <span data-i18n="delivered">Delivered</span> <span class="filter-count" id="deliveredCount">0</span></button>
+          <button type="button" class="status-filter rejected" data-filter="rejected" onclick="OrdersApp.filterOrders('rejected')"><i class="fas fa-circle-xmark"></i> <span data-i18n="cancelled">Cancelled</span> <span class="filter-count" id="rejectedCount">0</span></button>
         </div>
       </div>
   </header>
@@ -359,8 +366,8 @@
     <div class="container">
       <div class="page-header">
         <div>
-          <h1>Orders Dashboard</h1>
-          <p>All customer orders synced from the cloud</p>
+          <h1 data-i18n="ordersDashboard">Orders Dashboard</h1>
+          <p data-i18n="ordersSubtitle">All customer orders synced from the cloud</p>
         </div>
         <span class="badge-count" id="orderCount">0 Orders</span>
       </div>
@@ -382,6 +389,29 @@
   </footer>
 
   <script>
+    const OrdersI18n = {
+      currentLang: localStorage.getItem('lovara_lang') || 'ar',
+      translations: {
+        ar: { home:'الرئيسية', newOrder:'طلب جديد', returnsForm:'نموذج الاسترجاع', logout:'تسجيل الخروج', ordersDashboard:'لوحة الطلبات', ordersSubtitle:'كل طلبات العملاء متزامنة من السحابة', unconfirmed:'غير مؤكدة', confirmed:'مؤكدة', withCourier:'مع شركة الشحن', delivered:'تم التوصيل', cancelled:'ملغاة' },
+        en: { home:'Home', newOrder:'New Order', returnsForm:'Returns Form', logout:'Logout', ordersDashboard:'Orders Dashboard', ordersSubtitle:'All customer orders synced from the cloud', unconfirmed:'Unconfirmed', confirmed:'Confirmed', withCourier:'With courier', delivered:'Delivered', cancelled:'Cancelled' }
+      },
+      apply(lang = this.currentLang) {
+        this.currentLang = lang === 'en' ? 'en' : 'ar';
+        localStorage.setItem('lovara_lang', this.currentLang);
+        const root = document.documentElement;
+        root.lang = this.currentLang;
+        root.dir = this.currentLang === 'ar' ? 'rtl' : 'ltr';
+        const values = this.translations[this.currentLang];
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          const value = values[el.dataset.i18n];
+          if (value) el.textContent = value;
+        });
+        const label = document.getElementById('languageLabel');
+        if (label) label.textContent = this.currentLang === 'ar' ? 'EN' : 'AR';
+        document.documentElement.style.visibility = 'visible';
+      },
+      toggle() { this.apply(this.currentLang === 'ar' ? 'en' : 'ar'); }
+    };
     const OrdersApp = {
       db: null,
       orders: [],
@@ -393,7 +423,9 @@
       orderFilter: 'pending',
       productCatalog: { byId: {}, byName: {} },
 
+      toggleLanguage() { OrdersI18n.toggle(); },
       init() {
+        OrdersI18n.apply();
         let attempts = 0;
         const check = () => {
           attempts++;
