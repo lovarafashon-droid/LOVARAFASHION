@@ -758,6 +758,13 @@
 
       renderCartItems() {
         const container = document.getElementById('orderItems');
+        // Keep legacy qty/quantity fields aligned before pricing so the total
+        // always matches the quantity shown by the checkout controls.
+        this.cart.forEach(item => {
+          const normalizedQuantity = Math.max(1, Number(item.quantity ?? item.qty) || 1);
+          item.quantity = normalizedQuantity;
+          item.qty = normalizedQuantity;
+        });
         const cartPricing = window.LovaraPricing ? LovaraPricing.getCartPricing(this.cart) : null;
         let subtotal = cartPricing ? cartPricing.subtotal : 0;
         const defaultSizes = ['XS','S','M','L','XL','XXL','One Size'];
@@ -1036,6 +1043,7 @@
         const newQty = (this.cart[index].quantity || 1) + delta;
         if (newQty < 1) return; // prevent going below 1
         this.cart[index].quantity = newQty;
+        this.cart[index].qty = newQty;
         this.saveCart();
         this.renderCartItems();
         this.updateMobileBadge();

@@ -8,6 +8,9 @@ function assertEqual(actual, expected, label) {
 }
 let result = pricing.getCartPricing([{ price: 200, quantity: 2 }]);
 assertEqual(result.lines[0].unitPrice, 200, 'cart quantity alone does not activate discount');
+result = pricing.getCartPricing([{ price: 500, quantity: 1, qty: 2, quantityDiscountEnabled: true }]);
+assertEqual(result.lines[0].quantity, 1, 'visible checkout quantity wins over stale qty');
+assertEqual(result.lines[0].total, 500, 'one visible piece is charged once');
 result = pricing.getCartPricing([{ price: 200, quantity: 2, quantityDiscountEnabled: true }]);
 assertEqual(result.lines[0].unitPrice, 190, 'two pieces selected in preview');
 result = pricing.getCartPricing([

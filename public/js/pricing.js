@@ -6,7 +6,7 @@
   const THREE_PLUS_DISCOUNT = 20;
 
   function quantityOf(item) {
-    return Math.max(1, Number(item?.qty ?? item?.quantity) || 1);
+    return Math.max(1, Number(item?.quantity ?? item?.qty) || 1);
   }
 
   function baseUnitPrice(item) {

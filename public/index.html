@@ -1711,8 +1711,11 @@
       add(item) {
         const items = this.items;
         const existing = items.find(i => i.id === item.id && i.size === (item.size||null) && i.color === (item.color||null));
-        if (existing) { existing.qty = (existing.qty || 1) + (item.qty || 1); }
-        else { items.push({...item, qty: item.qty || 1}); }
+        if (existing) {
+          existing.qty = (existing.qty || existing.quantity || 1) + (item.qty || item.quantity || 1);
+          existing.quantity = existing.qty;
+        }
+        else { items.push({...item, qty: item.qty || item.quantity || 1, quantity: item.qty || item.quantity || 1}); }
         this.save(items); this.render();
         showToast(item.name + ' added to cart!');
       },
@@ -1721,6 +1724,7 @@
         if (!items[idx]) return;
         items[idx].qty = (items[idx].qty || 1) + delta;
         if (items[idx].qty <= 0) { items.splice(idx, 1); }
+        else { items[idx].quantity = items[idx].qty; }
         this.save(items); this.render();
       },
       remove(idx) {
