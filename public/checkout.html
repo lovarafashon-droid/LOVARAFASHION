@@ -788,8 +788,16 @@
           const qty = item.quantity || 1;
           const itemTotal = linePricing.total;
 
-          const currentSize = item.size || 'M';
+          // When quantity is greater than one, each physical piece needs its
+          // own variant selection. Legacy scalar values are copied to all
+          // pieces so existing carts keep their previous choice.
+          const currentSizes = Array.isArray(item.size) ? item.size : [item.size || 'M'];
+          while (currentSizes.length < qty) currentSizes.push(currentSizes[currentSizes.length - 1] || 'M');
+          currentSizes.length = qty;
           const currentColors = Array.isArray(item.color) ? item.color : [item.color || 'Black'];
+          while (currentColors.length < qty) currentColors.push(currentColors[currentColors.length - 1] || 'Black');
+          currentColors.length = qty;
+          const currentSize = currentSizes[0] || 'M';
           const currentColor = currentColors[0] || 'Black';
 
           // Build size options from product sizes or defaults
@@ -804,9 +812,12 @@
           if (currentSize && !sizeOptionsList.includes(currentSize)) {
             sizeOptionsList.unshift(currentSize);
           }
-          const sizeOptions = sizeOptionsList.map(s => 
-            `<option value="${s}" ${s === currentSize ? 'selected' : ''}>${s}</option>`
+          const buildSizeOptions = selectedSize => sizeOptionsList.map(s =>
+            `<option value="${s}" ${s === selectedSize ? 'selected' : ''}>${s}</option>`
           ).join('');
+          const sizeControls = qty > 1
+            ? currentSizes.map((size, pieceIndex) => `<div class="item-option item-piece-size"><label>${this.currentLang === 'ar' ? 'مقاس القطعة' : 'Piece size'} ${pieceIndex + 1}:</label><select onchange="CheckoutApp.updateSize(${index}, this.value, ${pieceIndex})">${buildSizeOptions(size)}</select></div>`).join('')
+            : `<div class="item-option"><label>${this.t('size') || 'Size'}:</label><select onchange="CheckoutApp.updateSize(${index}, this.value)">${buildSizeOptions(currentSize)}</select></div>`;
 
           // Build color options: include item's color + available colors
           let productColors = [];
@@ -823,9 +834,9 @@
           const colorOptions = productColors.map(c =>
             `<option value="${c}" ${c === currentColor ? 'selected' : ''}>${c}</option>`
           ).join('');
-          const colorControls = currentColors.length > 1
+          const colorControls = qty > 1
             ? currentColors.map((color, pieceIndex) => `<div class="item-option item-piece-color"><label>${this.currentLang === 'ar' ? 'لون القطعة' : 'Piece color'} ${pieceIndex + 1}:</label><select class="color-select" onchange="CheckoutApp.updateColor(${index}, this.value, ${pieceIndex})">${productColors.map(c => `<option value="${c}" ${c === color ? 'selected' : ''}>${c}</option>`).join('')}</select></div>`).join('')
-            : `<div class="item-option"><label>${this.t('color') || 'Color'}:</label><select class="color-select" onchange="CheckoutApp.updateColor(${index}, this.value)">${colorOptions.replace('selected', 'selected')}</select></div>`;
+            : `<div class="item-option"><label>${this.t('color') || 'Color'}:</label><select class="color-select" onchange="CheckoutApp.updateColor(${index}, this.value)">${colorOptions}</select></div>`;
 
           // Build images HTML (main + thumbnails gallery)
           const itemImages = item.images && item.images.length > 0 ? item.images : [item.imageUrl || item.image || 'https://via.placeholder.com/300x300/c9a87c/ffffff?text=LOVARA'];
@@ -854,10 +865,7 @@
                 ${descHtml}
                 <p class="item-meta">EGP ${price.toFixed(2)}${linePricing.discountPerPiece ? ` <strong>(خصم ${linePricing.discountPerPiece} جنيه)</strong>` : ''} ${item.pricingUnit ? `<strong> / ${item.unitLabel || (item.pricingUnit === 'dozen' ? 'دستة' : 'قطعة')}</strong>` : ''}</p>
                 <div class="item-options">
-                  <div class="item-option">
-                    <label>${this.t('size') || 'Size'}:</label>
-                    <select onchange="CheckoutApp.updateSize(${index}, this.value)">${sizeOptions}</select>
-                  </div>
+                  ${sizeControls}
                   ${colorControls}
                 </div>
                 <div class="qty-control">
@@ -1021,30 +1029,58 @@
 
 
 
-      updateSize(index, size) {
-        if (!this.cart[index]) return;
-        this.cart[index].size = size;
+      updateSize(index, size, pieceIndex = null) {
+        const item = this.cart[index];
+        if (!item) return;
+        if (pieceIndex === null) item.size = size;
+        else {
+          const qty = Math.max(1, Number(item.quantity || item.qty) || 1);
+          const sizes = Array.isArray(item.size) ? item.size : Array(qty).fill(item.size || 'M');
+          while (sizes.length < qty) sizes.push(sizes[sizes.length - 1] || 'M');
+          sizes[pieceIndex] = size;
+          item.size = sizes.slice(0, qty);
+        }
         this.saveCart();
         this.showToast((this.t('sizeUpdated') || 'Size updated') + ': ' + size, 'success');
       },
 
       updateColor(index, color, pieceIndex = null) {
-        if (!this.cart[index]) return;
-        if (pieceIndex === null || !Array.isArray(this.cart[index].color)) {
-          this.cart[index].color = pieceIndex === null ? color : [color];
-        } else {
-          this.cart[index].color[pieceIndex] = color;
+        const item = this.cart[index];
+        if (!item) return;
+        if (pieceIndex === null) item.color = color;
+        else {
+          const qty = Math.max(1, Number(item.quantity || item.qty) || 1);
+          const colors = Array.isArray(item.color) ? item.color : Array(qty).fill(item.color || 'Black');
+          while (colors.length < qty) colors.push(colors[colors.length - 1] || 'Black');
+          colors[pieceIndex] = color;
+          item.color = colors.slice(0, qty);
         }
         this.saveCart();
         this.showToast((this.t('colorUpdated') || 'Color updated') + ': ' + color, 'success');
       },
 
       updateQty(index, delta) {
-        if (!this.cart[index]) return;
-        const newQty = (this.cart[index].quantity || 1) + delta;
+        const item = this.cart[index];
+        if (!item) return;
+        const newQty = (item.quantity || item.qty || 1) + delta;
         if (newQty < 1) return; // prevent going below 1
-        this.cart[index].quantity = newQty;
-        this.cart[index].qty = newQty;
+        const oldQty = Math.max(1, Number(item.quantity || item.qty) || 1);
+        item.quantity = newQty;
+        item.qty = newQty;
+        // Quantity changed in checkout should activate the quantity offer and
+        // preserve independent choices for every physical piece.
+        item.quantityDiscountEnabled = newQty > 1;
+        if (newQty > 1) {
+          item.size = Array.isArray(item.size) ? item.size : Array(oldQty).fill(item.size || 'M');
+          item.color = Array.isArray(item.color) ? item.color : Array(oldQty).fill(item.color || 'Black');
+          while (item.size.length < newQty) item.size.push(item.size[item.size.length - 1] || 'M');
+          while (item.color.length < newQty) item.color.push(item.color[item.color.length - 1] || 'Black');
+          item.size = item.size.slice(0, newQty);
+          item.color = item.color.slice(0, newQty);
+        } else {
+          if (Array.isArray(item.size)) item.size = item.size[0] || 'M';
+          if (Array.isArray(item.color)) item.color = item.color[0] || 'Black';
+        }
         this.saveCart();
         this.renderCartItems();
         this.updateMobileBadge();
