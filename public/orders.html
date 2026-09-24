@@ -1029,7 +1029,6 @@
         const visaDiscount = totals.visaDiscount || '';
         const shippingDetailsHtml = (shippingBase || postalFee || vat || codFee || visaDiscount) ? `
           ${shippingBase ? `<div class="line">سعر J&amp;T الأساسي: <span>${esc(shippingBase)}</span></div>` : ''}
-          ${postalFee && !/^EGP 0(?:\.00)?$/.test(String(postalFee).trim()) ? `<div class="line">رسوم البريد 10%: <span>${esc(postalFee)}</span></div>` : ''}
           ${vat ? `<div class="line">ضريبة القيمة المضافة 14%: <span>${esc(vat)}</span></div>` : ''}
           ${codFee && !/^EGP 0(?:\.00)?$/.test(String(codFee).trim()) ? `<div class="line">رسوم الدفع عند الاستلام: <span>${esc(codFee)}</span></div>` : ''}
           ${visaDiscount && !/^EGP 0(?:\.00)?$/.test(String(visaDiscount).trim()) ? `<div class="line">خصم الدفع بالفيزا: <span>-${esc(visaDiscount)}</span></div>` : ''}` : '';
@@ -1600,7 +1599,6 @@
             <span>Shipping:</span><span>${shipping}</span>
           </div>
           ${totals.shippingBase ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>J&amp;T base:</span><span>${totals.shippingBase}</span></div>` : ''}
-          ${totals.postalFee && !/^EGP 0(?:\.00)?$/.test(String(totals.postalFee).trim()) ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>Postal 10%:</span><span>${totals.postalFee}</span></div>` : ''}
           ${totals.vat ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>VAT 14%:</span><span>${totals.vat}</span></div>` : ''}
           ${totals.codFee && !/^EGP 0(?:\.00)?$/.test(String(totals.codFee).trim()) ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>COD fee:</span><span>${totals.codFee}</span></div>` : ''}
           ${totals.visaDiscount && !/^EGP 0(?:\.00)?$/.test(String(totals.visaDiscount).trim()) ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>Visa discount:</span><span>-${totals.visaDiscount}</span></div>` : ''}
