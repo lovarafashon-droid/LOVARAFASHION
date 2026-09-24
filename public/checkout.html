@@ -624,8 +624,11 @@
       async init() {
         const directBuy = JSON.parse(localStorage.getItem('lovara_direct_buy') || 'null');
         const selectedCart = JSON.parse(localStorage.getItem('lovara_checkout_selection') || 'null');
+        const hasSelectedCart = localStorage.getItem('lovara_checkout_selection') !== null;
         this.isDirectPurchase = !!directBuy;
-        this.isSelectedCartPurchase = !directBuy && Array.isArray(selectedCart) && selectedCart.length > 0;
+        // An empty selection is still a valid checkout state. Otherwise, after
+        // removing the last item, refresh would fall back to the old full cart.
+        this.isSelectedCartPurchase = !directBuy && hasSelectedCart && Array.isArray(selectedCart);
         this.cart = directBuy ? [directBuy] : (this.isSelectedCartPurchase ? selectedCart : (JSON.parse(localStorage.getItem('lovara_cart')) || []));
         this.firebaseReady = this.initFirebase();
         await this.firebaseReady.catch(() => null);
@@ -1055,8 +1058,20 @@
       },
 
       saveCart() {
-        localStorage.setItem('lovara_cart', JSON.stringify(this.cart));
-        window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_cart', newValue: JSON.stringify(this.cart) }));
+        const serializedCart = JSON.stringify(this.cart);
+        localStorage.setItem('lovara_cart', serializedCart);
+
+        // Checkout can be opened from a selected-cart preview or as a direct
+        // purchase. Keep the source key in sync with the visible cart too;
+        // otherwise init() restores the stale item after a page refresh.
+        if (this.isDirectPurchase) {
+          if (this.cart.length > 0) localStorage.setItem('lovara_direct_buy', JSON.stringify(this.cart[0]));
+          else localStorage.removeItem('lovara_direct_buy');
+        } else if (this.isSelectedCartPurchase) {
+          localStorage.setItem('lovara_checkout_selection', serializedCart);
+        }
+
+        window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_cart', newValue: serializedCart }));
       },
 
       updateMobileBadge() {
