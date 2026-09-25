@@ -112,6 +112,14 @@
     .item-tag { font-size: 11px; color: var(--text-light); background: var(--bg); padding: 3px 7px; border-radius: 10px; }
     .item-tag i { margin-right: 4px; color: var(--primary); font-size: 10px; }
     .item-total { font-size: 15px; font-weight: 600; color: var(--primary); min-width: 90px; text-align: right; flex-shrink: 0; }
+    .merged-products-box { background:#f8f4ff; border:1px solid #d8c5ee; border-radius:12px; padding:13px; margin:0 0 18px; }
+    .merged-products-title { color:#6a1b9a; font-size:13px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:7px; }
+    .merged-products-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:9px; }
+    .merged-product { display:flex; align-items:center; gap:9px; background:#fff; border:1px solid #eadff5; border-radius:9px; padding:8px; min-width:0; }
+    .merged-product img { width:50px; height:50px; object-fit:cover; border-radius:7px; border:1px solid var(--border); flex-shrink:0; }
+    .merged-product-info { min-width:0; }
+    .merged-product-name { color:var(--secondary); font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .merged-product-meta { color:#6a1b9a; font-size:11px; margin-top:3px; }
     .totals-box { background: var(--secondary); color: #fff; border-radius: 10px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
     .totals-left { display: flex; flex-direction: column; gap: 6px; }
     .totals-left .line { font-size: 13px; color: #aaa; }
@@ -712,30 +720,23 @@
       },
       getDuplicateOrderKey(order) {
         const customer = order.customer || {};
+        const clean = value => String(value ?? '').trim().replace(/\s+/g, ' ');
+        const phone = value => String(value ?? '').replace(/\D/g, '');
         const customerKey = {
-          firstName: customer.firstName || '', lastName: customer.lastName || '',
-          phone: customer.phone || '', phone2: customer.phone2 || '', email: customer.email || '',
-          address: customer.address || '', city: customer.city || '',
-          state: customer.state || customer.governorate || customer.province || '',
-          country: customer.country || '', postalCode: customer.postalCode || ''
+          firstName: clean(customer.firstName), lastName: clean(customer.lastName),
+          phone: phone(customer.phone), address: clean(customer.address), city: clean(customer.city),
+          state: clean(customer.state || customer.governorate || customer.province)
         };
-        const itemKey = (order.items || []).map(item => ({
-          productId: item.productId || item.id || '', name: item.name || '',
-          price: Number(item.price) || 0, cost: Number(item.cost) || 0,
-          size: this.normalizeDuplicateValue(item.size || '-'),
-          color: this.normalizeDuplicateValue(item.color || '-'),
-          pricingUnit: item.pricingUnit || '', unitLabel: item.unitLabel || ''
-        })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+        if (!customerKey.firstName || !customerKey.lastName || !customerKey.phone || !customerKey.address) return '';
         return JSON.stringify(this.normalizeDuplicateValue({
-          customer: customerKey, items: itemKey,
-          status: order.status || 'pending', confirmationStatus: order.confirmationStatus || 'pending',
-          paymentMethod: order.payment?.method || ''
+          customer: customerKey
         }));
       },
       getDuplicateOrderGroups() {
         const groups = new Map();
         this.orders.forEach((order, index) => {
           const key = this.getDuplicateOrderKey(order);
+          if (!key) return;
           const group = groups.get(key) || [];
           group.push({ order, index });
           groups.set(key, group);
@@ -787,6 +788,8 @@
       buildMergedOrder(group) {
         const orders = group.map(entry => entry.order);
         const merged = { ...orders[0], items: this.mergeOrderItems(orders) };
+        merged.mergedFrom = orders.map(order => order.orderNumber || order._docId || '').filter(Boolean);
+        merged.mergedOrderCount = orders.length;
         const totals = {};
         ['subtotal', 'shipping', 'shippingBase', 'postalFee', 'vat', 'codFee', 'visaDiscount', 'discount', 'total'].forEach(field => {
           totals[field] = `EGP ${this.sumOrderMoney(orders.map(order => order.totals?.[field])).toFixed(2)}`;
@@ -1019,6 +1022,18 @@
           .filter(({ order }) => order.confirmationStatus === 'confirmed' && !['cancelled', 'delivered', 'shipped'].includes(order.status));
       },
 
+      renderMergedProducts(order) {
+        if (!order.mergedOrderCount || order.mergedOrderCount < 2) return '';
+        const esc = this.escapeHTML.bind(this);
+        const products = (order.items || []).map(item => {
+          const image = this.safeImageUrl(item.imageUrl || item.image) || 'https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA';
+          const price = (parseFloat(item.price) || 0).toFixed(2);
+          const quantity = Math.max(1, parseInt(item.quantity) || 1);
+          return `<div class="merged-product"><img src="${image}" alt="${esc(item.name || 'Product')}" onerror="this.onerror=null;this.src='https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA';"><div class="merged-product-info"><div class="merged-product-name">${esc(item.name || 'Unknown Product')}</div><div class="merged-product-meta">السعر: EGP ${price} · الكمية: ${quantity}</div></div></div>`;
+        }).join('');
+        return `<div class="merged-products-box"><div class="merged-products-title"><i class="fas fa-layer-group"></i> منتجات الطلبات بعد المطابقة (${order.mergedOrderCount} طلبات)</div><div class="merged-products-grid">${products}</div></div>`;
+      },
+
       renderOrder(order, index) {
         const dateObj = order.date ? (order.date.toDate ? order.date.toDate() : new Date(order.date)) : new Date();
         const date = dateObj.toLocaleString('en-GB', {
@@ -1225,6 +1240,7 @@
               </div>` : ''}
 
               ${customerHtml}
+              ${this.renderMergedProducts(order)}
 
               <div class="items-section">
                 <div class="box-title"><i class="fas fa-shopping-bag"></i> Ordered Items</div>
