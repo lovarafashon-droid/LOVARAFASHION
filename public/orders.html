@@ -245,6 +245,9 @@
     .location-label { font-size: 12px; color: #f57f17; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
     .location-label i { margin-right: 6px; color: #f57f17; }
     .location-value { font-size: 18px; font-weight: 700; color: #e65100; font-family: 'Cormorant Garamond', serif; }
+    .shipping-refusal-box { background:#fff3e0; border:1.5px solid #ffb74d; border-radius:var(--radius-sm); padding:13px 16px; margin-bottom:18px; color:#8d4e00; }
+    .shipping-refusal-title { font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+    .shipping-refusal-reason { font-size:13px; color:#6d3b00; }
 
     /* NEW: Stronger supplier tag */
     .supplier-tag {
@@ -440,6 +443,7 @@
       returnsUnsubscribe: null,
       rejectModalIndex: null,
       paymentModalIndex: null,
+      shippingRefusalModalIndex: null,
       orderFilter: 'pending',
       productCatalog: { byId: {}, byName: {} },
 
@@ -1240,6 +1244,7 @@
               </div>` : ''}
 
               ${customerHtml}
+              ${order.shippingRefusal ? `<div class="shipping-refusal-box"><div class="shipping-refusal-title"><i class="fas fa-triangle-exclamation"></i> ${order.shippingRefusal.type === 'refused_delivery' ? 'العميل رفض الاستلام' : 'العميل رفض الأوردر'}</div><div class="shipping-refusal-reason"><strong>السبب:</strong> ${esc(order.shippingRefusal.reason || 'لم يتم تسجيل السبب')}</div></div>` : ''}
               ${this.renderMergedProducts(order)}
 
               <div class="items-section">
@@ -1330,6 +1335,9 @@
               ` : orderStatus === 'shipped' ? `
               <button type="button" class="btn btn-confirm" onclick="OrdersApp.markDelivered(${index})">
                 <i class="fas fa-person-walking-luggage"></i> تم الوصول
+              </button>
+              <button type="button" class="btn btn-reject" onclick="OrdersApp.showShippingRefusalModal(${index})">
+                <i class="fas fa-triangle-exclamation"></i> ${order.shippingRefusal ? 'تعديل رفض العميل' : 'تسجيل رفض العميل'}
               </button>
               ` : orderStatus === 'officeOrdered' ? `
               <button type="button" class="btn btn-confirm" onclick="OrdersApp.markShipped(${index})">
@@ -1601,6 +1609,38 @@
         } catch (err) {
           console.error('[LOVARA Orders] Payment update error:', err);
           alert('تعذر حفظ الدفعة: ' + err.message);
+        }
+      },
+      showShippingRefusalModal(index) {
+        const order = this.orders[index];
+        if (!order) return;
+        this.shippingRefusalModalIndex = index;
+        document.getElementById('shippingRefusalTypeInput').value = order.shippingRefusal?.type || 'refused_order';
+        document.getElementById('shippingRefusalReasonInput').value = order.shippingRefusal?.reason || '';
+        document.getElementById('shippingRefusalModal').classList.add('show');
+      },
+      closeShippingRefusalModal() {
+        this.shippingRefusalModalIndex = null;
+        document.getElementById('shippingRefusalModal').classList.remove('show');
+      },
+      async submitShippingRefusal() {
+        const index = this.shippingRefusalModalIndex;
+        const order = index === null ? null : this.orders[index];
+        if (!order) return;
+        const type = document.getElementById('shippingRefusalTypeInput').value;
+        const reason = document.getElementById('shippingRefusalReasonInput').value.trim();
+        if (!reason) { alert('اكتب سبب الرفض من فضلك.'); return; }
+        const refusal = { type, reason, recordedAt: new Date().toISOString() };
+        try {
+          if (this.db && order._docId) await this.db.collection('orders').doc(order._docId).update({ shippingRefusal: refusal });
+          this.orders[index] = { ...order, shippingRefusal: refusal };
+          if (!this.db || !order._docId) localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
+          this.closeShippingRefusalModal();
+          this.renderOrders();
+          this.showToast('تم تسجيل رفض العميل وسببه.', 'success');
+        } catch (error) {
+          console.error('[LOVARA Orders] Shipping refusal update error:', error);
+          alert('تعذر حفظ بيانات الرفض: ' + error.message);
         }
       },
       showRejectModal(index) {
@@ -1910,6 +1950,23 @@
       <div class="modal-actions">
         <button class="btn btn-modal-cancel" onclick="OrdersApp.closeRejectModal()">Cancel</button>
         <button class="btn btn-modal-reject" onclick="OrdersApp.submitRejection()">Reject Order</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="shippingRefusalModal">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <h3><i class="fas fa-triangle-exclamation" style="color:#e65100;margin-right:8px;"></i>تسجيل رفض العميل</h3>
+      <p>اختار نوع الرفض واكتب السبب القادم من شركة الشحن.</p>
+      <label for="shippingRefusalTypeInput">نوع الرفض</label>
+      <select id="shippingRefusalTypeInput" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font:inherit;margin:8px 0 14px;background:#fff;">
+        <option value="refused_order">العميل رفض الأوردر</option>
+        <option value="refused_delivery">العميل رفض الاستلام</option>
+      </select>
+      <label for="shippingRefusalReasonInput">سبب الرفض</label>
+      <textarea id="shippingRefusalReasonInput" placeholder="مثال: العميل غير متاح، غيّر رأيه، العنوان غير صحيح..."></textarea>
+      <div class="modal-actions">
+        <button class="btn btn-modal-cancel" onclick="OrdersApp.closeShippingRefusalModal()">إلغاء</button>
+        <button class="btn btn-modal-reject" onclick="OrdersApp.submitShippingRefusal()">حفظ الرفض</button>
       </div>
     </div>
   </div>
