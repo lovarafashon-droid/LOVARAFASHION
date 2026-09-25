@@ -56,6 +56,7 @@
     .status-filter { display:inline-flex; align-items:center; gap:6px; padding:9px 12px; border:1px solid var(--border); background:#fff; color:var(--text-light); border-radius:20px; font-family:'Jost',sans-serif; font-size:11px; font-weight:600; cursor:pointer; white-space:nowrap; }
     .status-filter.active { color:#fff; border-color:var(--secondary); background:var(--secondary); }
     .status-filter.confirmed.active { background:#2e7d32; border-color:#2e7d32; }
+    .status-filter.office-ordered.active { background:#6a1b9a; border-color:#6a1b9a; }
     .status-filter.shipped.active { background:#1976d2; border-color:#1976d2; }
     .status-filter.rejected.active { background:#c0392b; border-color:#c0392b; }
     .status-filter.pending.active { background:#8a6500; border-color:#8a6500; }
@@ -88,6 +89,7 @@
     .order-status { padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
     .status-pending { background: rgba(201,168,124,0.25); color: #f0d5a8; }
     .status-confirmed { background: rgba(76,175,80,0.25); color: #a5d6a7; }
+    .status-officeOrdered { background: rgba(156,39,176,0.25); color: #e1bee7; }
     .status-shipped { background: rgba(33,150,243,0.25); color: #90caf9; }
     .status-delivered { background: rgba(76,175,80,0.25); color: #a5d6a7; }
     .status-cancelled { background: rgba(192,57,43,0.25); color: #ef9a9a; }
@@ -259,7 +261,7 @@
       .navbar .logo{font-size:22px;line-height:1}
       .nav-actions{width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
       .navbar-status-bar{padding:7px 10px}
-      .navbar-status-bar .order-status-nav{width:100%;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+      .navbar-status-bar .order-status-nav{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
       .nav-btn{justify-content:center;min-width:0;padding:9px 4px;font-size:10px;gap:4px;white-space:nowrap}
       .status-filter{justify-content:center;min-width:0;padding:9px 4px;font-size:10px;gap:3px}
       .nav-btn i{font-size:11px}
@@ -343,6 +345,7 @@
         <div class="order-status-nav" aria-label="Order status filters">
           <button type="button" class="status-filter pending active" data-filter="pending" onclick="OrdersApp.filterOrders('pending')"><i class="fas fa-clock"></i> <span data-i18n="unconfirmed">Unconfirmed</span> <span class="filter-count" id="pendingCount">0</span></button>
           <button type="button" class="status-filter confirmed" data-filter="confirmed" onclick="OrdersApp.filterOrders('confirmed')"><i class="fas fa-circle-check"></i> <span data-i18n="confirmed">Confirmed</span> <span class="filter-count" id="confirmedCount">0</span></button>
+          <button type="button" class="status-filter office-ordered" data-filter="officeOrdered" onclick="OrdersApp.filterOrders('officeOrdered')"><i class="fas fa-store"></i> <span>تم الطلب من المكتب</span> <span class="filter-count" id="officeOrderedCount">0</span></button>
           <button type="button" class="status-filter shipped" data-filter="shipped" onclick="OrdersApp.filterOrders('shipped')"><i class="fas fa-truck-fast"></i> <span data-i18n="withCourier">مع شركة الشحن</span> <span class="filter-count" id="shippedCount">0</span></button>
           <button type="button" class="status-filter delivered" data-filter="delivered" onclick="OrdersApp.filterOrders('delivered')"><i class="fas fa-person-walking-luggage"></i> <span data-i18n="delivered">Delivered</span> <span class="filter-count" id="deliveredCount">0</span></button>
           <button type="button" class="status-filter rejected" data-filter="rejected" onclick="OrdersApp.filterOrders('rejected')"><i class="fas fa-circle-xmark"></i> <span data-i18n="cancelled">Cancelled</span> <span class="filter-count" id="rejectedCount">0</span></button>
@@ -958,15 +961,16 @@
         const container = document.getElementById('ordersList');
         const countBadge = document.getElementById('orderCount');
         this.updateDuplicateButton();
-        const groups = { pending: [], confirmed: [], shipped: [], delivered: [], rejected: [] };
+        const groups = { pending: [], confirmed: [], officeOrdered: [], shipped: [], delivered: [], rejected: [] };
         this.orders.forEach((order, index) => {
           const filter = (order.status === 'cancelled' || order.confirmationStatus === 'rejected')
             ? 'rejected' : order.status === 'delivered'
               ? 'delivered' : order.status === 'shipped'
-                ? 'shipped' : (order.confirmationStatus === 'confirmed' ? 'confirmed' : 'pending');
+                ? 'shipped' : order.status === 'officeOrdered'
+                  ? 'officeOrdered' : (order.confirmationStatus === 'confirmed' ? 'confirmed' : 'pending');
           groups[filter].push({ order, index });
         });
-        ['pending', 'confirmed', 'shipped', 'delivered', 'rejected'].forEach(filter => {
+        ['pending', 'confirmed', 'officeOrdered', 'shipped', 'delivered', 'rejected'].forEach(filter => {
           const count = document.getElementById(`${filter}Count`);
           if (count) count.textContent = groups[filter].length;
           const button = document.querySelector(`.status-filter[data-filter="${filter}"]`);
@@ -983,10 +987,10 @@
           return;
         }
         const entries = groups[this.orderFilter] || groups.pending;
-        const filterLabels = { pending: 'Unconfirmed Order', confirmed: 'Confirmed Order', shipped: 'Orders with shipping company', delivered: 'Delivered Order', rejected: 'Cancelled Order' };
+        const filterLabels = { pending: 'Unconfirmed Order', confirmed: 'Confirmed Order', officeOrdered: 'تم الطلب من المكتب', shipped: 'Orders with shipping company', delivered: 'Delivered Order', rejected: 'Cancelled Order' };
         const filterLabel = filterLabels[this.orderFilter] || 'Order';
         countBadge.textContent = `${entries.length} ${filterLabel}${entries.length !== 1 ? 's' : ''}`;
-        const emptyText = { pending: 'No unconfirmed orders.', confirmed: 'No confirmed orders yet.', shipped: 'لا توجد طلبات مع شركة الشحن.', delivered: 'No delivered orders yet.', rejected: 'No cancelled or rejected orders.' }[this.orderFilter];
+        const emptyText = { pending: 'No unconfirmed orders.', confirmed: 'No confirmed orders yet.', officeOrdered: 'لا توجد طلبات تم طلبها من المكتب.', shipped: 'لا توجد طلبات مع شركة الشحن.', delivered: 'No delivered orders yet.', rejected: 'No cancelled or rejected orders.' }[this.orderFilter];
         const confirmedOrders = this.getConfirmedOrders();
         const bulkPrintBar = this.orderFilter === 'confirmed' ? `
           <div class="bulk-print-bar">
@@ -1004,7 +1008,7 @@
       },
 
       filterOrders(filter) {
-        if (!['pending', 'confirmed', 'shipped', 'delivered', 'rejected'].includes(filter)) return;
+        if (!['pending', 'confirmed', 'officeOrdered', 'shipped', 'delivered', 'rejected'].includes(filter)) return;
         this.orderFilter = filter;
         this.renderOrders();
       },
@@ -1021,7 +1025,7 @@
           weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
           hour: '2-digit', minute: '2-digit'
         });
-        const allowedStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+        const allowedStatuses = ['pending', 'confirmed', 'officeOrdered', 'shipped', 'delivered', 'cancelled'];
         const orderStatus = allowedStatuses.includes(order.status) ? order.status : 'pending';
         const statusClass = `status-${orderStatus}`;
         const statusText = orderStatus.toUpperCase();
@@ -1278,9 +1282,13 @@
               <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;background:#e3f2fd;color:#1565c0;border-color:#90caf9;">
                 <i class="fas fa-truck-fast"></i> مع شركة الشحن ✓
               </button>
+              ` : confirmStatus === 'confirmed' && orderStatus === 'officeOrdered' ? `
+              <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;background:#f3e5f5;color:#6a1b9a;border-color:#ce93d8;">
+                <i class="fas fa-store"></i> تم الطلب من المكتب ✓
+              </button>
               ` : confirmStatus === 'confirmed' ? `
-              <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;">
-                <i class="fas fa-user-check"></i> تم تأكيد الأوردر من العميل ✓
+              <button type="button" class="btn btn-confirm" onclick="OrdersApp.markOfficeOrdered(${index})">
+                <i class="fas fa-store"></i> تم الطلب من المكتب
               </button>
               ` : `
               <button type="button" class="btn btn-reject" disabled style="opacity:0.7;cursor:default;">
@@ -1307,7 +1315,7 @@
               <button type="button" class="btn btn-confirm" onclick="OrdersApp.markDelivered(${index})">
                 <i class="fas fa-person-walking-luggage"></i> تم الوصول
               </button>
-              ` : confirmStatus === 'confirmed' ? `
+              ` : orderStatus === 'officeOrdered' ? `
               <button type="button" class="btn btn-confirm" onclick="OrdersApp.markShipped(${index})">
                 <i class="fas fa-truck-fast"></i> مع شركة الشحن
               </button>
@@ -1447,9 +1455,31 @@
         });
       },
 
-      markShipped(index) {
+      markOfficeOrdered(index) {
         const order = this.orders[index];
         if (!order || order.confirmationStatus !== 'confirmed') return;
+        if (!confirm('هل تم طلب الأوردر من المكتب؟')) return;
+        const updates = {
+          status: 'officeOrdered',
+          officeOrderedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (this.db && order._docId) {
+          this.db.collection('orders').doc(order._docId).update(updates)
+            .then(() => {
+              this.showToast('تم نقل الأوردر إلى قسم تم الطلب من المكتب.', 'success');
+              this.renderOrders();
+            })
+            .catch(err => alert('تعذر تحديث حالة الأوردر: ' + err.message));
+        } else {
+          this.orders[index] = { ...order, ...updates, officeOrderedAt: new Date().toISOString() };
+          localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
+          this.renderOrders();
+          this.showToast('تم نقل الأوردر إلى قسم تم الطلب من المكتب.', 'success');
+        }
+      },
+      markShipped(index) {
+        const order = this.orders[index];
+        if (!order || order.confirmationStatus !== 'confirmed' || order.status !== 'officeOrdered') return;
         if (!confirm('هل تم تسليم الأوردر لشركة الشحن؟')) return;
         const updates = {
           status: 'shipped',
