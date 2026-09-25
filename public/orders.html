@@ -64,6 +64,10 @@
     .orders-page { padding: 130px 0 32px; min-height: 100vh; }
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
     .page-header h1 { font-family: 'Cormorant Garamond', serif; font-size: 36px; color: var(--secondary); }
+    .page-header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .btn-merge-duplicates { background:#fff8e1; color:#8a6500; border:1px solid #ffe082; }
+    .btn-merge-duplicates:hover { background:#8a6500; color:#fff; border-color:#8a6500; transform:translateY(-1px); }
+    .btn-merge-duplicates:disabled { opacity:.55; cursor:not-allowed; transform:none; }
     .page-header p { color: var(--text-light); font-size: 14px; }
     .badge-count { background: var(--primary); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
     .loading-state { text-align: center; padding: 80px 20px; color: var(--text-light); }
@@ -369,7 +373,12 @@
           <h1 data-i18n="ordersDashboard">Orders Dashboard</h1>
           <p data-i18n="ordersSubtitle">All customer orders synced from the cloud</p>
         </div>
-        <span class="badge-count" id="orderCount">0 Orders</span>
+        <div class="page-header-actions">
+          <button type="button" class="btn btn-merge-duplicates" id="mergeDuplicatesButton" onclick="OrdersApp.mergeDuplicateOrders()" disabled>
+            <i class="fas fa-layer-group"></i> <span id="mergeDuplicatesLabel">لا توجد طلبات متطابقة</span>
+          </button>
+          <span class="badge-count" id="orderCount">0 Orders</span>
+        </div>
       </div>
       <div class="dashboard-tabs"><button class="dashboard-tab active" id="ordersTab" onclick="OrdersApp.showTab('orders')"><i class="fas fa-box"></i> الطلبات</button><button class="dashboard-tab" id="returnsTab" onclick="OrdersApp.showTab('returns')"><i class="fas fa-rotate-left"></i> طلبات الاسترجاع <span id="returnCount">0</span></button></div>
       <div id="ordersList">
@@ -688,6 +697,143 @@
         }
       },
 
+      normalizeDuplicateValue(value) {
+        if (Array.isArray(value)) return value.map(item => this.normalizeDuplicateValue(item));
+        if (value && typeof value === 'object') {
+          return Object.keys(value).sort().reduce((result, key) => {
+            result[key] = this.normalizeDuplicateValue(value[key]);
+            return result;
+          }, {});
+        }
+        return value ?? '';
+      },
+      getDuplicateOrderKey(order) {
+        const customer = order.customer || {};
+        const customerKey = {
+          firstName: customer.firstName || '', lastName: customer.lastName || '',
+          phone: customer.phone || '', phone2: customer.phone2 || '', email: customer.email || '',
+          address: customer.address || '', city: customer.city || '',
+          state: customer.state || customer.governorate || customer.province || '',
+          country: customer.country || '', postalCode: customer.postalCode || ''
+        };
+        const itemKey = (order.items || []).map(item => ({
+          productId: item.productId || item.id || '', name: item.name || '',
+          price: Number(item.price) || 0, cost: Number(item.cost) || 0,
+          size: this.normalizeDuplicateValue(item.size || '-'),
+          color: this.normalizeDuplicateValue(item.color || '-'),
+          pricingUnit: item.pricingUnit || '', unitLabel: item.unitLabel || ''
+        })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+        return JSON.stringify(this.normalizeDuplicateValue({
+          customer: customerKey, items: itemKey,
+          status: order.status || 'pending', confirmationStatus: order.confirmationStatus || 'pending',
+          paymentMethod: order.payment?.method || ''
+        }));
+      },
+      getDuplicateOrderGroups() {
+        const groups = new Map();
+        this.orders.forEach((order, index) => {
+          const key = this.getDuplicateOrderKey(order);
+          const group = groups.get(key) || [];
+          group.push({ order, index });
+          groups.set(key, group);
+        });
+        return [...groups.values()].filter(group => group.length > 1);
+      },
+      updateDuplicateButton() {
+        const button = document.getElementById('mergeDuplicatesButton');
+        const label = document.getElementById('mergeDuplicatesLabel');
+        if (!button || !label) return;
+        const groups = this.getDuplicateOrderGroups();
+        const duplicateCount = groups.reduce((sum, group) => sum + group.length - 1, 0);
+        button.disabled = duplicateCount === 0;
+        label.textContent = duplicateCount
+          ? `دمج ${duplicateCount} طلب مكرر (${groups.length} مجموعة)`
+          : 'لا توجد طلبات متطابقة';
+        button.title = duplicateCount ? 'دمج الطلبات المتطابقة تماماً' : 'لا توجد طلبات متطابقة';
+      },
+      mergeOrderItems(orders) {
+        const items = new Map();
+        orders.forEach(order => (order.items || []).forEach(item => {
+          const key = JSON.stringify(this.normalizeDuplicateValue({
+            productId: item.productId || item.id || '', name: item.name || '', price: Number(item.price) || 0,
+            cost: Number(item.cost) || 0, size: item.size || '-', color: item.color || '-',
+            pricingUnit: item.pricingUnit || '', unitLabel: item.unitLabel || ''
+          }));
+          const quantity = Math.max(1, parseInt(item.quantity) || 1);
+          const current = items.get(key);
+          if (!current) {
+            items.set(key, { ...item, quantity,
+              color: Array.isArray(item.color) ? [...item.color] : item.color,
+              size: Array.isArray(item.size) ? [...item.size] : item.size });
+            return;
+          }
+          current.quantity += quantity;
+          ['color', 'size'].forEach(field => {
+            if (Array.isArray(current[field]) || Array.isArray(item[field])) {
+              const left = Array.isArray(current[field]) ? current[field] : Array(quantity).fill(current[field] || '-');
+              const right = Array.isArray(item[field]) ? item[field] : Array(quantity).fill(item[field] || '-');
+              current[field] = [...left, ...right];
+            }
+          });
+        }));
+        return [...items.values()];
+      },
+      sumOrderMoney(values) {
+        return values.reduce((sum, value) => sum + (Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0), 0);
+      },
+      buildMergedOrder(group) {
+        const orders = group.map(entry => entry.order);
+        const merged = { ...orders[0], items: this.mergeOrderItems(orders) };
+        const totals = {};
+        ['subtotal', 'shipping', 'shippingBase', 'postalFee', 'vat', 'codFee', 'visaDiscount', 'discount', 'total'].forEach(field => {
+          totals[field] = `EGP ${this.sumOrderMoney(orders.map(order => order.totals?.[field])).toFixed(2)}`;
+        });
+        merged.totals = { ...(orders[0].totals || {}), ...totals };
+        merged.profit = orders.reduce((sum, order) => sum + (Number(order.profit) || (order.items || []).reduce((itemSum, item) => itemSum + ((Number(item.price) || 0) - (Number(item.cost) || 0)) * (parseInt(item.quantity) || 1), 0)), 0);
+        const notes = [...new Set(orders.map(order => String(order.customer?.notes || '').trim()).filter(Boolean))];
+        if (notes.length) merged.customer = { ...(merged.customer || {}), notes: notes.join('\n') };
+        const paid = this.sumOrderMoney(orders.map(order => order.payment?.receivedAmount || order.paidAmount));
+        if (paid > 0) {
+          merged.paidAmount = paid;
+          merged.payment = { ...(merged.payment || {}), receivedAmount: paid };
+        }
+        return merged;
+      },
+      async mergeDuplicateOrders() {
+        const groups = this.getDuplicateOrderGroups();
+        if (!groups.length) return;
+        const duplicateCount = groups.reduce((sum, group) => sum + group.length - 1, 0);
+        if (!confirm(`سيتم دمج ${groups.length} مجموعة (${duplicateCount} طلب مكرر) في طلبات مفردة، وحذف النسخ المكررة. هل تريد المتابعة؟`)) return;
+        try {
+          if (this.db) {
+            const batch = this.db.batch();
+            groups.forEach(group => {
+              const keeper = group[0].order;
+              if (!keeper._docId) return;
+              const merged = this.buildMergedOrder(group);
+              delete merged._docId;
+              batch.set(this.db.collection('orders').doc(keeper._docId), merged);
+              group.slice(1).forEach(({ order }) => {
+                if (order._docId) batch.delete(this.db.collection('orders').doc(order._docId));
+              });
+            });
+            await batch.commit();
+          } else {
+            const mergedIndexes = new Set();
+            groups.forEach(group => {
+              this.orders[group[0].index] = this.buildMergedOrder(group);
+              group.slice(1).forEach(({ index }) => mergedIndexes.add(index));
+            });
+            this.orders = this.orders.filter((_, index) => !mergedIndexes.has(index));
+            localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
+            this.renderOrders();
+          }
+          this.showToast(`تم دمج ${duplicateCount} طلب مكرر بنجاح.`, 'success');
+        } catch (error) {
+          console.error('[LOVARA Orders] Merge duplicates error:', error);
+          alert('تعذر دمج الطلبات: ' + error.message);
+        }
+      },
       getProductForItem(item) {
         if (!item) return null;
         return (item.productId && this.productCatalog.byId[item.productId])
@@ -811,6 +957,7 @@
       renderOrders() {
         const container = document.getElementById('ordersList');
         const countBadge = document.getElementById('orderCount');
+        this.updateDuplicateButton();
         const groups = { pending: [], confirmed: [], shipped: [], delivered: [], rejected: [] };
         this.orders.forEach((order, index) => {
           const filter = (order.status === 'cancelled' || order.confirmationStatus === 'rejected')
