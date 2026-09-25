@@ -1499,18 +1499,23 @@
         if (!confirm('هل تم تسليم الأوردر لشركة الشحن؟')) return;
         const updates = {
           status: 'shipped',
-          shippedAt: firebase.firestore.FieldValue.serverTimestamp()
+          shippedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          officeOrderedAt: firebase.firestore.FieldValue.delete()
         };
         if (this.db && order._docId) {
           this.db.collection('orders').doc(order._docId).update(updates)
             .then(() => {
-              this.orders[index] = { ...order, ...updates };
+              const nextOrder = { ...order, status: 'shipped' };
+              delete nextOrder.officeOrderedAt;
+              this.orders[index] = nextOrder;
               this.showToast('تم نقل الأوردر إلى قسم مع شركة الشحن.', 'success');
               this.renderOrders();
             })
             .catch(err => alert('Failed to send to shipping company: ' + err.message));
         } else {
-          this.orders[index] = { ...order, ...updates };
+          const nextOrder = { ...order, status: 'shipped', shippedAt: new Date().toISOString() };
+          delete nextOrder.officeOrderedAt;
+          this.orders[index] = nextOrder;
           localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
           this.renderOrders();
           this.showToast('تم نقل الأوردر إلى قسم مع شركة الشحن.', 'success');
