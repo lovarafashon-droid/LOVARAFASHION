@@ -922,6 +922,7 @@
       // carrier fee from the quotation plus the store's EGP 10 surcharge.
       postalFeeRate: 0.10,
       codStoreSurcharge: 10,
+      shippingStoreSurcharge: 6,
       vatRate: 0.14,
       getCodFee(amount) {
         const orderAmount = Math.max(0, Number(amount) || 0);
@@ -936,14 +937,15 @@
 
       getShippingBreakdown(governorate, subtotal) {
         const base = this.getShippingPrice(governorate);
-        if (!governorate || subtotal >= 2500) return { base: 0, postalFee: 0, vat: 0, codFee: 0, visaDiscount: 0, total: 0 };
+        if (!governorate || subtotal >= 2500) return { base: 0, postalFee: 0, vat: 0, codFee: 0, shippingStoreSurcharge: 0, visaDiscount: 0, total: 0 };
         const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value || '';
         const codFee = paymentMethod === 'cod' ? this.getCodFee(subtotal) : 0;
         const visaDiscount = paymentMethod === 'visa' ? 10 : 0;
         // Both postal fees and VAT are calculated from the quoted base rate.
         const postalFee = base * this.postalFeeRate;
         const vat = base * this.vatRate;
-        return { base, postalFee, vat, codFee, visaDiscount, total: Math.max(0, base + postalFee + vat + codFee - visaDiscount) };
+        const shippingStoreSurcharge = this.shippingStoreSurcharge;
+        return { base, postalFee, vat, codFee, shippingStoreSurcharge, visaDiscount, total: Math.max(0, base + postalFee + vat + codFee + shippingStoreSurcharge - visaDiscount) };
       },
 
       async applyPromoCode() {
@@ -1269,7 +1271,7 @@
           },
           payment: { method: 'visa', transactionId: '', methodName: this.getPaymentMethodName('visa'), status: 'awaiting_payment' },
           items: this.cart.map(item => ({ productId: item.id || '', name: item.name || 'Product', category: item.category || item.categoryName || '', subcategory: item.subcategory || item.subCategory || '', productType: item.productType || item.type || '', sizes: Array.isArray(item.sizes) ? item.sizes : [], colors: Array.isArray(item.colors) ? item.colors : [], price: (window.LovaraPricing ? LovaraPricing.getCartPricing(this.cart).lines.find(entry => entry.item === item)?.unitPrice : parseFloat(item.price)) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
-          totals: { subtotal: document.getElementById('subtotal').textContent, shipping: document.getElementById('shipping').textContent, shippingBase: 'EGP ' + (this.currentShippingBreakdown?.base || 0).toFixed(2), postalFee: 'EGP ' + (this.currentShippingBreakdown?.postalFee || 0).toFixed(2), vat: 'EGP ' + (this.currentShippingBreakdown?.vat || 0).toFixed(2), codFee: 'EGP ' + (this.currentShippingBreakdown?.codFee || 0).toFixed(2), visaDiscount: 'EGP ' + (this.currentShippingBreakdown?.visaDiscount || 0).toFixed(2), discount: this.promo ? ('EGP ' + this.getPromoDiscountTotal().toFixed(2)) : 'EGP 0.00', total: totalText },
+          totals: { subtotal: document.getElementById('subtotal').textContent, shipping: document.getElementById('shipping').textContent, shippingBase: 'EGP ' + (this.currentShippingBreakdown?.base || 0).toFixed(2), postalFee: 'EGP ' + (this.currentShippingBreakdown?.postalFee || 0).toFixed(2), vat: 'EGP ' + (this.currentShippingBreakdown?.vat || 0).toFixed(2), codFee: 'EGP ' + (this.currentShippingBreakdown?.codFee || 0).toFixed(2), shippingStoreSurcharge: 'EGP ' + (this.currentShippingBreakdown?.shippingStoreSurcharge || 0).toFixed(2), visaDiscount: 'EGP ' + (this.currentShippingBreakdown?.visaDiscount || 0).toFixed(2), discount: this.promo ? ('EGP ' + this.getPromoDiscountTotal().toFixed(2)) : 'EGP 0.00', total: totalText },
           promoCode: this.promo ? this.promo.code : '',
           promoId: this.promo ? this.promo.id : '',
           employeeId: this.promo ? (this.promo.employeeId || '') : '',
@@ -1383,7 +1385,7 @@
             status: paymentMethod === 'cod' ? 'cash_on_delivery' : 'awaiting_payment'
           },
           items: this.cart.map(item => ({ productId: item.id || '', name: item.name || 'Product', category: item.category || item.categoryName || '', subcategory: item.subcategory || item.subCategory || '', productType: item.productType || item.type || '', sizes: Array.isArray(item.sizes) ? item.sizes : [], colors: Array.isArray(item.colors) ? item.colors : [], price: (window.LovaraPricing ? LovaraPricing.getCartPricing(this.cart).lines.find(entry => entry.item === item)?.unitPrice : parseFloat(item.price)) || 0, cost: parseFloat(item.cost) || 0, quantity: item.quantity || 1, size: item.size || '-', color: item.color || '-', imageUrl: item.imageUrl || '' })),
-          totals: { subtotal: subtotalText, shipping: shippingText, shippingBase: 'EGP ' + (this.currentShippingBreakdown?.base || 0).toFixed(2), postalFee: 'EGP ' + (this.currentShippingBreakdown?.postalFee || 0).toFixed(2), vat: 'EGP ' + (this.currentShippingBreakdown?.vat || 0).toFixed(2), codFee: 'EGP ' + (this.currentShippingBreakdown?.codFee || 0).toFixed(2), visaDiscount: 'EGP ' + (this.currentShippingBreakdown?.visaDiscount || 0).toFixed(2), discount: this.promo ? ('EGP ' + this.getPromoDiscountTotal().toFixed(2)) : 'EGP 0.00', total: totalText },
+          totals: { subtotal: subtotalText, shipping: shippingText, shippingBase: 'EGP ' + (this.currentShippingBreakdown?.base || 0).toFixed(2), postalFee: 'EGP ' + (this.currentShippingBreakdown?.postalFee || 0).toFixed(2), vat: 'EGP ' + (this.currentShippingBreakdown?.vat || 0).toFixed(2), codFee: 'EGP ' + (this.currentShippingBreakdown?.codFee || 0).toFixed(2), shippingStoreSurcharge: 'EGP ' + (this.currentShippingBreakdown?.shippingStoreSurcharge || 0).toFixed(2), visaDiscount: 'EGP ' + (this.currentShippingBreakdown?.visaDiscount || 0).toFixed(2), discount: this.promo ? ('EGP ' + this.getPromoDiscountTotal().toFixed(2)) : 'EGP 0.00', total: totalText },
           promoCode: this.promo ? this.promo.code : '',
           promoId: this.promo ? this.promo.id : '',
           employeeId: this.promo ? (this.promo.employeeId || '') : '',
