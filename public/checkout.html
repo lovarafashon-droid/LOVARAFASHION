@@ -918,12 +918,15 @@
         'South Sinai': 106
       },
       shippingAdditionalKg: { sameCity: 5, zone1: 5, zone2: 7, zone3: 10, zone4: 12 },
-      // Postal surcharge removed from shipping calculations.
-      postalFeeRate: 0,
+      // J&T rates exclude a 10% postal surcharge. COD also has the
+      // carrier fee from the quotation plus the store's EGP 10 surcharge.
+      postalFeeRate: 0.10,
+      codStoreSurcharge: 10,
       vatRate: 0.14,
       getCodFee(amount) {
         const orderAmount = Math.max(0, Number(amount) || 0);
-        return orderAmount <= 500 ? 5 : Math.min(orderAmount * 0.01, 300);
+        const carrierFee = orderAmount <= 500 ? 5 : Math.min(orderAmount * 0.01, 300);
+        return carrierFee + this.codStoreSurcharge;
       },
 
       getShippingPrice(governorate) {
@@ -937,11 +940,10 @@
         const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value || '';
         const codFee = paymentMethod === 'cod' ? this.getCodFee(subtotal) : 0;
         const visaDiscount = paymentMethod === 'visa' ? 10 : 0;
-        // Shipping uses the quoted base price plus VAT and COD only.
-        // The previous 10% postal surcharge has been removed.
-        const postalFee = 0;
+        // Both postal fees and VAT are calculated from the quoted base rate.
+        const postalFee = base * this.postalFeeRate;
         const vat = base * this.vatRate;
-        return { base, postalFee, vat, codFee, visaDiscount, total: Math.max(0, base + vat + codFee - visaDiscount) };
+        return { base, postalFee, vat, codFee, visaDiscount, total: Math.max(0, base + postalFee + vat + codFee - visaDiscount) };
       },
 
       async applyPromoCode() {
