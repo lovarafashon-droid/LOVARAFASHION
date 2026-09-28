@@ -2499,7 +2499,9 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       },
 
       filterByMonth(orders) {
-        let filtered = orders;
+        // Profit is realized only after the customer receives the order.
+        // Exclude pending, office, shipping, refused and cancelled orders.
+        let filtered = orders.filter(o => o.status === 'delivered');
 
         // Filter by status
         if (this.currentStatus !== 'all') {
