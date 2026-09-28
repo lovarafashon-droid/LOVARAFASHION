@@ -57,7 +57,9 @@
     .status-filter.active { color:#fff; border-color:var(--secondary); background:var(--secondary); }
     .status-filter.confirmed.active { background:#2e7d32; border-color:#2e7d32; }
     .status-filter.office-ordered.active { background:#6a1b9a; border-color:#6a1b9a; }
+    .status-filter.office-arrived.active { background:#2e7d32; border-color:#2e7d32; }
     .status-filter.shipped.active { background:#1976d2; border-color:#1976d2; }
+    .status-filter.shipping-refused.active { background:#e65100; border-color:#e65100; }
     .status-filter.rejected.active { background:#c0392b; border-color:#c0392b; }
     .status-filter.pending.active { background:#8a6500; border-color:#8a6500; }
     .status-filter .filter-count { min-width:18px; height:18px; padding:0 5px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; background:rgba(0,0,0,.08); font-size:10px; }
@@ -211,6 +213,8 @@
     .dashboard-tabs { display:flex; gap:10px; margin:0 0 24px; border-bottom:1px solid var(--border); padding-bottom:10px; flex-wrap:wrap; }
     .dashboard-tab { border:1px solid var(--border); background:#fff; color:var(--text-light); border-radius:22px; padding:10px 18px; cursor:pointer; font-family:inherit; font-size:13px; }
     .dashboard-tab.active { background:var(--secondary); color:#fff; border-color:var(--secondary); }
+    .dashboard-tab.refusals.active { background:#e65100; border-color:#e65100; }
+    .dashboard-tab.office-arrived.active { background:#2e7d32; border-color:#2e7d32; }
     .order-group { margin: 0 0 28px; }
     .order-group-title { display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:13px 17px; border-radius:12px; font-size:16px; font-weight:700; }
     .order-group-title i { font-size:18px; }
@@ -357,7 +361,9 @@
           <button type="button" class="status-filter pending active" data-filter="pending" onclick="OrdersApp.filterOrders('pending')"><i class="fas fa-clock"></i> <span data-i18n="unconfirmed">Unconfirmed</span> <span class="filter-count" id="pendingCount">0</span></button>
           <button type="button" class="status-filter confirmed" data-filter="confirmed" onclick="OrdersApp.filterOrders('confirmed')"><i class="fas fa-circle-check"></i> <span data-i18n="confirmed">Confirmed</span> <span class="filter-count" id="confirmedCount">0</span></button>
           <button type="button" class="status-filter office-ordered" data-filter="officeOrdered" onclick="OrdersApp.filterOrders('officeOrdered')"><i class="fas fa-store"></i> <span>تم الطلب من المكتب</span> <span class="filter-count" id="officeOrderedCount">0</span></button>
+          <button type="button" class="status-filter office-arrived" data-filter="officeReceived" onclick="OrdersApp.filterOrders('officeReceived')"><i class="fas fa-warehouse"></i> <span>تم الوصول إلى المكتب</span> <span class="filter-count" id="officeReceivedCount">0</span></button>
           <button type="button" class="status-filter shipped" data-filter="shipped" onclick="OrdersApp.filterOrders('shipped')"><i class="fas fa-truck-fast"></i> <span data-i18n="withCourier">مع شركة الشحن</span> <span class="filter-count" id="shippedCount">0</span></button>
+          <button type="button" class="status-filter shipping-refused" data-filter="shippingRefused" onclick="OrdersApp.filterOrders('shippingRefused')"><i class="fas fa-triangle-exclamation"></i> <span>رفض الاستلام</span> <span class="filter-count" id="shippingRefusedCount">0</span></button>
           <button type="button" class="status-filter delivered" data-filter="delivered" onclick="OrdersApp.filterOrders('delivered')"><i class="fas fa-person-walking-luggage"></i> <span data-i18n="delivered">Delivered</span> <span class="filter-count" id="deliveredCount">0</span></button>
           <button type="button" class="status-filter rejected" data-filter="rejected" onclick="OrdersApp.filterOrders('rejected')"><i class="fas fa-circle-xmark"></i> <span data-i18n="cancelled">Cancelled</span> <span class="filter-count" id="rejectedCount">0</span></button>
         </div>
@@ -394,7 +400,7 @@
           <span class="badge-count" id="orderCount">0 Orders</span>
         </div>
       </div>
-      <div class="dashboard-tabs"><button class="dashboard-tab active" id="ordersTab" onclick="OrdersApp.showTab('orders')"><i class="fas fa-box"></i> الطلبات</button><button class="dashboard-tab" id="returnsTab" onclick="OrdersApp.showTab('returns')"><i class="fas fa-rotate-left"></i> طلبات الاسترجاع <span id="returnCount">0</span></button></div>
+      <div class="dashboard-tabs"><button class="dashboard-tab active" id="ordersTab" onclick="OrdersApp.showTab('orders')"><i class="fas fa-box"></i> الطلبات</button><button class="dashboard-tab" id="returnsTab" onclick="OrdersApp.showTab('returns')"><i class="fas fa-rotate-left"></i> طلبات الاسترجاع <span id="returnCount">0</span></button><button class="dashboard-tab refusals" id="shippingRefusalsTab" onclick="OrdersApp.showTab('shippingRefusals')"><i class="fas fa-triangle-exclamation"></i> رفض الاستلام <span id="shippingRefusalCount">0</span></button><button class="dashboard-tab office-arrived" id="officeArrivedTab" onclick="OrdersApp.showTab('officeArrived')"><i class="fas fa-warehouse"></i> تم الوصول من المكتب <span id="officeArrivedCount">0</span></button></div>
       <div id="ordersList">
         <div class="loading-state" id="loadingState">
           <i class="fas fa-circle-notch fa-spin"></i>
@@ -402,6 +408,8 @@
         </div>
       </div>
       <div id="returnsList" class="hidden"><div class="loading-state"><i class="fas fa-circle-notch fa-spin"></i><p>Loading return requests...</p></div></div>
+      <div id="shippingRefusalsList" class="hidden"><div class="loading-state"><i class="fas fa-circle-notch fa-spin"></i><p>Loading shipping refusal orders...</p></div></div>
+      <div id="officeArrivedList" class="hidden"><div class="loading-state"><i class="fas fa-circle-notch fa-spin"></i><p>Loading office-arrived orders...</p></div></div>
     </div>
   </section>
 
@@ -554,10 +562,16 @@
       showTab(tab) {
         const ordersList = document.getElementById('ordersList');
         const returnsList = document.getElementById('returnsList');
+        const shippingRefusalsList = document.getElementById('shippingRefusalsList');
+        const officeArrivedList = document.getElementById('officeArrivedList');
         document.getElementById('ordersTab').classList.toggle('active', tab === 'orders');
         document.getElementById('returnsTab').classList.toggle('active', tab === 'returns');
+        document.getElementById('shippingRefusalsTab').classList.toggle('active', tab === 'shippingRefusals');
+        document.getElementById('officeArrivedTab').classList.toggle('active', tab === 'officeArrived');
         ordersList.classList.toggle('hidden', tab !== 'orders');
         returnsList.classList.toggle('hidden', tab !== 'returns');
+        shippingRefusalsList.classList.toggle('hidden', tab !== 'shippingRefusals');
+        officeArrivedList.classList.toggle('hidden', tab !== 'officeArrived');
       },
 
       loadReturns() {
@@ -594,6 +608,32 @@
           const photo = this.safeImageUrl(r.imageUrl || r.imageDataUrl);
           return `<article class="return-card"><div class="return-head"><div><span class="return-id">#${esc(r.orderNumber || r._docId)}</span><span class="order-date" style="margin-left:12px">${date}</span></div><span class="return-status">${statusText}</span></div><div class="return-body"><div class="return-grid"><div><div class="return-label">Customer</div><div class="return-value">${esc((r.firstName || '') + ' ' + (r.lastName || ''))}</div></div><div><div class="return-label">Phone</div><div class="return-value">${esc(r.phone || '—')}</div></div><div><div class="return-label">Product</div><div class="return-value">${esc(r.productName || '—')}</div></div><div><div class="return-label">Request</div><div class="return-value">${type} · ${esc(r.reason || '—')}</div></div>${photo ? `<div><div class="return-label">Photo</div><a href="${photo}" target="_blank" rel="noopener"><img class="return-photo" src="${photo}" alt="Return product"></a></div>` : ''}</div>${r.details ? `<div class="return-details"><strong>Details:</strong> ${esc(r.details)}</div>` : ''}<div class="order-actions" style="padding:15px 0 0;background:transparent;border:0;justify-content:flex-start"><button class="btn btn-confirm" onclick="OrdersApp.updateReturn(${i}, 'approved')"><i class="fas fa-check"></i> Approve</button><button class="btn btn-reject" onclick="OrdersApp.updateReturn(${i}, 'rejected')"><i class="fas fa-times"></i> Reject</button></div></div></article>`;
         }).join('');
+      },
+
+      renderShippingRefusals() {
+        const container = document.getElementById('shippingRefusalsList');
+        const refusedOrders = this.orders
+          .map((order, index) => ({ order, index }))
+          .filter(({ order }) => order.shippingRefusal && order.status !== 'officeReceived');
+        document.getElementById('shippingRefusalCount').textContent = refusedOrders.length;
+        if (!refusedOrders.length) {
+          container.innerHTML = '<div class="empty-state"><i class="fas fa-triangle-exclamation"></i><h3>لا توجد طلبات رفض استلام</h3><p>أي طلب يرفض العميل استلامه من شركة الشحن سيظهر هنا تلقائيًا.</p></div>';
+          return;
+        }
+        container.innerHTML = `<div class="return-details" style="margin-bottom:18px;border-color:#ffcc80;background:#fff8e1;color:#8a4b00;"><i class="fas fa-circle-info"></i> هذه الطلبات تم تسجيل رفض استلامها من شركة الشحن، ويمكنك تعديل سبب الرفض من داخل الطلب.</div>${refusedOrders.map(({ order, index }) => this.renderOrder(order, index)).join('')}`;
+      },
+
+      renderOfficeArrived() {
+        const container = document.getElementById('officeArrivedList');
+        const arrivedOrders = this.orders
+          .map((order, index) => ({ order, index }))
+          .filter(({ order }) => order.status === 'officeReceived');
+        document.getElementById('officeArrivedCount').textContent = arrivedOrders.length;
+        if (!arrivedOrders.length) {
+          container.innerHTML = '<div class="empty-state"><i class="fas fa-warehouse"></i><h3>لا توجد طلبات وصلت من المكتب</h3><p>بعد رجوع طلب رفض الاستلام ووصوله للمكتب، اضغط «تم الوصول من المكتب» ليظهر هنا.</p></div>';
+          return;
+        }
+        container.innerHTML = `<div class="return-details" style="margin-bottom:18px;border-color:#a5d6a7;background:#e8f5e9;color:#2e7d32;"><i class="fas fa-circle-info"></i> هذه الطلبات رفض العميل استلامها ثم تم تسجيل وصولها مرة أخرى إلى المكتب.</div>${arrivedOrders.map(({ order, index }) => this.renderOrder(order, index)).join('')}`;
       },
 
       async updateReturn(index, status) {
@@ -968,16 +1008,20 @@
         const container = document.getElementById('ordersList');
         const countBadge = document.getElementById('orderCount');
         this.updateDuplicateButton();
-        const groups = { pending: [], confirmed: [], officeOrdered: [], shipped: [], delivered: [], rejected: [] };
+        this.renderShippingRefusals();
+        this.renderOfficeArrived();
+        const groups = { pending: [], confirmed: [], officeOrdered: [], officeReceived: [], shipped: [], shippingRefused: [], delivered: [], rejected: [] };
         this.orders.forEach((order, index) => {
           const filter = (order.status === 'cancelled' || order.confirmationStatus === 'rejected')
             ? 'rejected' : order.status === 'delivered'
-              ? 'delivered' : order.status === 'shipped'
-                ? 'shipped' : order.status === 'officeOrdered'
+              ? 'delivered' : order.status === 'officeReceived'
+              ? 'officeReceived' : (order.status === 'shippingRefused' || (order.status === 'shipped' && order.shippingRefusal))
+                ? 'shippingRefused' : order.status === 'shipped'
+                  ? 'shipped' : order.status === 'officeOrdered'
                   ? 'officeOrdered' : (order.confirmationStatus === 'confirmed' ? 'confirmed' : 'pending');
           groups[filter].push({ order, index });
         });
-        ['pending', 'confirmed', 'officeOrdered', 'shipped', 'delivered', 'rejected'].forEach(filter => {
+        ['pending', 'confirmed', 'officeOrdered', 'officeReceived', 'shipped', 'shippingRefused', 'delivered', 'rejected'].forEach(filter => {
           const count = document.getElementById(`${filter}Count`);
           if (count) count.textContent = groups[filter].length;
           const button = document.querySelector(`.status-filter[data-filter="${filter}"]`);
@@ -994,10 +1038,10 @@
           return;
         }
         const entries = groups[this.orderFilter] || groups.pending;
-        const filterLabels = { pending: 'Unconfirmed Order', confirmed: 'Confirmed Order', officeOrdered: 'تم الطلب من المكتب', shipped: 'Orders with shipping company', delivered: 'Delivered Order', rejected: 'Cancelled Order' };
+        const filterLabels = { pending: 'Unconfirmed Order', confirmed: 'Confirmed Order', officeOrdered: 'تم الطلب من المكتب', officeReceived: 'تم الوصول إلى المكتب', shipped: 'Orders with shipping company', shippingRefused: 'رفض الاستلام', delivered: 'Delivered Order', rejected: 'Cancelled Order' };
         const filterLabel = filterLabels[this.orderFilter] || 'Order';
         countBadge.textContent = `${entries.length} ${filterLabel}${entries.length !== 1 ? 's' : ''}`;
-        const emptyText = { pending: 'No unconfirmed orders.', confirmed: 'No confirmed orders yet.', officeOrdered: 'لا توجد طلبات تم طلبها من المكتب.', shipped: 'لا توجد طلبات مع شركة الشحن.', delivered: 'No delivered orders yet.', rejected: 'No cancelled or rejected orders.' }[this.orderFilter];
+        const emptyText = { pending: 'No unconfirmed orders.', confirmed: 'No confirmed orders yet.', officeOrdered: 'لا توجد طلبات تم طلبها من المكتب.', officeReceived: 'لا توجد طلبات تم الوصول بها إلى المكتب.', shipped: 'لا توجد طلبات مع شركة الشحن.', shippingRefused: 'لا توجد طلبات رفض استلام.', delivered: 'No delivered orders yet.', rejected: 'No cancelled or rejected orders.' }[this.orderFilter];
         const confirmedOrders = this.getConfirmedOrders();
         const bulkPrintBar = this.orderFilter === 'confirmed' ? `
           <div class="bulk-print-bar">
@@ -1015,7 +1059,7 @@
       },
 
       filterOrders(filter) {
-        if (!['pending', 'confirmed', 'officeOrdered', 'shipped', 'delivered', 'rejected'].includes(filter)) return;
+        if (!['pending', 'confirmed', 'officeOrdered', 'officeReceived', 'shipped', 'shippingRefused', 'delivered', 'rejected'].includes(filter)) return;
         this.orderFilter = filter;
         this.renderOrders();
       },
@@ -1044,11 +1088,12 @@
           weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
           hour: '2-digit', minute: '2-digit'
         });
-        const allowedStatuses = ['pending', 'confirmed', 'officeOrdered', 'shipped', 'delivered', 'cancelled'];
+        const allowedStatuses = ['pending', 'confirmed', 'officeOrdered', 'shipped', 'shippingRefused', 'delivered', 'officeReceived', 'cancelled'];
         const orderStatus = allowedStatuses.includes(order.status) ? order.status : 'pending';
         const statusClass = `status-${orderStatus}`;
         const statusText = orderStatus.toUpperCase();
         const isCancelled = orderStatus === 'cancelled';
+        const isShippingRefusal = Boolean(order.shippingRefusal);
         const confirmStatus = ['pending', 'confirmed', 'rejected'].includes(order.confirmationStatus) ? order.confirmationStatus : 'pending';
         const rejectionReason = order.rejectionReason || '';
         const esc = this.escapeHTML.bind(this);
@@ -1331,6 +1376,17 @@
               ${orderStatus === 'delivered' ? `
               <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;">
                 <i class="fas fa-person-walking-luggage"></i> تم الوصول ✓
+              </button>
+              ` : orderStatus === 'officeReceived' ? `
+              <button type="button" class="btn btn-confirm" disabled style="opacity:0.7;cursor:default;background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7;">
+                <i class="fas fa-warehouse"></i> تم الوصول من المكتب ✓
+              </button>
+              ` : orderStatus === 'shippingRefused' || (orderStatus === 'shipped' && isShippingRefusal) ? `
+              <button type="button" class="btn btn-confirm" onclick="OrdersApp.markOfficeReceived(${index})">
+                <i class="fas fa-warehouse"></i> تم الوصول من المكتب
+              </button>
+              <button type="button" class="btn btn-reject" onclick="OrdersApp.showShippingRefusalModal(${index})">
+                <i class="fas fa-pen"></i> تعديل سبب الرفض
               </button>
               ` : orderStatus === 'shipped' ? `
               <button type="button" class="btn btn-confirm" onclick="OrdersApp.markDelivered(${index})">
@@ -1630,17 +1686,41 @@
         const type = document.getElementById('shippingRefusalTypeInput').value;
         const reason = document.getElementById('shippingRefusalReasonInput').value.trim();
         if (!reason) { alert('اكتب سبب الرفض من فضلك.'); return; }
-        const refusal = { type, reason, recordedAt: new Date().toISOString() };
+        const refusal = { ...(order.shippingRefusal || {}), type, reason, recordedAt: new Date().toISOString() };
         try {
-          if (this.db && order._docId) await this.db.collection('orders').doc(order._docId).update({ shippingRefusal: refusal });
-          this.orders[index] = { ...order, shippingRefusal: refusal };
+          const updates = { status: 'shippingRefused', shippingRefusal: refusal, deliveredAt: firebase.firestore.FieldValue.delete() };
+          if (this.db && order._docId) await this.db.collection('orders').doc(order._docId).update(updates);
+          this.orders[index] = { ...order, ...updates };
           if (!this.db || !order._docId) localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
           this.closeShippingRefusalModal();
           this.renderOrders();
-          this.showToast('تم تسجيل رفض العميل وسببه.', 'success');
+          this.showToast('تم نقل الأوردر إلى قسم رفض الاستلام.', 'success');
         } catch (error) {
           console.error('[LOVARA Orders] Shipping refusal update error:', error);
           alert('تعذر حفظ بيانات الرفض: ' + error.message);
+        }
+      },
+
+      async markOfficeReceived(index) {
+        const order = this.orders[index];
+        if (!order || !order.shippingRefusal || !['shippingRefused', 'shipped'].includes(order.status)) return;
+        if (!confirm('هل وصل الأوردر المرتجع إلى المكتب؟')) return;
+        const updates = {
+          status: 'officeReceived',
+          officeReceivedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        try {
+          if (this.db && order._docId) await this.db.collection('orders').doc(order._docId).update(updates);
+          this.orders[index] = { ...order, ...updates };
+          if (!this.db || !order._docId) {
+            this.orders[index].officeReceivedAt = new Date().toISOString();
+            localStorage.setItem('lovara_orders', JSON.stringify(this.orders));
+          }
+          this.renderOrders();
+          this.showToast('تم نقل الأوردر إلى قسم تم الوصول من المكتب.', 'success');
+        } catch (error) {
+          console.error('[LOVARA Orders] Office received update error:', error);
+          alert('تعذر تسجيل وصول الأوردر للمكتب: ' + error.message);
         }
       },
       showRejectModal(index) {
