@@ -861,6 +861,16 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               </div>
             </div>
 
+            <div class="form-row offer-form-row">
+              <div class="form-group">
+                <label><span data-i18n="salePrice">سعر العرض (ج.م)</span> <small style="color:var(--text-light)" data-i18n="optional">(اختياري)</small></label>
+                <input type="number" id="pSalePrice" placeholder="مثال: 250" step="0.01" min="0">
+              </div>
+              <div class="form-group">
+                <label><span data-i18n="offerDays">مدة العرض بالأيام</span> <small style="color:var(--text-light)">(مثال: 5)</small></label>
+                <input type="number" id="pOfferDays" placeholder="مثال: 5" step="1" min="1">
+              </div>
+            </div>
             <div class="form-row hidden" id="dozenPriceGroup">
               <div class="form-group">
                 <label><span data-i18n="dozenPrice">سعر الدستة (ج.م)</span> <small style="color:var(--text-light)" data-i18n="dozenPriceHint">(اختياري — البرالات والاندرات)</small></label>
@@ -1086,7 +1096,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         email: "Email", password: "Password", signInBtn: "Sign In", invalidCreds: "Invalid credentials",
         productManager: "Product Manager", productManagerDesc: "Add and manage products in Firebase Firestore",
         logout: "Logout", addNewProduct: "Add New Product", productAdded: "Product added to Firebase!",
-        error: "Error", productName: "Product Name *", price: "Price (EGP) *", dozenPrice: "Dozen Price (EGP)", dozenPriceHint: "(optional — bras / panties)", oldPrice: "Old Price (EGP)",
+        error: "Error", salePrice: "Offer Price (EGP)", offerDays: "Offer duration (days)", productName: "Product Name *", price: "Price (EGP) *", dozenPrice: "Dozen Price (EGP)", dozenPriceHint: "(optional — bras / panties)", oldPrice: "Old Price (EGP)",
         optional: "(optional)", category: "Category *", selectCategory: "Select Category",
         dresses: "Dresses", tops: "Tops", pants: "Pants", accessories: "Accessories", lingerie: "Lingerie", sets: "Sweatshirts", suits: "Suits", pajamas: "Pajamas", winter: "Winter",
         hijab: "Hijab",
@@ -1132,7 +1142,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         email: "البريد الإلكتروني", password: "كلمة المرور", signInBtn: "تسجيل الدخول", invalidCreds: "بيانات الدخول غير صحيحة",
         productManager: "إدارة المنتجات", productManagerDesc: "أضف وأدر المنتجات في قاعدة بيانات المنتجات",
         logout: "تسجيل الخروج", addNewProduct: "إضافة منتج جديد", productAdded: "تم إضافة المنتج إلى Firebase!",
-        error: "خطأ", productName: "اسم المنتج *", price: "السعر (ج.م) *", dozenPrice: "سعر الدستة (ج.م)", dozenPriceHint: "(اختياري — البرالات والاندرات)", oldPrice: "السعر القديم (ج.م)",
+        error: "خطأ", salePrice: "سعر العرض (ج.م)", offerDays: "مدة العرض بالأيام", productName: "اسم المنتج *", price: "السعر (ج.م) *", dozenPrice: "سعر الدستة (ج.م)", dozenPriceHint: "(اختياري — البرالات والاندرات)", oldPrice: "السعر القديم (ج.م)",
         optional: "(اختياري)", category: "الفئة *", selectCategory: "اختر الفئة",
         dresses: "فساتين", tops: "توبات", pants: "بناطيل", accessories: "إكسسوارات", lingerie: "ملابس داخلية", sets: "سويت شرت", suits: "سوتات", pajamas: "بيجامات",
         hijab: "محجبات",
@@ -1953,6 +1963,14 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
         const sizes = this.getSelectedSizes();
         const colors = this.getSelectedColors();
+        const salePriceInput = document.getElementById('pSalePrice').value.trim();
+        const offerDaysInput = document.getElementById('pOfferDays').value.trim();
+        if ((salePriceInput && !offerDaysInput) || (!salePriceInput && offerDaysInput)) {
+          AdminApp.showError(AppSettings.currentLang === 'ar' ? 'أدخلي سعر العرض ومدة العرض معًا.' : 'Enter both the offer price and duration.');
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+          return false;
+        }
 
         const img1 = document.getElementById('pImage1').value.trim();
         const img2 = document.getElementById('pImage2').value.trim();
@@ -1964,6 +1982,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           pricePiece: parseFloat(document.getElementById('pPrice').value),
           priceDozen: document.getElementById('pDozenPrice').value ? parseFloat(document.getElementById('pDozenPrice').value) : null,
           oldPrice: document.getElementById('pOldPrice').value ? parseFloat(document.getElementById('pOldPrice').value) : null,
+          salePrice: document.getElementById('pSalePrice').value ? parseFloat(document.getElementById('pSalePrice').value) : null,
+          offerDurationDays: document.getElementById('pOfferDays').value ? parseInt(document.getElementById('pOfferDays').value, 10) : null,
+          saleStartedAt: document.getElementById('pSalePrice').value && document.getElementById('pOfferDays').value ? Date.now() : null,
+          saleEndsAt: document.getElementById('pSalePrice').value && document.getElementById('pOfferDays').value ? Date.now() + (parseInt(document.getElementById('pOfferDays').value, 10) * 86400000) : null,
           supplier: document.getElementById('pSupplier').value.trim() || '',
           category: document.getElementById('pCategory').value,
           subcategory: document.getElementById('pSubcategory') ? document.getElementById('pSubcategory').value : '',
@@ -2125,6 +2147,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           const viewText = t.all === 'الكل' ? 'عرض' : 'View';
           const cost = parseFloat(p.cost) || 0;
           const price = parseFloat(p.price) || 0;
+          const offerActive = Number(p.salePrice) > 0 && Number(p.saleEndsAt) > Date.now();
+          const offerHtml = offerActive ? `<span class="meta-tag offer-admin-tag"><i class="fas fa-bolt"></i> عرض ${Number(p.salePrice).toFixed(2)} حتى ${new Date(Number(p.saleEndsAt)).toLocaleDateString('ar-EG')}</span>` : '';
           const profit = cost > 0 ? price - cost : 0;
           const profitLabel = t.profitLabelShort || 'Profit';
           const costLabel = t.costLabelShort || 'Cost';
@@ -2140,7 +2164,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
             <div class="product-item-info">
               <h4>${p.name}</h4>
               <p>${catLabel}${badgeLabel ? ' &bull; ' + badgeLabel : ''}${p.showOnHome ? ' &bull; 🏠' : ''}${p.showOnCategory ? ' &bull; 📁' : ''}</p>
-              <div class="product-meta">${subcatHtml}${sizesHtml}${colorsHtml}${supplierHtml}${comingSoonHtml}</div>
+              <div class="product-meta">${subcatHtml}${sizesHtml}${colorsHtml}${supplierHtml}${comingSoonHtml}${offerHtml}</div>
               <div class="product-profit-info">
                 <span class="cost-tag"><i class="fas fa-industry"></i> ${costLabel}: ${cost.toFixed(2)} جنيه مصري</span>
                 ${profitHtml}
@@ -2175,6 +2199,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         document.getElementById('pPrice').value = product.price !== undefined && product.price !== null ? product.price : '';
         document.getElementById('pDozenPrice').value = product.priceDozen !== undefined && product.priceDozen !== null ? product.priceDozen : '';
         document.getElementById('pOldPrice').value = product.oldPrice !== undefined && product.oldPrice !== null ? product.oldPrice : '';
+        document.getElementById('pSalePrice').value = product.salePrice !== undefined && product.salePrice !== null ? product.salePrice : '';
+        document.getElementById('pOfferDays').value = product.offerDurationDays !== undefined && product.offerDurationDays !== null ? product.offerDurationDays : '';
         document.getElementById('pCost').value = product.cost !== undefined && product.cost !== null ? product.cost : '';
         document.getElementById('pStock').value = product.stock !== undefined && product.stock !== null ? product.stock : 1;
         document.getElementById('pCategory').value = product.category || '';
@@ -2279,6 +2305,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         document.getElementById('editProductId').value = '';
         document.getElementById('pCost').value = '';
         document.getElementById('pDozenPrice').value = '';
+        document.getElementById('pSalePrice').value = '';
+        document.getElementById('pOfferDays').value = '';
         document.getElementById('pSupplier').value = '';
         document.getElementById('pStock').value = '1';
         document.getElementById('editModeBadge').classList.add('hidden');

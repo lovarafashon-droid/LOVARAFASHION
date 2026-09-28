@@ -3,6 +3,59 @@
 // Auth, Cart, Wishlist, i18n, Products for ALL category pages
 // ============================================
 
+// ============================================
+// LOVARA - Timed offer helpers
+// ============================================
+window.LovaraOffers = window.LovaraOffers || {
+  getState(product, now = Date.now()) {
+    const originalPrice = Number(product?.pricePiece ?? product?.price) || 0;
+    const salePrice = Number(product?.salePrice) || 0;
+    const endsAt = Number(product?.saleEndsAt) || 0;
+    const active = salePrice > 0 && endsAt > now;
+    return {
+      active,
+      originalPrice,
+      price: active ? salePrice : originalPrice,
+      salePrice,
+      endsAt,
+      remainingMs: active ? Math.max(0, endsAt - now) : 0
+    };
+  },
+  formatRemaining(ms, lang = 'ar') {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = value => String(value).padStart(2, '0');
+    if (lang === 'ar') return `${days} يوم ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    return `${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  },
+  startCountdowns(onExpire) {
+    if (this._timer) clearInterval(this._timer);
+    const tick = () => {
+      let expired = false;
+      document.querySelectorAll('[data-offer-countdown]').forEach(element => {
+        const endsAt = Number(element.dataset.offerCountdown) || 0;
+        const remaining = endsAt - Date.now();
+        if (remaining <= 0) {
+          element.textContent = element.dataset.expiredLabel || (document.documentElement.lang === 'ar' ? 'انتهى العرض' : 'Offer ended');
+          element.classList.add('is-expired');
+          expired = true;
+        } else {
+          element.textContent = element.dataset.offerLabel + ' ' + this.formatRemaining(remaining, document.documentElement.lang === 'ar' ? 'ar' : 'en');
+        }
+      });
+      if (expired && typeof onExpire === 'function' && !this._expireQueued) {
+        this._expireQueued = true;
+        setTimeout(() => { this._expireQueued = false; onExpire(); }, 0);
+      }
+    };
+    tick();
+    this._timer = setInterval(tick, 1000);
+  }
+};
+
 function optimizeImageKitUrl(url, width = 600) {
   if (typeof url !== 'string' || !url.includes('ik.imagekit.io')) return url;
   const separator = url.includes('?') ? '&' : '?';
@@ -572,7 +625,7 @@ const CategoryApp = {
 
   addToCart(product, size, color, quantity = 1, pricingUnit = 'piece') {
     const unit = pricingUnit === 'dozen' ? 'dozen' : 'piece';
-    const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0);
+    const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (window.LovaraOffers ? window.LovaraOffers.getState(product).price : (parseFloat(product.pricePiece ?? product.price) || 0));
     const selectedQuantity = Math.max(1, Number(quantity) || 1);
     const colorKey = Array.isArray(color) ? JSON.stringify(color) : color;
     const existing = this.cart.find(item => item.id === product.id && item.size === size && (Array.isArray(item.color) ? JSON.stringify(item.color) : item.color) === colorKey && (item.pricingUnit || 'piece') === unit);
@@ -902,6 +955,15 @@ const CategoryApp = {
     }
   },
 
+  getProductVariants(product, type) {
+    if (!product) return [];
+    const keys = type === 'sizes' ? ['sizes', 'availableSizes', 'sizeOptions', 'size'] : ['colors', 'availableColors', 'colorOptions', 'color'];
+    const raw = keys.map(key => product[key]).find(value => Array.isArray(value) ? value.length : String(value || '').trim());
+    if (Array.isArray(raw)) return [...new Set(raw.map(value => String(value).trim()).filter(Boolean))];
+    if (typeof raw === 'string') return [...new Set(raw.split(/[,،|]/).map(value => value.trim()).filter(Boolean))];
+    return [];
+  },
+
   openSharedProductFromUrl() {
     const productId = new URLSearchParams(window.location.search).get('product');
     if (!productId || !this.products.some(product => product.id === productId)) return;
@@ -981,7 +1043,7 @@ const CategoryApp = {
     const max = parseFloat(document.getElementById('filterMaxPrice')?.value);
     const size = document.getElementById('filterSize')?.value || '';
     return this.products.filter(product => {
-      const price = parseFloat(product?.price) || 0;
+      const price = window.LovaraOffers ? window.LovaraOffers.getState(product).price : (parseFloat(product?.price) || 0);
       const matchesSubcategory = this.activeSubcategory === 'all' || product.subcategory === this.activeSubcategory;
       const matchesPrice = (!Number.isFinite(min) || price >= min) && (!Number.isFinite(max) || price <= max);
       const matchesSize = !size || (Array.isArray(product?.sizes) && product.sizes.includes(size));
@@ -1023,6 +1085,7 @@ const CategoryApp = {
     if (prev) prev.disabled = this.currentProductPage === 0;
     if (next) next.disabled = this.currentProductPage >= totalPages - 1;
     if (label) label.textContent = `${this.currentProductPage + 1} / ${totalPages}`;
+    if (window.LovaraOffers) window.LovaraOffers.startCountdowns(() => this.renderProductPage());
   },
 
   setupProductCardDelegation() {
@@ -1060,12 +1123,17 @@ const CategoryApp = {
     card.setAttribute('data-product-id', product.id || '');
     const badgeText = this.badgeTranslations[this.currentLang]?.[product.badge] || product.badge;
     const badgeHtml = product.badge ? `<div class="product-badge">${badgeText}</div>` : '';
-    const oldPriceHtml = product.oldPrice ? `<span class="old-price">EGP ${product.oldPrice.toFixed(2)}</span>` : '';
-    const sizesHtml = product.sizes ? product.sizes.map(s => `<span class="product-size-tag">${s}</span>`).join('') : '';
-    const colorsHtml = product.colors ? product.colors.map(c => `<span class="product-color-tag" style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span>`).join('') : '';
+    const offer = window.LovaraOffers ? window.LovaraOffers.getState(product) : { active: false, price: parseFloat(product.price) || 0, originalPrice: parseFloat(product.price) || 0, endsAt: 0 };
+    const oldPriceValue = offer.active ? offer.originalPrice : (parseFloat(product.oldPrice) || 0);
+    const oldPriceHtml = oldPriceValue > offer.price ? `<span class="old-price">EGP ${oldPriceValue.toFixed(2)}</span>` : '';
+    const offerHtml = offer.active ? `<div class="offer-countdown" data-offer-countdown="${offer.endsAt}" data-offer-label="${this.currentLang === 'ar' ? 'العرض ينتهي خلال' : 'Offer ends in'}" data-expired-label="${this.currentLang === 'ar' ? 'انتهى العرض' : 'Offer ended'}"></div>` : '';
+    const productSizes = this.getProductVariants(product, 'sizes');
+    const productColors = this.getProductVariants(product, 'colors');
+    const sizesHtml = productSizes.map(s => `<span class="product-size-tag">${s}</span>`).join('');
+    const colorsHtml = productColors.map(c => `<span class="product-color-tag" style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span>`).join('');
     const isWished = this.isInWishlist(product.id);
     const cardImage = optimizeImageKitUrl(product.imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA', 600);
-    card.innerHTML = `<div class="product-img-wrap" onclick="CategoryApp.openProductDetail('${product.id}')" style="cursor:pointer;"><img src="${cardImage}" alt="${product.name}" class="product-img" loading="lazy" decoding="async" fetchpriority="low" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">${badgeHtml}<button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="event.stopPropagation(); CategoryApp.handleWishlistClick('${product.id}')"><i class="fas fa-heart"></i></button></div><div class="product-info"><h4 class="product-name">${product.name}</h4><p class="product-price">EGP ${product.price ? (parseFloat(product.price) || 0).toFixed(2) : '0.00'} ${oldPriceHtml}</p>${sizesHtml ? `<div class="product-sizes"><span class="product-meta-label">${this.t('size')}:</span>${sizesHtml}</div>` : ''}${colorsHtml ? `<div class="product-colors"><span class="product-meta-label">${this.t('color')}:</span>${colorsHtml}</div>` : ''}${product.badge === 'Coming Soon' || product.comingSoon === true ? `<div class="product-actions coming-soon-actions"><span class="coming-soon-label" style="flex:1;text-align:center;padding:10px 14px;background:#f5f5f5;border-radius:8px;color:#888;font-size:13px;font-weight:500;"><i class="fas fa-clock" style="margin-right:6px;"></i>${this.badgeTranslations[this.currentLang]?.['Coming Soon'] || 'Coming Soon'}</span><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share" style="width:40px;height:40px;border-radius:8px;border:1px solid #e8e4e0;background:#fff;color:#666;cursor:pointer;"><i class="fas fa-share-nodes"></i></button></div>` : `<div class="product-actions"><button class="add-to-cart" onclick="CategoryApp.handleAddToCart('${product.id}')"><i class="fas fa-bag-shopping"></i> ${this.t('addToCart')}</button><button class="btn-buy-now homepage-preview-buy" type="button" onclick="CategoryApp.handleBuyNow('${product.id}')"><i class="fas fa-eye"></i> ${this.t('buyNow')}</button><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share"><i class="fas fa-share-nodes"></i></button></div>`}</div>`;
+    card.innerHTML = `<div class="product-img-wrap" onclick="CategoryApp.openProductDetail('${product.id}')" style="cursor:pointer;"><img src="${cardImage}" alt="${product.name}" class="product-img" loading="lazy" decoding="async" fetchpriority="low" onerror="this.src='https://via.placeholder.com/300x400?text=LOVARA'">${badgeHtml}<button class="product-wishlist ${isWished ? 'active' : ''}" aria-label="Add to wishlist" onclick="event.stopPropagation(); CategoryApp.handleWishlistClick('${product.id}')"><i class="fas fa-heart"></i></button></div><div class="product-info"><h4 class="product-name">${product.name}</h4><p class="product-price">EGP ${offer.price.toFixed(2)} ${oldPriceHtml}</p>${offerHtml}${sizesHtml ? `<div class="product-sizes"><span class="product-meta-label">${this.t('size')}:</span>${sizesHtml}</div>` : ''}${colorsHtml ? `<div class="product-colors"><span class="product-meta-label">${this.t('color')}:</span>${colorsHtml}</div>` : ''}${product.badge === 'Coming Soon' || product.comingSoon === true ? `<div class="product-actions coming-soon-actions"><span class="coming-soon-label" style="flex:1;text-align:center;padding:10px 14px;background:#f5f5f5;border-radius:8px;color:#888;font-size:13px;font-weight:500;"><i class="fas fa-clock" style="margin-right:6px;"></i>${this.badgeTranslations[this.currentLang]?.['Coming Soon'] || 'Coming Soon'}</span><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share" style="width:40px;height:40px;border-radius:8px;border:1px solid #e8e4e0;background:#fff;color:#666;cursor:pointer;"><i class="fas fa-share-nodes"></i></button></div>` : `<div class="product-actions"><button class="add-to-cart" onclick="CategoryApp.handleAddToCart('${product.id}')"><i class="fas fa-bag-shopping"></i> ${this.t('addToCart')}</button><button class="btn-buy-now homepage-preview-buy" type="button" onclick="CategoryApp.handleBuyNow('${product.id}')"><i class="fas fa-eye"></i> ${this.t('buyNow')}</button><button class="btn-share" onclick="CategoryApp.shareProduct('${product.id}')" aria-label="Share"><i class="fas fa-share-nodes"></i></button></div>`}</div>`;
     card.addEventListener('click', event => {
       if (event.target.closest('button, a, input, select, textarea')) return;
       this.openProductDetail(product.id);
@@ -1091,8 +1159,8 @@ const CategoryApp = {
     }
     // The card action is a real add action (not a silent redirect to a preview).
     // The product preview remains available through Buy Now and the product image.
-    const defaultSize = Array.isArray(product.sizes) && product.sizes.length ? product.sizes[0] : null;
-    const defaultColor = Array.isArray(product.colors) && product.colors.length ? product.colors[0] : null;
+    const defaultSize = this.getProductVariants(product, 'sizes')[0] || null;
+    const defaultColor = this.getProductVariants(product, 'colors')[0] || null;
     this.addToCart(product, defaultSize, defaultColor, 1);
   },
 
@@ -1124,8 +1192,8 @@ const CategoryApp = {
     const modal = document.createElement('div');
     modal.id = 'categoryProductModal';
     modal.className = 'category-product-modal';
-    const sizes = Array.isArray(product.sizes) ? product.sizes : [];
-    const colors = Array.isArray(product.colors) ? product.colors : [];
+    const sizes = this.getProductVariants(product, 'sizes');
+    const colors = this.getProductVariants(product, 'colors');
     const hasUnitPricing = ['bras', 'panties'].includes(String(product.subcategory || '').toLowerCase()) && Number(product.priceDozen) > 0;
     const unitOptions = hasUnitPricing ? `<div class="category-preview-section unit-pricing-section"><h4>اختاري طريقة الشراء</h4><div class="category-preview-options category-preview-units"><button type="button" class="category-preview-option selected" data-unit="piece">قطعة <small>EGP ${(parseFloat(product.pricePiece ?? product.price) || 0).toFixed(2)}</small></button><button type="button" class="category-preview-option" data-unit="dozen">دستة <small>EGP ${(parseFloat(product.priceDozen) || 0).toFixed(2)}</small></button></div></div>` : '';
     modal.innerHTML = `<div class="category-product-overlay"></div><div class="category-product-dialog" role="dialog" aria-modal="true"><button type="button" class="category-product-close" aria-label="Close"><i class="fas fa-times"></i></button><div class="category-product-gallery"><img class="category-preview-image" alt=""><button type="button" class="category-preview-prev"><i class="fas fa-chevron-left"></i></button><button type="button" class="category-preview-next"><i class="fas fa-chevron-right"></i></button><span class="category-preview-counter"></span></div><div class="category-product-details"><span class="category-preview-badge"></span><h2></h2><div class="category-preview-prices"><span class="category-preview-price"></span><del class="category-preview-old"></del></div><div class="category-preview-description"></div>${unitOptions}${sizes.length ? `<div class="category-preview-section"><h4>${this.t('selectSize')}</h4><div class="category-preview-options category-preview-sizes">${sizes.map((size, index) => `<button type="button" class="category-preview-option${index === 0 ? ' selected' : ''}" data-size="${size}">${size}</button>`).join('')}</div></div>` : ''}${colors.length ? `<div class="category-preview-section category-preview-color-selection"></div>` : ''}<div class="category-preview-actions"><div class="category-preview-qty"><button type="button" data-qty="-1">−</button><span>1</span><button type="button" data-qty="1">+</button></div><button type="button" class="category-preview-add"><i class="fas fa-bag-shopping"></i>${this.t('addToCart')}</button><button type="button" class="category-preview-buy"><i class="fas fa-bolt"></i>${this.t('buyNow')}</button><button type="button" class="category-preview-wish"><i class="far fa-heart"></i></button></div></div></div>`;
@@ -1161,13 +1229,22 @@ const CategoryApp = {
     modal.querySelector('h2').textContent = product.name || 'Product';
     const updatePrice = () => {
       const unit = selectedUnit();
-      const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0);
+      const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || 0) : (window.LovaraOffers ? window.LovaraOffers.getState(product).price : (parseFloat(product.pricePiece ?? product.price) || 0));
       // Quantity discounts are calculated only after the item enters the cart.
       modal.querySelector('.category-preview-price').textContent = `EGP ${price.toFixed(2)} / ${unit === 'dozen' ? 'دستة' : 'قطعة'}`;
     };
     updatePrice();
     renderColorSelectors(1);
-    modal.querySelector('.category-preview-old').textContent = product.oldPrice ? `EGP ${parseFloat(product.oldPrice).toFixed(2)}` : '';
+    const previewOffer = window.LovaraOffers ? window.LovaraOffers.getState(product) : { active: false, originalPrice: parseFloat(product.price) || 0, endsAt: 0 };
+    modal.querySelector('.category-preview-old').textContent = previewOffer.active ? `EGP ${previewOffer.originalPrice.toFixed(2)}` : (product.oldPrice ? `EGP ${parseFloat(product.oldPrice).toFixed(2)}` : '');
+    if (previewOffer.active) {
+      const offerTimer = document.createElement('div');
+      offerTimer.className = 'offer-countdown offer-countdown-preview';
+      offerTimer.dataset.offerCountdown = previewOffer.endsAt;
+      offerTimer.dataset.offerLabel = this.currentLang === 'ar' ? 'العرض ينتهي خلال' : 'Offer ends in';
+      offerTimer.dataset.expiredLabel = this.currentLang === 'ar' ? 'انتهى العرض' : 'Offer ended';
+      modal.querySelector('.category-preview-prices').appendChild(offerTimer);
+    }
     modal.querySelector('.category-preview-description').textContent = product.description || '';
     modal.querySelector('.category-preview-badge').textContent = product.badge || '';
     modal.querySelector('.category-preview-badge').style.display = product.badge ? 'inline-block' : 'none';
@@ -1193,6 +1270,7 @@ const CategoryApp = {
     modal.querySelector('.category-preview-wish').addEventListener('click', event => { this.toggleWishlist(product); event.currentTarget.classList.toggle('active'); });
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => modal.classList.add('show'));
+    if (window.LovaraOffers) window.LovaraOffers.startCountdowns(() => { if (document.getElementById('categoryProductModal')) this.openProductDetail(product.id); });
   },
 
   closeProductDetail(fromPopstate = false, closeWithoutBack = false) {
@@ -1243,8 +1321,10 @@ const CategoryApp = {
     }
     const existing = document.getElementById('buyNowModal');
     if (existing) existing.remove();
-    const sizesHtml = product.sizes ? product.sizes.map((s, i) => `<label class="buy-now-option"><input type="radio" name="buySize" value="${s}" ${i === 0 ? 'checked' : ''}><span>${s}</span></label>`).join('') : '';
-    const colorsHtml = product.colors ? product.colors.map((c, i) => `<label class="buy-now-option"><input type="radio" name="buyColor" value="${c}" ${i === 0 ? 'checked' : ''}><span style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span></label>`).join('') : '';
+    const productSizes = this.getProductVariants(product, 'sizes');
+    const productColors = this.getProductVariants(product, 'colors');
+    const sizesHtml = productSizes.map((s, i) => `<label class="buy-now-option"><input type="radio" name="buySize" value="${s}" ${i === 0 ? 'checked' : ''}><span>${s}</span></label>`).join('');
+    const colorsHtml = productColors.map((c, i) => `<label class="buy-now-option"><input type="radio" name="buyColor" value="${c}" ${i === 0 ? 'checked' : ''}><span style="background:${c};color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3)">${c}</span></label>`).join('');
     const modal = document.createElement('div');
     modal.id = 'buyNowModal';
     modal.className = 'buy-now-modal';
@@ -1264,7 +1344,7 @@ const CategoryApp = {
     if (modal) { modal.classList.remove('show'); setTimeout(() => modal.remove(), 300); }
   },
 
-  startDirectCheckout(product, size, color, quantity = 1, pricingUnit = 'piece') { localStorage.removeItem('lovara_checkout_selection'); const unit = pricingUnit === 'dozen' ? 'dozen' : 'piece'; const selectedQuantity = Math.max(1, Number(quantity) || 1); const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (parseFloat(product.pricePiece ?? product.price) || 0); localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, category: product.category || product.categoryName || '', subcategory: product.subcategory || product.subCategory || '', productType: product.productType || product.type || '', price, pricePiece: parseFloat(product.pricePiece ?? product.price) || 0, priceDozen: parseFloat(product.priceDozen) || 0, pricingUnit: unit, unitLabel: unit === 'dozen' ? 'Dozen / دستة' : 'Piece / قطعة', size: size || null, color: color || null, quantity: selectedQuantity, qty: selectedQuantity, quantityDiscountEnabled: selectedQuantity > 1 })); window.location.assign('/checkout.html'); },
+  startDirectCheckout(product, size, color, quantity = 1, pricingUnit = 'piece') { localStorage.removeItem('lovara_checkout_selection'); const unit = pricingUnit === 'dozen' ? 'dozen' : 'piece'; const selectedQuantity = Math.max(1, Number(quantity) || 1); const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (window.LovaraOffers ? window.LovaraOffers.getState(product).price : (parseFloat(product.pricePiece ?? product.price) || 0)); localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, category: product.category || product.categoryName || '', subcategory: product.subcategory || product.subCategory || '', productType: product.productType || product.type || '', price, pricePiece: parseFloat(product.pricePiece ?? product.price) || 0, priceDozen: parseFloat(product.priceDozen) || 0, pricingUnit: unit, unitLabel: unit === 'dozen' ? 'Dozen / دستة' : 'Piece / قطعة', size: size || null, color: color || null, quantity: selectedQuantity, qty: selectedQuantity, quantityDiscountEnabled: selectedQuantity > 1 })); window.location.assign('/checkout.html'); },
   confirmBuyNow(productId, isDirectBuy) {
     const product = this.products.find(p => p.id === productId);
     if (!product) return;

@@ -58,7 +58,7 @@ async function fetchProductsViaRest(limit = 0) {
   const structuredQuery = {
     from: [{ collectionId: 'products' }],
     select: { fields: [
-      'showOnHome', 'name', 'nameEn', 'englishName', 'titleEn', 'names', 'price', 'oldPrice', 'category', 'badge',
+      'showOnHome', 'name', 'nameEn', 'englishName', 'titleEn', 'names', 'price', 'pricePiece', 'salePrice', 'saleStartedAt', 'saleEndsAt', 'offerDurationDays', 'oldPrice', 'category', 'badge',
       'sizes', 'colors', 'comingSoon', 'imageUrl', 'image', 'imageURL',
       'photo', 'img', 'thumbnail', 'images', 'createdAt'
     ].map(fieldPath => ({ fieldPath })) }
@@ -325,6 +325,7 @@ function renderCarouselPage() {
     container.style.minHeight = `${Math.max(reservedHeight, container.scrollHeight)}px`;
     container.style.opacity = '1';
     container.style.transform = 'translateX(0)';
+    if (window.LovaraOffers) window.LovaraOffers.startCountdowns(() => renderCarouselPage());
   }, 150);
 
   if (pagination) {
@@ -429,7 +430,8 @@ function createProductCard(id, product) {
   div.setAttribute('data-product-id', id);
 
   const safeName = (product.name || 'Unnamed').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const price = parseFloat(product.price) || 0;
+  const offer = window.LovaraOffers ? window.LovaraOffers.getState(product) : { active: false, price: parseFloat(product.price) || 0, originalPrice: parseFloat(product.price) || 0, endsAt: 0 };
+  const price = offer.price;
   const oldPrice = parseFloat(product.oldPrice) || 0;
   const imageUrl = product.imageUrl || product.image || product.imageURL || product.photo || product.img || product.thumbnail || '';
   const finalImage = optimizeHomepageImageUrl(imageUrl || 'https://via.placeholder.com/300x400?text=LOVARA', 600);
@@ -437,7 +439,9 @@ function createProductCard(id, product) {
   const lang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : (localStorage.getItem('lovara_lang') || 'en');
   const badgeText = badgeTranslations[lang]?.[product.badge] || product.badge;
   const badgeHtml = product.badge ? `<div class="product-badge">${badgeText}</div>` : '';
-  const oldPriceHtml = oldPrice > 0 ? `<span class="old-price">EGP ${oldPrice.toFixed(2)}</span>` : '';
+  const displayOldPrice = offer.active ? offer.originalPrice : oldPrice;
+  const oldPriceHtml = displayOldPrice > price ? `<span class="old-price">EGP ${displayOldPrice.toFixed(2)}</span>` : '';
+  const offerHtml = offer.active ? `<div class="offer-countdown" data-offer-countdown="${offer.endsAt}" data-offer-label="${lang === 'ar' ? 'العرض ينتهي خلال' : 'Offer ends in'}" data-expired-label="${lang === 'ar' ? 'انتهى العرض' : 'Offer ended'}"></div>` : '';
 
   // Sizes
   let sizesHtml = '';
@@ -470,7 +474,7 @@ function createProductCard(id, product) {
     </div>
     <div class="product-info">
       <h4 class="product-name">${safeName}</h4>
-      <p class="product-price">EGP ${price.toFixed(2)} ${oldPriceHtml}</p>
+      <p class="product-price">EGP ${price.toFixed(2)} ${oldPriceHtml}</p>${offerHtml}
       ${sizesHtml}
       ${colorsHtml}
       ${(() => {

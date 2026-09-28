@@ -3308,3 +3308,10 @@ body.lang-ar .toggle-pw {
   #cartCheckoutPreview [data-preview-items] select { max-width: 100%; }
   #cartCheckoutPreview [data-preview-continue], #cartCheckoutPreview [data-preview-back] { padding: 11px 7px !important; font-size: 12px; }
 }
+
+/* Timed offers */
+.offer-countdown { display: inline-flex; align-items: center; gap: 5px; width: fit-content; margin: -4px 0 10px; padding: 5px 9px; border-radius: 8px; background: #fff4e5; color: #a65300; border: 1px solid #ffd39b; font-size: 11px; font-weight: 700; direction: rtl; }
+.offer-countdown::before { content: "\f017"; font-family: "Font Awesome 6 Free"; font-weight: 900; }
+.offer-countdown.is-expired { background: #f2f2f2; color: #777; border-color: #ddd; }
+.offer-countdown-preview { margin: 0; font-size: 12px; }
+.offer-admin-tag { background: #fff4e5 !important; color: #a65300 !important; border-color: #ffd39b !important; }
