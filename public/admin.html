@@ -1068,7 +1068,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           <div class="products-list-header">
             <h2><span data-i18n="products">Products</span> <span id="productCount">(0)</span></h2>
             <button type="button" class="btn-bulk-price" onclick="ProductManager.bulkIncreasePrices()">
-              <i class="fas fa-arrow-trend-up"></i> <span data-i18n="bulkIncreasePrices">زيادة أسعار الكل</span>
+              <i class="fas fa-tags"></i> <span data-i18n="bulkAdjustPrices">تعديل أسعار الكل</span>
             </button>
           </div>
 
@@ -1127,7 +1127,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         dragDrop: "or drag & drop here", badge: "Badge", none: "None", newBadge: "New", saleBadge: "Sale",
         bestsellerBadge: "Bestseller", limitedBadge: "Limited",
         comingSoonBadge: "Coming Soon", description: "Description", addProduct: "Add Product",
-        products: "Products", all: "All", loading: "Loading products...", noProducts: "No products found.", bulkIncreasePrices: "Increase all prices",
+        products: "Products", all: "All", loading: "Loading products...", noProducts: "No products found.", bulkAdjustPrices: "Adjust all prices",
         deleteConfirm: "Delete this product?", firebaseNotLoaded: "Firebase not loaded. Check your config.",
         enterEmailPass: "Please enter email and password", selectImage: "Please select an image file (JPG, PNG, WebP)",
         imageSize: "Image size should be less than 5MB", failedAdd: "Failed to add product: ",
@@ -1173,7 +1173,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         dragDrop: "أو اسحب وأفلت هنا", badge: "الشارة", none: "بدون", newBadge: "جديد", saleBadge: "تخفيض",
         bestsellerBadge: "الأكثر مبيعاً", limitedBadge: "محدود",
         comingSoonBadge: "سوف يتوفر قريباً", description: "الوصف", addProduct: "إضافة المنتج",
-        products: "المنتجات", all: "الكل", loading: "جاري تحميل المنتجات...", noProducts: "لا توجد منتجات.", bulkIncreasePrices: "زيادة أسعار الكل",
+        products: "المنتجات", all: "الكل", loading: "جاري تحميل المنتجات...", noProducts: "لا توجد منتجات.", bulkAdjustPrices: "تعديل أسعار الكل",
         deleteConfirm: "حذف هذا المنتج؟", firebaseNotLoaded: "لم يتم تحميل قاعدة البيانات. تحقق من الإعدادات.",
         enterEmailPass: "الرجاء إدخال البريد وكلمة المرور", selectImage: "الرجاء اختيار ملف صورة (JPG, PNG, WebP)",
         imageSize: "حجم الصورة يجب أن يكون أقل من 5 ميجا", failedAdd: "فشل في إضافة المنتج: ",
@@ -2118,9 +2118,18 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           return;
         }
 
+        const direction = prompt(isArabic
+          ? 'اختار العملية:\n1 - زيادة الأسعار\n2 - نقص الأسعار'
+          : 'Choose the operation:\n1 - Increase prices\n2 - Decrease prices');
+        if (direction === null) return;
+        if (!['1', '2'].includes(direction.trim())) {
+          alert(isArabic ? 'اختيار غير صحيح.' : 'Invalid choice.');
+          return;
+        }
+
         const mode = prompt(isArabic
-          ? 'اختار نوع الزيادة:\n1 - نسبة مئوية\n2 - مبلغ ثابت بالجنيه'
-          : 'Choose the increase type:\n1 - Percentage\n2 - Fixed amount in EGP');
+          ? 'اختار طريقة التعديل:\n1 - نسبة مئوية\n2 - مبلغ ثابت بالجنيه'
+          : 'Choose the adjustment type:\n1 - Percentage\n2 - Fixed amount in EGP');
         if (mode === null) return;
         if (!['1', '2'].includes(mode.trim())) {
           alert(isArabic ? 'اختيار غير صحيح.' : 'Invalid choice.');
@@ -2137,17 +2146,20 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           return;
         }
 
+        const isDecrease = direction.trim() === '2';
+        const operationLabel = isDecrease ? (isArabic ? 'نقص' : 'decrease') : (isArabic ? 'زيادة' : 'increase');
         const typeLabel = mode.trim() === '1' ? `${value}%` : `${value} جنيه`;
         const confirmation = isArabic
-          ? `سيتم زيادة أسعار ${this.products.length} منتج بمقدار ${typeLabel}.\nسيتم تحديث السعر الأساسي، سعر الدستة، سعر العرض والسعر القديم إن وُجدوا.\nهل تريد المتابعة؟`
-          : `${this.products.length} products will be updated by ${typeLabel}.\nBase, dozen, offer and old prices will be updated when present.\nContinue?`;
+          ? `سيتم ${operationLabel} أسعار ${this.products.length} منتج بمقدار ${typeLabel}.\nلن ينزل أي سعر أقل من صفر.\nسيتم تحديث السعر الأساسي، سعر الدستة، سعر العرض والسعر القديم إن وُجدوا.\nهل تريد المتابعة؟`
+          : `${this.products.length} products will have a ${operationLabel} of ${typeLabel}.\nNo price will go below zero.\nBase, dozen, offer and old prices will be updated when present.\nContinue?`;
         if (!confirm(confirmation)) return;
 
         const roundPrice = number => Math.round(number * 100) / 100;
         const increase = price => {
           const numeric = Number(price);
           if (!Number.isFinite(numeric)) return null;
-          return roundPrice(mode.trim() === '1' ? numeric * (1 + value / 100) : numeric + value);
+          const next = mode.trim() === '1' ? numeric * (1 + (isDecrease ? -value : value) / 100) : numeric + (isDecrease ? -value : value);
+          return Math.max(0, roundPrice(next));
         };
         const priceFields = ['price', 'pricePiece', 'priceDozen', 'salePrice', 'oldPrice'];
         const updates = this.products.map(product => {
