@@ -924,6 +924,7 @@
       codStoreSurcharge: 10,
       shippingStoreSurcharge: 6,
       vatRate: 0.14,
+      shippingRateMultiplier: 0.5,
       getCodFee(amount) {
         const orderAmount = Math.max(0, Number(amount) || 0);
         const carrierFee = orderAmount <= 500 ? 5 : Math.min(orderAmount * 0.01, 300);
@@ -932,7 +933,7 @@
 
       getShippingPrice(governorate) {
         if (!governorate) return 0;
-        return this.shippingPrices[governorate] || 106;
+        return (this.shippingPrices[governorate] || 106) * this.shippingRateMultiplier;
       },
 
       getShippingBreakdown(governorate, subtotal) {
@@ -942,10 +943,13 @@
         const codFee = paymentMethod === 'cod' ? this.getCodFee(subtotal) : 0;
         const visaDiscount = paymentMethod === 'visa' ? 10 : 0;
         // Both postal fees and VAT are calculated from the quoted base rate.
+        const multiplier = this.shippingRateMultiplier;
         const postalFee = base * this.postalFeeRate;
         const vat = base * this.vatRate;
-        const shippingStoreSurcharge = this.shippingStoreSurcharge;
-        return { base, postalFee, vat, codFee, shippingStoreSurcharge, visaDiscount, total: Math.max(0, base + postalFee + vat + codFee + shippingStoreSurcharge - visaDiscount) };
+        const discountedCodFee = codFee * multiplier;
+        const shippingStoreSurcharge = this.shippingStoreSurcharge * multiplier;
+        const discountedVisa = visaDiscount * multiplier;
+        return { base, postalFee, vat, codFee: discountedCodFee, shippingStoreSurcharge, visaDiscount: discountedVisa, total: Math.max(0, base + postalFee + vat + discountedCodFee + shippingStoreSurcharge - discountedVisa) };
       },
 
       async applyPromoCode() {
