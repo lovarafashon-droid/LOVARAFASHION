@@ -174,6 +174,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 .products-list { background: var(--card-bg); padding: 35px; border-radius: 16px; box-shadow: var(--shadow); }
 .products-list h2 { font-family: 'Cormorant Garamond', serif; font-size: 28px; margin-bottom: 25px; color: var(--secondary); }
 .products-list h2 span { color: var(--primary); font-size: 18px; }
+.products-list-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 25px; }
+.products-list-header h2 { margin-bottom: 0; }
+.btn-bulk-price { display: inline-flex; align-items: center; gap: 8px; padding: 10px 15px; border: 1px solid var(--primary); border-radius: 8px; background: var(--primary); color: #fff; font: 600 13px 'Jost', sans-serif; cursor: pointer; transition: var(--transition); white-space: nowrap; }
+.btn-bulk-price:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201,168,124,0.25); }
 .product-item { display: flex; gap: 15px; padding: 15px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; transition: var(--transition); background: var(--card-bg); }
 .product-item:hover { border-color: var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 .product-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; background: var(--bg); }
@@ -321,6 +325,8 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
   .admin-grid { grid-template-columns: 1fr 1fr; gap: 18px; }
   .admin-form-wrapper, .products-list { padding: 22px; border-radius: 14px; }
   .admin-form-wrapper h2, .products-list h2 { font-size: 20px; margin-bottom: 16px; }
+  .products-list-header { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .btn-bulk-price { width: 100%; justify-content: center; }
   .form-group { margin-bottom: 14px; }
   .form-group label { font-size: 13px; margin-bottom: 5px; }
   .form-group input, .form-group select, .form-group textarea { padding: 10px 13px; font-size: 13px; }
@@ -1059,7 +1065,12 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
 
         <!-- Products List -->
         <div class="products-list">
-          <h2><span data-i18n="products">Products</span> <span id="productCount">(0)</span></h2>
+          <div class="products-list-header">
+            <h2><span data-i18n="products">Products</span> <span id="productCount">(0)</span></h2>
+            <button type="button" class="btn-bulk-price" onclick="ProductManager.bulkIncreasePrices()">
+              <i class="fas fa-arrow-trend-up"></i> <span data-i18n="bulkIncreasePrices">زيادة أسعار الكل</span>
+            </button>
+          </div>
 
           <div class="category-filter">
             <button class="filter-pill active" data-filter="all" onclick="ProductManager.setFilter('all')" data-i18n="all">All</button>
@@ -1116,7 +1127,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         dragDrop: "or drag & drop here", badge: "Badge", none: "None", newBadge: "New", saleBadge: "Sale",
         bestsellerBadge: "Bestseller", limitedBadge: "Limited",
         comingSoonBadge: "Coming Soon", description: "Description", addProduct: "Add Product",
-        products: "Products", all: "All", loading: "Loading products...", noProducts: "No products found.",
+        products: "Products", all: "All", loading: "Loading products...", noProducts: "No products found.", bulkIncreasePrices: "Increase all prices",
         deleteConfirm: "Delete this product?", firebaseNotLoaded: "Firebase not loaded. Check your config.",
         enterEmailPass: "Please enter email and password", selectImage: "Please select an image file (JPG, PNG, WebP)",
         imageSize: "Image size should be less than 5MB", failedAdd: "Failed to add product: ",
@@ -1162,7 +1173,7 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         dragDrop: "أو اسحب وأفلت هنا", badge: "الشارة", none: "بدون", newBadge: "جديد", saleBadge: "تخفيض",
         bestsellerBadge: "الأكثر مبيعاً", limitedBadge: "محدود",
         comingSoonBadge: "سوف يتوفر قريباً", description: "الوصف", addProduct: "إضافة المنتج",
-        products: "المنتجات", all: "الكل", loading: "جاري تحميل المنتجات...", noProducts: "لا توجد منتجات.",
+        products: "المنتجات", all: "الكل", loading: "جاري تحميل المنتجات...", noProducts: "لا توجد منتجات.", bulkIncreasePrices: "زيادة أسعار الكل",
         deleteConfirm: "حذف هذا المنتج؟", firebaseNotLoaded: "لم يتم تحميل قاعدة البيانات. تحقق من الإعدادات.",
         enterEmailPass: "الرجاء إدخال البريد وكلمة المرور", selectImage: "الرجاء اختيار ملف صورة (JPG, PNG, WebP)",
         imageSize: "حجم الصورة يجب أن يكون أقل من 5 ميجا", failedAdd: "فشل في إضافة المنتج: ",
@@ -2096,6 +2107,80 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
           this.loadProducts();
         } catch (error) {
           AdminApp.showError(t.failedDelete + error.message);
+        }
+      },
+
+      // Increase all catalog prices in one controlled admin action.
+      async bulkIncreasePrices() {
+        const isArabic = AppSettings.currentLang === 'ar';
+        if (!this.products.length) {
+          alert(isArabic ? 'لا توجد منتجات لتحديث أسعارها.' : 'There are no products to update.');
+          return;
+        }
+
+        const mode = prompt(isArabic
+          ? 'اختار نوع الزيادة:\n1 - نسبة مئوية\n2 - مبلغ ثابت بالجنيه'
+          : 'Choose the increase type:\n1 - Percentage\n2 - Fixed amount in EGP');
+        if (mode === null) return;
+        if (!['1', '2'].includes(mode.trim())) {
+          alert(isArabic ? 'اختيار غير صحيح.' : 'Invalid choice.');
+          return;
+        }
+
+        const rawValue = prompt(isArabic
+          ? (mode.trim() === '1' ? 'اكتب نسبة الزيادة (مثال: 10):' : 'اكتب مبلغ الزيادة بالجنيه (مثال: 50):')
+          : (mode.trim() === '1' ? 'Enter the increase percentage (e.g. 10):' : 'Enter the increase amount in EGP (e.g. 50):'));
+        if (rawValue === null) return;
+        const value = Number(String(rawValue).replace(',', '.').trim());
+        if (!Number.isFinite(value) || value <= 0 || (mode.trim() === '1' && value > 1000)) {
+          alert(isArabic ? 'اكتب قيمة موجبة صحيحة (النسبة لا تتعدى 1000%).' : 'Enter a valid positive value (percentage cannot exceed 1000%).');
+          return;
+        }
+
+        const typeLabel = mode.trim() === '1' ? `${value}%` : `${value} جنيه`;
+        const confirmation = isArabic
+          ? `سيتم زيادة أسعار ${this.products.length} منتج بمقدار ${typeLabel}.\nسيتم تحديث السعر الأساسي، سعر الدستة، سعر العرض والسعر القديم إن وُجدوا.\nهل تريد المتابعة؟`
+          : `${this.products.length} products will be updated by ${typeLabel}.\nBase, dozen, offer and old prices will be updated when present.\nContinue?`;
+        if (!confirm(confirmation)) return;
+
+        const roundPrice = number => Math.round(number * 100) / 100;
+        const increase = price => {
+          const numeric = Number(price);
+          if (!Number.isFinite(numeric)) return null;
+          return roundPrice(mode.trim() === '1' ? numeric * (1 + value / 100) : numeric + value);
+        };
+        const priceFields = ['price', 'pricePiece', 'priceDozen', 'salePrice', 'oldPrice'];
+        const updates = this.products.map(product => {
+          const data = { updatedAt: Date.now() };
+          priceFields.forEach(field => {
+            if (product[field] !== undefined && product[field] !== null && product[field] !== '') {
+              const next = increase(product[field]);
+              if (next !== null) data[field] = next;
+            }
+          });
+          // Older products may only have `price`; keep the mirror field in sync.
+          if (data.price !== undefined && product.pricePiece === undefined) data.pricePiece = data.price;
+          return { product, data };
+        });
+
+        try {
+          // Firestore batches are limited to 500 writes; use smaller chunks for safety.
+          for (let i = 0; i < updates.length; i += 450) {
+            const batch = AdminApp.db.batch();
+            updates.slice(i, i + 450).forEach(({ product, data }) => {
+              batch.update(AdminApp.db.collection('products').doc(product.id), data);
+            });
+            await withAdminTimeout(batch.commit(), 30000, isArabic
+              ? 'انتهت مهلة تحديث الأسعار.'
+              : 'Price update timed out.');
+          }
+          updates.forEach(({ product, data }) => Object.assign(product, data));
+          this.renderProducts();
+          alert(isArabic ? `تم تحديث أسعار ${updates.length} منتج بنجاح.` : `Successfully updated ${updates.length} products.`);
+        } catch (error) {
+          console.error('Bulk price update failed:', error);
+          AdminApp.showError((isArabic ? 'فشل تحديث الأسعار: ' : 'Failed to update prices: ') + error.message);
+          await this.loadProducts({ silent: true });
         }
       },
 
