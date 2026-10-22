@@ -58,7 +58,7 @@ async function fetchProductsViaRest(limit = 0) {
   const structuredQuery = {
     from: [{ collectionId: 'products' }],
     select: { fields: [
-      'showOnHome', 'name', 'nameAr', 'nameEn', 'englishName', 'titleEn', 'names', 'price', 'pricePiece', 'salePrice', 'saleStartedAt', 'saleEndsAt', 'offerDurationDays', 'oldPrice', 'category', 'categoryName', 'subcategory', 'subCategory', 'productType', 'description', 'badge',
+      'showOnHome', 'name', 'nameEn', 'englishName', 'titleEn', 'names', 'price', 'pricePiece', 'salePrice', 'saleStartedAt', 'saleEndsAt', 'offerDurationDays', 'oldPrice', 'category', 'badge',
       'sizes', 'colors', 'comingSoon', 'imageUrl', 'image', 'imageURL',
       'photo', 'img', 'thumbnail', 'images', 'createdAt'
     ].map(fieldPath => ({ fieldPath })) }
@@ -218,8 +218,7 @@ const carouselState = window.carouselState = {
   currentPage: 0,
   itemsPerPage: 4,
   filteredProducts: [],
-  currentFilter: 'all',
-  searchQuery: ''
+  currentFilter: 'all'
 };
 
 const badgeTranslations = {
@@ -274,7 +273,8 @@ function initProductCarousel(grid, products) {
   grid.appendChild(carouselWrapper);
   grid.appendChild(pagination);
 
-  filterProducts(carouselState.currentFilter);
+  renderCarouselPage();
+  updateArrowVisibility();
 
   // Setup event delegation for product actions
   // setupProductActionsDelegation removed — using inline onclick
@@ -313,7 +313,7 @@ function renderCarouselPage() {
   setTimeout(() => {
     container.innerHTML = '';
     if (pageProducts.length === 0) {
-      container.innerHTML = `<div class="empty-state"><h3>${getHomepageSearchCopy('none')}</h3><p>${getHomepageSearchCopy('retry')}</p></div>`;
+      container.innerHTML = '<div class="empty-state"><h3>No products found</h3><p>Try another category.</p></div>';
       container.style.opacity = '1';
       container.style.transform = 'translateX(0)';
       return;
@@ -363,78 +363,24 @@ function updateArrowVisibility() {
 function filterProducts(category) {
   carouselState.currentFilter = category;
   carouselState.currentPage = 0;
-  const wanted = normalizeProductCategory(category);
-  const query = normalizeSearchText(carouselState.searchQuery);
-  const categoryLabels = {
-    dresses: 'فساتين dresses', tops: 'توبات بلوزات tops', pants: 'بناطيل pants',
-    accessories: 'اكسسوارات accessories', lingerie: 'ملابس داخلية lingerie', sets: 'اطقم sets',
-    suits: 'سوتات suits', pajamas: 'بيجامات pajamas', winter: 'شتوي الشتوي winter', hijab: 'محجبات hijab'
-  };
-  carouselState.filteredProducts = carouselState.products.filter(product => {
-    const productCategories = [product.category, product.categoryName, product.subcategory, product.subCategory, product.productType];
-    const matchesCategory = category === 'all' || productCategories.some(value => normalizeProductCategory(value) === wanted);
-    if (!matchesCategory) return false;
-    if (!query) return true;
-    const names = product.names && typeof product.names === 'object' ? Object.values(product.names) : [];
-    const searchable = [product.name, product.nameAr, product.nameEn, product.englishName, product.titleEn, ...names,
-      product.description, product.category, product.categoryName, product.subcategory, product.subCategory,
-      product.productType, categoryLabels[normalizeProductCategory(product.category)]]
-      .filter(Boolean).join(' ');
-    return normalizeSearchText(searchable).includes(query);
-  });
+
+  if (category === 'all') {
+    carouselState.filteredProducts = carouselState.products;
+  } else {
+    const wanted = normalizeProductCategory(category);
+    carouselState.filteredProducts = carouselState.products.filter(p => normalizeProductCategory(p.category) === wanted);
+  }
 
   renderCarouselPage();
   updateArrowVisibility();
-  updateHomepageSearchStatus();
 }
 
 function normalizeProductCategory(category) {
   return String(category || '').trim().toLowerCase().replace(/[\s_-]+/g, ' ');
 }
 
-function normalizeSearchText(value) {
-  return String(value || '').toLocaleLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
-    .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه')
-    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-}
-
-function getHomepageSearchCopy(key) {
-  const lang = window.i18n?.currentLang || localStorage.getItem('lovara_lang') || 'ar';
-  const copy = {
-    ar: { hint: 'اكتبي اسم قطعة أو تصنيف للوصول بسرعة', none: 'مفيش منتجات مطابقة', retry: 'جرّبي اسمًا أو تصنيفًا مختلفًا.' },
-    en: { hint: 'Type a product name or category to find it faster', none: 'No matching products', retry: 'Try another name or category.' }
-  };
-  return copy[lang]?.[key] || copy.ar[key];
-}
-
-function updateHomepageSearchStatus() {
-  const status = document.getElementById('homepageSearchStatus');
-  if (!status) return;
-  if (!String(carouselState.searchQuery || '').trim()) {
-    status.textContent = getHomepageSearchCopy('hint');
-    return;
-  }
-  const lang = window.i18n?.currentLang || localStorage.getItem('lovara_lang') || 'ar';
-  status.textContent = lang === 'ar'
-    ? `تم العثور على ${carouselState.filteredProducts.length} منتج`
-    : `${carouselState.filteredProducts.length} products found`;
-}
-
-window.refreshHomepageSearch = updateHomepageSearchStatus;
-
-function setupCatalogSearch() {
-  const input = document.getElementById('homepageProductSearch');
-  if (!input) return;
-  input.addEventListener('input', () => {
-    carouselState.searchQuery = input.value;
-    filterProducts(carouselState.currentFilter);
-  });
-}
-
 function updateAvailableFilterButtons(products) {
-  document.querySelectorAll('.homepage-category-tabs .filter-btn').forEach(button => {
+  document.querySelectorAll('.filter-btn').forEach(button => {
     const category = button.getAttribute('data-filter');
     const available = category === 'all' || products.some(product => normalizeProductCategory(product.category) === normalizeProductCategory(category));
     button.hidden = !available;
@@ -754,4 +700,3 @@ function setupFilterButtons() {
 }
 
 document.addEventListener('DOMContentLoaded', setupFilterButtons);
-document.addEventListener('DOMContentLoaded', setupCatalogSearch);
