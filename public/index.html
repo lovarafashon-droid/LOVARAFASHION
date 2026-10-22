@@ -391,7 +391,7 @@
       <nav class="nav-links" id="navLinks">
         <a href="#home" class="nav-link active" data-i18n="navHome">Home</a>
         <a href="#shop" class="nav-link" data-i18n="navShop">Shop</a>
-        <a href="#shop" class="nav-link" data-i18n="navCategories">Categories</a>
+        <a href="#categories" class="nav-link" data-i18n="navCategories">Categories</a>
         <a href="#about" class="nav-link" data-i18n="navAbout">About</a>
         <a href="#contact" class="nav-link" data-i18n="navContact">Contact</a>
       </nav>
@@ -555,6 +555,15 @@
     </div>
   </section>
 
+  <!-- ===================== SHOPPING ASSURANCES ===================== -->
+  <section class="shopping-assurances" aria-label="معلومات التسوق / Shopping information">
+    <div class="container shopping-assurances-inner">
+      <div class="assurance-item"><i class="fas fa-money-bill-wave" aria-hidden="true"></i><span data-i18n="trustCash">الدفع عند الاستلام</span></div>
+      <div class="assurance-item"><i class="fas fa-truck-fast" aria-hidden="true"></i><span data-i18n="trustShipping">شحن مجاني للطلبات فوق ٢٥٠٠ جنيه</span></div>
+      <div class="assurance-item"><i class="fas fa-location-dot" aria-hidden="true"></i><span data-i18n="trustNationwide">توصيل لكل محافظات مصر</span></div>
+    </div>
+  </section>
+
   <!-- ===================== CATEGORIES ===================== -->
   <section class="categories" id="categories">
     <div class="container">
@@ -709,18 +718,26 @@
         <p class="section-eyebrow" data-i18n="shopEyebrow">Our Collection</p>
         <h2 class="section-title" data-i18n="shopTitle">New Arrivals</h2>
       </div>
+      <div class="homepage-search-wrap">
+        <label class="homepage-search">
+          <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+          <input type="search" id="homepageProductSearch" data-i18n-placeholder="shopSearchPlaceholder" placeholder="ابحثي عن اسم المنتج أو التصنيف" aria-label="البحث عن المنتجات / Search products" autocomplete="off">
+          <span class="search-shortcut" aria-hidden="true">⌕</span>
+        </label>
+        <p class="homepage-search-status" id="homepageSearchStatus" aria-live="polite" data-i18n="shopSearchHint">اكتبي اسم قطعة أو تصنيف للوصول بسرعة</p>
+      </div>
       <div class="homepage-category-tabs" aria-label="Product sections">
-        <button type="button" class="filter-btn active" data-filter="all">الكل / All</button>
-        <button type="button" class="filter-btn" data-filter="dresses">فساتين / Dresses</button>
-        <button type="button" class="filter-btn" data-filter="tops">توبات / Tops</button>
-        <button type="button" class="filter-btn" data-filter="pants">بناطيل / Pants</button>
-        <button type="button" class="filter-btn" data-filter="accessories">إكسسوارات / Accessories</button>
-        <button type="button" class="filter-btn" data-filter="lingerie">ملابس داخلية / Lingerie</button>
-        <button type="button" class="filter-btn" data-filter="sets">أطقم / Sets</button>
-        <button type="button" class="filter-btn" data-filter="suits">سوتات / Suits</button>
-        <button type="button" class="filter-btn" data-filter="pajamas">بيجامات / Pajamas</button>
-        <button type="button" class="filter-btn" data-filter="winter">شتوي / Winter</button>
-        <button type="button" class="filter-btn" data-filter="hijab">محجبات / Hijab</button>
+        <button type="button" class="filter-btn active" data-filter="all" data-i18n="filterAll">الكل</button>
+        <button type="button" class="filter-btn" data-filter="dresses" data-i18n="filterDresses">فساتين</button>
+        <button type="button" class="filter-btn" data-filter="tops" data-i18n="filterTops">توبات</button>
+        <button type="button" class="filter-btn" data-filter="pants" data-i18n="filterPants">بناطيل</button>
+        <button type="button" class="filter-btn" data-filter="accessories" data-i18n="filterAccessories">إكسسوارات</button>
+        <button type="button" class="filter-btn" data-filter="lingerie" data-i18n="filterLingerie">ملابس داخلية</button>
+        <button type="button" class="filter-btn" data-filter="sets" data-i18n="filterSets">أطقم</button>
+        <button type="button" class="filter-btn" data-filter="suits" data-i18n="filterSuits">سوتات</button>
+        <button type="button" class="filter-btn" data-filter="pajamas" data-i18n="filterPajamas">بيجامات</button>
+        <button type="button" class="filter-btn" data-filter="winter" data-i18n="filterWinter">شتوي</button>
+        <button type="button" class="filter-btn" data-filter="hijab" data-i18n="filterHijab">محجبات</button>
       </div>
 
       <div class="products-grid" id="productsGrid">
@@ -1118,8 +1135,10 @@
         catExplore: "Explore",
         shopEyebrow: "Our Collection", shopTitle: "New Arrivals",
         filterAll: "All", filterDresses: "Dresses", filterTops: "Tops", filterPants: "Pants",
-        filterAccessories: "Accessories", filterLingerie: "Lingerie", filterSets: "Sets", filterWinter: "Winter",
-        filterHijab: "Hijab",
+        filterAccessories: "Accessories", filterLingerie: "Lingerie", filterSets: "Sets", filterSuits: "Suits", filterPajamas: "Pajamas", filterWinter: "Winter",
+        filterHijab: "Hijab", shopSearchPlaceholder: "Search products by name or category", shopSearchHint: "Type a product name or category to find it faster",
+        trustCash: "Cash on delivery", trustShipping: "Free shipping over EGP 2,500", trustNationwide: "Delivery across Egypt",
+        searchNoResults: "No matching products", searchNoResultsHint: "Try another name or category.", searchResultCount: "{count} products found",
         emptyTitle: "Products Coming Soon",
         emptyDesc: "We're adding beautiful new items.<br>Check back shortly!",
         aboutEyebrow: "Our Story",
@@ -1200,8 +1219,10 @@
         catExplore: "استكشفي",
         shopEyebrow: "مجموعتنا", shopTitle: "وصل حديثاً",
         filterAll: "الكل", filterDresses: "فساتين", filterTops: "بلوزات", filterPants: "بناطيل",
-        filterAccessories: "إكسسوارات", filterLingerie: "ملابس داخلية", filterSets: "اطقم", filterWinter: "الشتوي",
-        filterHijab: "محجبات",
+        filterAccessories: "إكسسوارات", filterLingerie: "ملابس داخلية", filterSets: "أطقم", filterSuits: "سوتات", filterPajamas: "بيجامات", filterWinter: "الشتوي",
+        filterHijab: "محجبات", shopSearchPlaceholder: "ابحثي باسم المنتج أو التصنيف", shopSearchHint: "اكتبي اسم قطعة أو تصنيف للوصول بسرعة",
+        trustCash: "الدفع عند الاستلام", trustShipping: "شحن مجاني للطلبات فوق ٢٥٠٠ جنيه", trustNationwide: "توصيل لكل محافظات مصر",
+        searchNoResults: "مفيش منتجات مطابقة", searchNoResultsHint: "جرّبي اسمًا أو تصنيفًا مختلفًا.", searchResultCount: "تم العثور على {count} منتج",
         emptyTitle: "المنتجات قريباً",
         emptyDesc: "نضيف قطعاً جديدة رائعة إلى مجموعتنا.<br>تفقدي قريباً!",
         aboutEyebrow: "قصتنا",
@@ -1291,6 +1312,7 @@
         if (titleEl && t[titleEl.getAttribute('data-i18n')]) document.title = t[titleEl.getAttribute('data-i18n')];
         this.updateMarquee(lang);
         window.refreshHeroBestsellerLanguage?.(lang);
+        window.refreshHomepageSearch?.();
       },
       updateMarquee(lang) {
         const t = translations[lang];
@@ -1652,22 +1674,6 @@
         return JSON.parse(localStorage.getItem('lovara_cart') || '[]');
       },
       open() {
-        const isLoggedIn = (window.CategoryApp && CategoryApp.currentUser) || localStorage.getItem('lovara_user');
-        if (!isLoggedIn) {
-          const msg = (window.i18n && i18n.currentLang === 'ar') ? 'يرجى تسجيل الدخول أولاً لعرض السلة' : 'Please login first to view your cart';
-          showToast(msg, 'error');
-          // Try every possible way to open the login modal
-          const modal = document.getElementById('loginModal');
-          if (modal) {
-            modal.classList.add('show');
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            console.log('[LOVARA] Login modal opened directly');
-          }
-          if (window.Modals) { Modals.open('loginModal'); console.log('[LOVARA] Modals.open called'); }
-          else if (window.CategoryApp) { CategoryApp.openLoginModal(); console.log('[LOVARA] CategoryApp.openLoginModal called'); }
-          return;
-        }
         window.CategoryApp?.closeWishlistModal?.(true);
         const modal = document.getElementById('cartModal');
         const overlay = document.getElementById('cartOverlay');

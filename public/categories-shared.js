@@ -75,6 +75,7 @@ const CategoryApp = {
   currentUser: null,
   products: [],
   activeSubcategory: 'all',
+  searchQuery: '',
   currentProductPage: 0,
   productsPerPage: 4,
   firebaseReady: false,
@@ -89,7 +90,7 @@ const CategoryApp = {
       navLogin: "Login", navSignup: "Sign Up",
       catDresses: "Dresses", catTops: "Tops", catPants: "Pants", catAccessories: "Accessories", catSets: "Sweatshirts", catSuits: "Suits", catPajamas: "Pajamas", catLingerie: "Lingerie",
       catHijab: "Hijab", catWinter: "Winter", winterCollectionEyebrow: "Winter Collection", winterCollectionTitle: "Warmth & Style", winterCollectionDesc: "Choose your winter look with soft fabrics and refined details.",
-      shopEyebrow: "Our Collection", loadingProducts: "Loading products...",
+      shopEyebrow: "Our Collection", loadingProducts: "Loading products...", searchPlaceholder: "Search in this category", noSearchResults: "No matching products", searchTryAgain: "Try another name or clear the search.",
       emptyTitle: "Products Coming Soon", emptyDesc: "We are adding beautiful new items to this category.<br />Check back shortly!",
       supportTitle: "Need Help?", supportDesc: "Have an issue with a product? Contact us directly and we will help you resolve it.",
       phoneSupport: "Phone Support", phoneSupportDesc: "Call us at +20128845212",
@@ -141,7 +142,7 @@ const CategoryApp = {
       catDresses: "فساتين", catTops: "توبات", catPants: "بناطيل", catAccessories: "إكسسوارات", catSets: "سويت شرت", catSuits: "سوتات", catPajamas: "بيجامات", catLingerie: "ملابس داخلية",
       catHijab: "محجبات", catWinter: "الشتوي", winterCollectionEyebrow: "مجموعة الشتوي", winterCollectionTitle: "دفء وأناقة", winterCollectionDesc: "اختاري إطلالتك الشتوية بخامات ناعمة وتفاصيل فاخرة.",
       shopEyebrow: "مجموعتنا", loadingProducts: "جاري تحميل المنتجات...",
-      emptyTitle: "المنتجات قريباً", emptyDesc: "نضيف قطعاً جديدة رائعة إلى هذا التصنيف.<br />تفقدي قريباً!",
+      emptyTitle: "المنتجات قريباً", emptyDesc: "نضيف قطعاً جديدة رائعة إلى هذا التصنيف.<br />تفقدي قريباً!", searchPlaceholder: "ابحثي داخل هذا التصنيف", noSearchResults: "مفيش منتجات مطابقة", searchTryAgain: "جرّبي اسمًا مختلفًا أو امسحي البحث.",
       supportTitle: "تحتاجين مساعدة؟", supportDesc: "عندكِ مشكلة في منتج؟ تواصلي معانا مباشرة وهنساعدكِ تحلها.",
       phoneSupport: "دعم هاتفي", phoneSupportDesc: "اتصلي بنا على +20128845212",
       chatLabel: "شات", whatsappSupport: "دعم واتساب", whatsappSupportDesc: "تواصلي معانا على واتساب",
@@ -587,6 +588,11 @@ const CategoryApp = {
       const key = el.getAttribute('data-i18n-placeholder');
       if (t[key]) el.placeholder = t[key];
     });
+    const categorySearch = document.getElementById('categoryProductSearchInput');
+    if (categorySearch) {
+      categorySearch.placeholder = t.searchPlaceholder;
+      categorySearch.setAttribute('aria-label', t.searchPlaceholder);
+    }
     const category = document.body.getAttribute('data-category');
     const titleMap = { dresses: 'pageTitleDresses', tops: 'pageTitleTops', pants: 'pageTitlePants', accessories: 'pageTitleAccessories', sets: 'pageTitleSets', lingerie: 'pageTitleLingerie', hijab: 'pageTitleHijab', winter: 'pageTitleWinter' };
     const titleKey = titleMap[category];
@@ -1002,6 +1008,20 @@ const CategoryApp = {
     const category = document.body.getAttribute('data-category');
     // The homepage has its own product carousel and must not show category filters.
     if (!category) return;
+    if (!document.getElementById('categoryProductSearch')) {
+      const search = document.createElement('div');
+      search.className = 'category-search';
+      search.id = 'categoryProductSearch';
+      search.innerHTML = `<i class="fas fa-magnifying-glass" aria-hidden="true"></i><input id="categoryProductSearchInput" type="search" autocomplete="off"><button type="button" class="category-search-clear" aria-label="Clear search"><i class="fas fa-times" aria-hidden="true"></i></button>`;
+      const input = search.querySelector('input');
+      const clear = search.querySelector('button');
+      input.placeholder = this.translations[this.currentLang].searchPlaceholder;
+      input.setAttribute('aria-label', input.placeholder);
+      input.value = this.searchQuery;
+      input.addEventListener('input', () => { this.searchQuery = input.value; this.applyProductFilters(); });
+      clear.addEventListener('click', () => { input.value = ''; this.searchQuery = ''; this.applyProductFilters(); input.focus(); });
+      grid.parentNode.insertBefore(search, grid);
+    }
     if (['winter', 'tops', 'suits', 'sets', 'pajamas', 'lingerie'].includes(category) && !document.getElementById('categorySubcategoryTabs')) {
       const tabs = document.createElement('div');
       tabs.id = 'categorySubcategoryTabs';
@@ -1042,12 +1062,22 @@ const CategoryApp = {
     const min = parseFloat(document.getElementById('filterMinPrice')?.value);
     const max = parseFloat(document.getElementById('filterMaxPrice')?.value);
     const size = document.getElementById('filterSize')?.value || '';
+    const query = String(this.searchQuery || '').toLocaleLowerCase().normalize('NFKD')
+      .replace(/[\u064B-\u065F\u0670\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه')
+      .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
     return this.products.filter(product => {
       const price = window.LovaraOffers ? window.LovaraOffers.getState(product).price : (parseFloat(product?.price) || 0);
       const matchesSubcategory = this.activeSubcategory === 'all' || product.subcategory === this.activeSubcategory;
       const matchesPrice = (!Number.isFinite(min) || price >= min) && (!Number.isFinite(max) || price <= max);
       const matchesSize = !size || (Array.isArray(product?.sizes) && product.sizes.includes(size));
-      return matchesSubcategory && matchesPrice && matchesSize;
+      const names = product.names && typeof product.names === 'object' ? Object.values(product.names) : [];
+      const searchText = [product.name, product.nameAr, product.nameEn, product.englishName, product.titleEn, ...names,
+        product.description, product.category, product.categoryName, product.subcategory, product.subCategory, product.productType]
+        .filter(Boolean).join(' ').toLocaleLowerCase().normalize('NFKD')
+        .replace(/[\u064B-\u065F\u0670\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه')
+        .replace(/[^\p{L}\p{N}]+/gu, ' ');
+      const matchesSearch = !query || searchText.includes(query);
+      return matchesSubcategory && matchesPrice && matchesSize && matchesSearch;
     });
   },
 
@@ -1078,7 +1108,20 @@ const CategoryApp = {
     const start = this.currentProductPage * this.productsPerPage;
     grid.querySelectorAll('.product-card').forEach(card => card.remove());
     filtered.slice(start, start + this.productsPerPage).forEach(product => grid.appendChild(this.createProductCard(product)));
-    if (emptyState) emptyState.style.display = filtered.length === 0 ? 'flex' : 'none';
+    if (emptyState) {
+      emptyState.style.display = filtered.length === 0 ? 'flex' : 'none';
+      if (this.searchQuery.trim()) {
+        const title = emptyState.querySelector('h3');
+        const description = emptyState.querySelector('p');
+        if (title) title.textContent = this.translations[this.currentLang].noSearchResults;
+        if (description) description.textContent = this.translations[this.currentLang].searchTryAgain;
+      } else {
+        const title = emptyState.querySelector('h3');
+        const description = emptyState.querySelector('p');
+        if (title) title.textContent = this.translations[this.currentLang].emptyTitle;
+        if (description) description.innerHTML = this.translations[this.currentLang].emptyDesc;
+      }
+    }
     const prev = document.getElementById('productsPrev');
     const next = document.getElementById('productsNext');
     const label = document.getElementById('productsPageLabel');

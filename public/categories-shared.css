@@ -3315,3 +3315,31 @@ body.lang-ar .toggle-pw {
 .offer-countdown.is-expired { background: #f2f2f2; color: #777; border-color: #ddd; }
 .offer-countdown-preview { margin: 0; font-size: 12px; }
 .offer-admin-tag { background: #fff4e5 !important; color: #a65300 !important; border-color: #ffd39b !important; }
+
+
+/* Category catalog search */
+.category-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(560px, 100%);
+  min-height: 50px;
+  margin: 0 auto 22px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--accent);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .045);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.category-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(201, 168, 124, .12); }
+.category-search input { flex: 1; min-width: 0; height: 46px; border: 0; outline: 0; background: transparent; color: var(--secondary); font: inherit; font-size: 14px; }
+.category-search input::placeholder { color: var(--text-light); }
+.category-search-clear { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f7f4f0; color: var(--text-light); cursor: pointer; }
+.category-search-clear:hover { background: var(--accent); color: #fff; }
+[dir="rtl"] .category-search { direction: rtl; }
+@media (max-width: 600px) {
+  .category-search { min-height: 46px; margin-bottom: 16px; }
+  .category-search input { height: 42px; font-size: 13px; }
+}
