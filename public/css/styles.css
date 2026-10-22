@@ -4205,3 +4205,51 @@ html[dir="rtl"] .marquee-content {
   .cart-actions { gap: 8px; }
   .cart-actions button { min-height: 42px; padding: 10px 8px; font-size: .78rem; }
 }
+
+/* ============================================
+   TABLET BALANCE - 769px to 900px
+   Keep the desktop header readable while using
+   two-column content grids at tablet widths.
+   ============================================ */
+@media (min-width: 769px) and (max-width: 900px) {
+  .container { padding-left: 20px; padding-right: 20px; }
+
+  .nav-container {
+    gap: 14px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .nav-links { gap: 0; }
+  .nav-link { padding-left: 8px; padding-right: 8px; font-size: .78rem; }
+  .nav-actions { gap: 6px; }
+  .auth-buttons { gap: 6px; }
+  .auth-buttons .btn { padding: 8px 12px; font-size: .75rem; }
+  .logo { font-size: 1.4rem; }
+
+  .hero {
+    flex-direction: column;
+    text-align: center;
+    padding-top: calc(var(--nav-h) + 36px);
+    padding-bottom: 56px;
+  }
+  .hero-content { max-width: 680px; padding: 0 24px; }
+  .hero-eyebrow { padding-left: 0; }
+  .hero-eyebrow::before { display: none; }
+  .hero-ctas, .hero-stats { justify-content: center; }
+  .hero-visual { width: 100%; padding: 40px 24px 0; }
+  .hero-card-main { width: 260px; height: 360px; }
+  .hero-card-sm { transform: scale(.9); }
+  .hero-card-sm.top-right { top: 50px; right: calc(50% - 230px); }
+  .hero-card-sm.bottom-left { bottom: 70px; left: calc(50% - 230px); }
+  .hero-scroll { display: none; }
+
+  .categories-grid,
+  .products-grid,
+  .carousel-products-container { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .category-img { height: 220px; }
+  .product-img-wrap { height: 250px; }
+  .category-info { padding-left: 16px; padding-right: 48px; }
+
+  .categories, .shop, .about, .contact { padding-top: 72px; padding-bottom: 72px; }
+  .footer-grid { grid-template-columns: repeat(2, 1fr); gap: 28px; }
+}
