@@ -1076,6 +1076,38 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="partnerOfferModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="partnerOfferTitle">
+      <button class="modal-close" id="partnerOfferClose" type="button" aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
+      <div class="modal-header">
+        <div class="modal-logo">LOVARA</div>
+        <h2 id="partnerOfferTitle">هل تحب تكون شريكًا في LOVARA؟</h2>
+        <p>قدّم متجرك للبيع على LOVARA، وحسابك يظل حساب عميل عادي لحد موافقة الإدارة.</p>
+      </div>
+      <div class="form-actions" style="display:flex;gap:12px;justify-content:center">
+        <button class="btn btn-primary" id="partnerAccept" type="button">موافق</button>
+        <button class="btn btn-outline" id="partnerDecline" type="button">رفض</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="partnerApplicationModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="partnerApplicationTitle">
+      <button class="modal-close" id="partnerApplicationClose" type="button" aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
+      <div class="modal-header">
+        <div class="modal-logo">LOVARA</div>
+        <h2 id="partnerApplicationTitle">بيانات المتجر</h2>
+        <p>أرسل الطلب للإدارة. المتجر لن يظهر قبل الموافقة.</p>
+      </div>
+      <form class="modal-form" id="partnerApplicationForm">
+        <div class="form-group"><label for="partnerStoreName">اسم المتجر</label><input id="partnerStoreName" type="text" maxlength="80" required></div>
+        <div class="form-group"><label for="partnerSupportPhone">رقم دعم العملاء مع مفتاح الدولة</label><input id="partnerSupportPhone" type="tel" placeholder="+201234567890" required></div>
+        <div class="form-group"><label for="partnerStoreImage">صورة المتجر</label><input id="partnerStoreImage" type="file" accept="image/*" required><img id="partnerStoreImagePreview" alt="معاينة صورة المتجر" hidden style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin-top:10px"></div>
+        <button type="submit" class="btn btn-primary btn-full" id="partnerSubmitButton">إرسال الطلب</button>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast" id="toast">
     <i class="fas fa-check-circle"></i>
@@ -1490,7 +1522,8 @@
             if (authModal) authModal.classList.remove('show', 'active');
           });
           document.body.style.overflow = '';
-          this.saveUser(result.user, 'google').catch(error => console.warn('[LOVARA] User profile sync failed:', error));
+          const isNewAccount = Boolean(result.additionalUserInfo?.isNewUser);
+          await this.saveUser(result.user, 'google').catch(error => console.warn('[LOVARA] User profile sync failed:', error));
           const admin = await this.isAdmin(result.user);
           this.currentUser = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL, role: admin ? 'admin' : 'user' };
           localStorage.setItem('lovara_user', JSON.stringify(this.currentUser));
@@ -1500,6 +1533,7 @@
             setTimeout(() => this.openAdminPortal(), 600);
           }
           showToast('تم تسجيل الدخول بنجاح');
+          if (isNewAccount) setTimeout(() => window.LovaraPartnerOnboarding?.offer(result.user), 350);
         } catch (error) { this.showAuthError(error); }
       },
       async login(event) {
@@ -1526,9 +1560,10 @@
         const password = document.getElementById('signupPassword').value;
         try {
           const result = await firebase.auth().createUserWithEmailAndPassword(email, password);
-          this.saveUser(result.user).catch(error => console.warn('[LOVARA] User profile sync failed:', error));
+          await this.saveUser(result.user).catch(error => console.warn('[LOVARA] User profile sync failed:', error));
           Modals.close('signupModal');
           showToast('Account created successfully!');
+          setTimeout(() => window.LovaraPartnerOnboarding?.offer(result.user), 350);
         } catch (error) { this.showAuthError(error); }
       },
       async reset(event) {
@@ -2485,6 +2520,8 @@
       else bind();
     })();
   </script>
+
+<script src="/js/partner-onboarding.js"></script>
 
 <!-- ========== LOVARA Structured Data (JSON-LD) ========== -->
 <!-- ضيف الكود ده قبل إغلاق </body> في الصفحة الرئيسية -->

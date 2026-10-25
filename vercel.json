@@ -15,7 +15,26 @@
       "permanent": true
     }
   ],
+  "rewrites": [
+    { "source": "/store/:slug", "destination": "/store.html?slug=:slug" },
+    { "source": "/seller", "destination": "/seller.html" },
+    { "source": "/admin/stores", "destination": "/admin-stores.html" }
+  ],
   "headers": [
+    {
+      "source": "/admin/stores",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive, nosnippet" },
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, private" }
+      ]
+    },
+    {
+      "source": "/seller",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive, nosnippet" },
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, private" }
+      ]
+    },
     {
       "source": "/sitemap.xml",
       "headers": [

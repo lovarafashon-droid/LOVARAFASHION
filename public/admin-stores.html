@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet"><meta name="theme-color" content="#ef8b23">
+  <title>طلبات المتاجر | LOVARA Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@400;500;600&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <style>
+    :root{--orange:#ef8b23;--ink:#252321;--paper:#f8f6f3;--muted:#777;--line:#e8e4df;--white:#fff}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:'Jost','Noto Sans Arabic',sans-serif}.top{height:68px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(15px,5vw,65px)}.brand{font:600 25px 'Cormorant Garamond',serif;letter-spacing:4px;text-decoration:none;color:inherit}.top-actions{display:flex;gap:9px;align-items:center}.top a:not(.brand){color:#555;text-decoration:none}.wrap{max-width:1180px;margin:32px auto;padding:0 18px}.head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px}.head h1{font:500 36px 'Cormorant Garamond','Noto Sans Arabic',serif;margin:0}.head p{color:var(--muted);margin:5px 0 0}.tabs{display:flex;gap:10px;margin:18px 0}.tab{border:1px solid var(--line);background:#fff;color:var(--ink);padding:10px 17px;border-radius:9px;font:600 14px inherit;cursor:pointer}.tab.active{background:var(--orange);border-color:var(--orange);color:#fff}.tab-panel{display:none}.tab-panel.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:13px;box-shadow:0 5px 18px #1111;display:grid;grid-template-columns:120px 1fr;gap:18px}.card img{width:120px;height:120px;object-fit:cover;border-radius:10px;background:#f1efeb}.card h2{font:500 24px 'Cormorant Garamond','Noto Sans Arabic',serif;margin:0 0 6px}.meta{color:var(--muted);font-size:13px;line-height:1.8}.card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.btn{border:0;border-radius:8px;padding:10px 15px;background:var(--orange);color:#fff;font:600 13px inherit;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:7px}.btn.green{background:#168c55}.btn.red{background:#a94442}.btn.dark{background:#3f3c38}.btn:disabled{opacity:.55;cursor:wait}.subscription{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:11px}.subscription input{width:82px;padding:9px;border:1px solid var(--line);border-radius:8px;font:inherit}.empty,.notice{background:#fff;border:1px solid var(--line);border-radius:13px;padding:25px;text-align:center;color:var(--muted)}.login{max-width:430px;margin:70px auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:0 8px 28px #1111}.field{margin-bottom:14px}.field label{display:block;font-size:13px;margin-bottom:6px}.field input{width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;font:inherit}.hidden{display:none!important}.error{color:#a94442}.status{font-weight:600;padding:4px 10px;border-radius:20px;background:#f2eee8;font-size:12px}.active-status{background:#e8f5e9;color:#237336}.paused-status{background:#ffebee;color:#a33}.expired-status{background:#fff3e0;color:#9a5700}@media(max-width:620px){.card{grid-template-columns:76px 1fr;padding:13px;gap:12px}.card img{width:76px;height:88px}.head{align-items:flex-start;flex-direction:column}.head h1{font-size:30px}.top-actions{font-size:12px}.subscription input{width:66px}}
+  </style>
+</head>
+<body>
+  <header class="top"><a class="brand" href="/">LOVARA</a><div class="top-actions"><a href="/admin">لوحة الأدمن</a><button id="logoutButton" class="btn dark hidden" type="button">خروج</button></div></header>
+  <main class="wrap">
+    <section id="loginPanel" class="login hidden"><h1>دخول الأدمن</h1><p>استخدم حساب الأدمن الموجود مسبقًا.</p><form id="loginForm"><div class="field"><label for="adminEmail">البريد الإلكتروني</label><input id="adminEmail" type="email" required autocomplete="username"></div><div class="field"><label for="adminPassword">كلمة المرور</label><input id="adminPassword" type="password" required autocomplete="current-password"></div><button class="btn" type="submit">تسجيل الدخول</button> <span id="loginError" class="error"></span></form></section>
+    <section id="dashboard" class="hidden"><div class="head"><div><h1><i class="fas fa-store" style="color:var(--orange)"></i> طلبات المتاجر والاشتراكات</h1><p>مراجعة طلبات الشركاء وإدارة مدة المتجر وحالته.</p></div><div id="adminIdentity" class="meta"></div></div>
+      <div class="tabs"><button class="tab active" data-tab="requests">طلبات المتاجر <span id="pendingCount">0</span></button><button class="tab" data-tab="shops">المتاجر المعتمدة</button></div>
+      <section id="requestsPanel" class="tab-panel active"><div id="requestsList" class="notice">جارٍ تحميل الطلبات…</div></section>
+      <section id="shopsPanel" class="tab-panel"><div id="shopsList" class="notice">جارٍ تحميل المتاجر…</div></section>
+    </section>
+  </main>
+  <script src="/js/admin-stores.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>متجر شريك | LOVARA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@400;500;600&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <style>
+    :root{--gold:#c9a87c;--ink:#1a1a1a;--paper:#f8f6f3;--muted:#777;--line:#e8e4df}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:'Jost','Noto Sans Arabic',sans-serif}.top{height:68px;background:#fff;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;padding:0 clamp(16px,5vw,72px)}.brand{font:600 25px 'Cormorant Garamond',serif;letter-spacing:4px}.top a{text-decoration:none;color:inherit}.top .back{font-size:14px;color:#555}.hero{background:#fff;display:grid;grid-template-columns:minmax(150px,260px) 1fr;gap:28px;align-items:center;padding:36px max(20px,calc((100vw - 1180px)/2));border-bottom:1px solid var(--line)}.hero img{width:100%;aspect-ratio:1.35;object-fit:cover;border-radius:18px;background:#eee}.hero h1{font:500 clamp(28px,5vw,52px) 'Cormorant Garamond','Noto Sans Arabic',serif;margin:0 0 10px}.hero p{color:var(--muted);margin:0 0 18px}.wa{display:inline-flex;gap:9px;align-items:center;background:#168c55;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9px;font-weight:600}.content{max-width:1180px;margin:34px auto;padding:0 20px 70px}.title{font:500 32px 'Cormorant Garamond','Noto Sans Arabic',serif;margin:0 0 20px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:18px}.card{background:white;border:1px solid #efebe5;border-radius:14px;overflow:hidden;box-shadow:0 5px 20px #1111}.card img{width:100%;height:260px;object-fit:cover;background:#f0eeeb}.card-body{padding:15px}.card h3{font-size:16px;margin:0 0 7px}.desc{font-size:13px;color:var(--muted);min-height:36px;line-height:1.6}.price{font-weight:700;color:#a88451;margin:10px 0 13px}.status{max-width:620px;margin:70px auto;text-align:center;padding:40px 22px;background:#fff;border-radius:18px;border:1px solid var(--line)}.status i{font-size:36px;color:var(--gold)}.status h1{font:500 30px 'Cormorant Garamond','Noto Sans Arabic',serif}.status p{color:var(--muted);line-height:1.8}.hidden{display:none!important}@media(max-width:640px){.hero{grid-template-columns:100px 1fr;gap:16px;padding:22px 16px}.hero h1{font-size:28px}.hero p{font-size:13px}.hero img{aspect-ratio:1}.content{margin-top:25px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card img{height:190px}.card-body{padding:11px}.card h3{font-size:14px}}
+  </style>
+</head>
+<body>
+  <header class="top"><a class="brand" href="/">LOVARA</a><a class="back" href="/">العودة إلى الموقع الرئيسي</a></header>
+  <section id="storeHero" class="hero hidden"><img id="storeImage" alt="صورة المتجر"><div><h1 id="storeName"></h1><p>متجر شريك على LOVARA</p><a id="storeWhatsApp" class="wa" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> تواصل مع المتجر</a></div></section>
+  <main id="storeContent" class="content hidden"><h2 class="title">منتجات المتجر</h2><div id="storeProducts" class="grid"></div></main>
+  <section id="storeMessage" class="status"><i class="fas fa-spinner fa-spin"></i><h1>جارٍ تحميل المتجر</h1><p>لحظات من فضلك…</p></section>
+  <script src="/js/storefront.js"></script>
+</body>
+</html>

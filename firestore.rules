@@ -2,48 +2,132 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function: check if current user is admin
     function isAdmin() {
-      return request.auth != null && 
+      return request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Helper function: check if user owns the document
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // ============================================
-    // USERS COLLECTION
-    // ============================================
+    function ownsShop(shopId) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/shops/$(shopId))
+        && get(/databases/$(database)/documents/shops/$(shopId)).data.ownerUid == request.auth.uid;
+    }
+
+    function isPublicShop(shopId) {
+      return exists(/databases/$(database)/documents/shops/$(shopId))
+        && get(/databases/$(database)/documents/shops/$(shopId)).data.active == true
+        && get(/databases/$(database)/documents/shops/$(shopId)).data.expiresAt is timestamp
+        && request.time < get(/databases/$(database)/documents/shops/$(shopId)).data.expiresAt;
+    }
+
+    function ownsActiveShop(shopId) {
+      return ownsShop(shopId) && isPublicShop(shopId);
+    }
+
     match /users/{userId} {
-      // Users can read only their own profile; admins can read profiles for management.
       allow get: if isAdmin() || isOwner(userId);
-      // Only admin can list all users
       allow list: if isAdmin();
-      // A normal signup may not create an admin profile.
       allow create: if request.auth != null
         && request.auth.uid == userId
         && request.resource.data.role == 'user';
-      // Users may edit their profile, but never their role. Only an existing admin
-      // can grant or revoke admin access.
+      // Customers may update their profile, but cannot promote themselves or assign a shop.
       allow update: if isAdmin()
-        || (isOwner(userId) && request.resource.data.role == resource.data.role);
+        || (isOwner(userId)
+          && request.resource.data.role == resource.data.role
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['storeId']));
       allow delete: if isAdmin();
     }
 
-    // ============================================
-    // PRODUCTS COLLECTION
-    // - Public read (anyone can view products)
-    // - Admin-only write (create, update, delete)
-    // ============================================
+    // Existing LOVARA catalog remains public and can only be changed by admins.
     match /products/{productId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    // ORDERS COLLECTION
-    // Customers can read their own orders and cancel pending/confirmed orders.
+    // A customer account may submit one store request. Only the owner can finish a draft;
+    // only admins can approve/reject it or change its review fields.
+    match /storeRequests/{userId} {
+      allow get: if isAdmin() || isOwner(userId);
+      allow list: if isAdmin();
+      allow create: if isOwner(userId)
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status == 'draft'
+        && request.resource.data.storeName is string
+        && request.resource.data.storeName.size() >= 2
+        && request.resource.data.storeName.size() <= 80
+        && request.resource.data.supportPhone is string
+        && request.resource.data.supportPhone.size() >= 8
+        && request.resource.data.supportPhone.size() <= 20
+        && request.resource.data.imageUrl == ''
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'ownerEmail', 'storeName', 'supportPhone', 'imageUrl',
+          'status', 'createdAt', 'updatedAt'
+        ]);
+      allow update: if isAdmin()
+        || (isOwner(userId)
+          && resource.data.ownerUid == request.auth.uid
+          && resource.data.status in ['draft', 'rejected']
+          && request.resource.data.ownerUid == request.auth.uid
+          && request.resource.data.status == 'draft'
+          && request.resource.data.storeName is string
+          && request.resource.data.storeName.size() >= 2
+          && request.resource.data.storeName.size() <= 80
+          && request.resource.data.supportPhone is string
+          && request.resource.data.supportPhone.size() >= 8
+          && request.resource.data.supportPhone.size() <= 20
+          && request.resource.data.imageUrl == ''
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'ownerEmail', 'storeName', 'supportPhone', 'imageUrl', 'status', 'updatedAt'
+          ]));
+      allow delete: if isAdmin();
+    }
+
+    // Shop pages are fetched by their direct slug; no public collection listing exists.
+    match /shops/{shopId} {
+      allow get: if isAdmin() || ownsShop(shopId) || isPublicShop(shopId);
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+
+      // Each merchant writes only beneath their approved shop. The parent shop's active
+      // subscription is rechecked by Firestore on every write and public read.
+      match /products/{productId} {
+        allow read: if isAdmin() || ownsShop(shopId) || isPublicShop(shopId);
+        allow create: if isAdmin()
+          || (ownsActiveShop(shopId)
+            && request.resource.data.ownerUid == request.auth.uid
+            && request.resource.data.name is string
+            && request.resource.data.name.size() > 0
+            && request.resource.data.name.size() <= 120
+            && request.resource.data.category is string
+            && request.resource.data.category.size() <= 60
+            && request.resource.data.price is number
+            && request.resource.data.price >= 0
+            && request.resource.data.imageUrl is string
+            && request.resource.data.keys().hasOnly([
+              'name', 'category', 'price', 'description', 'imageUrl',
+              'ownerUid', 'createdAt', 'updatedAt'
+            ]));
+        allow update: if isAdmin()
+          || (ownsActiveShop(shopId)
+            && resource.data.ownerUid == request.auth.uid
+            && request.resource.data.ownerUid == request.auth.uid
+            && request.resource.data.name is string
+            && request.resource.data.category is string
+            && request.resource.data.price is number
+            && request.resource.data.price >= 0
+            && request.resource.data.imageUrl is string
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'name', 'category', 'price', 'description', 'imageUrl', 'updatedAt'
+            ]));
+        allow delete: if isAdmin()
+          || (ownsActiveShop(shopId) && resource.data.ownerUid == request.auth.uid);
+      }
+    }
+
     match /orders/{orderId} {
       allow create: if request.resource.data.keys().hasAll(['customer', 'items', 'totals', 'date']);
       allow read: if isAdmin() || (request.auth != null && (resource.data.userId == request.auth.uid || resource.data.customer.email == request.auth.token.email));
@@ -56,9 +140,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // RETURN REQUESTS
-    // Customers may submit a request with only the fields needed for review.
-    // Only admins can read or change requests after submission.
     match /returns/{returnId} {
       allow create: if request.resource.data.keys().hasAll([
         'firstName', 'lastName', 'phone', 'orderNumber', 'type',
@@ -82,7 +163,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-
     match /visitors/{visitorId} {
       allow create, update: if true;
       allow read, delete: if isAdmin();
@@ -98,14 +178,10 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // Push notification devices registered by administrators.
     match /notificationTokens/{tokenId} {
       allow read, write: if isAdmin();
     }
 
-    // ============================================
-    // DEFAULT: DENY EVERYTHING ELSE
-    // ============================================
     match /{document=**} {
       allow read, write: if false;
     }
