@@ -16,9 +16,8 @@
     }
   ],
   "rewrites": [
-    { "source": "/store/:slug", "destination": "/store.html?slug=:slug" },
-    { "source": "/seller", "destination": "/seller.html" },
-    { "source": "/admin/stores", "destination": "/admin-stores.html" }
+    { "source": "/store/:slug", "destination": "/store?slug=:slug" },
+    { "source": "/admin/stores", "destination": "/admin-stores" }
   ],
   "headers": [
     {
