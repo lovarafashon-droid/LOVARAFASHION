@@ -628,7 +628,7 @@ const CategoryApp = {
     const price = unit === 'dozen' ? (parseFloat(product.priceDozen) || parseFloat(product.price) || 0) : (window.LovaraOffers ? window.LovaraOffers.getState(product).price : (parseFloat(product.pricePiece ?? product.price) || 0));
     const selectedQuantity = Math.max(1, Number(quantity) || 1);
     const colorKey = Array.isArray(color) ? JSON.stringify(color) : color;
-    const existing = this.cart.find(item => item.id === product.id && item.size === size && (Array.isArray(item.color) ? JSON.stringify(item.color) : item.color) === colorKey && (item.pricingUnit || 'piece') === unit);
+    const existing = this.cart.find(item => item.id === product.id && !item.storeId && item.size === size && (Array.isArray(item.color) ? JSON.stringify(item.color) : item.color) === colorKey && (item.pricingUnit || 'piece') === unit);
     if (existing) {
       existing.quantity = ((existing.qty ?? existing.quantity) || 1) + selectedQuantity;
       existing.qty = existing.quantity;

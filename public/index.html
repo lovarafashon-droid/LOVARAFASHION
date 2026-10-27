@@ -1480,6 +1480,22 @@
           return false;
         }
       },
+      async openPartnerDashboardIfApproved(user) {
+        const path = window.location.pathname.replace(/\/$/, '') || '/';
+        if (!user || path === '/checkout' || path === '/seller' || path.startsWith('/admin') || path.startsWith('/orders')) return false;
+        try {
+          const profile = await this.db.collection('users').doc(user.uid).get({ source: 'server' });
+          const storeId = profile.exists ? String(profile.data().storeId || '') : '';
+          if (!storeId) return false;
+          const shop = await this.db.collection('shops').doc(storeId).get({ source: 'server' });
+          if (!shop.exists) return false;
+          window.location.href = '/seller';
+          return true;
+        } catch (error) {
+          console.warn('[LOVARA] Partner dashboard check failed:', error);
+          return false;
+        }
+      },
       openAdminPortal() {
         const modal = document.getElementById('adminPortalModal');
         if (!modal) return;
@@ -1531,6 +1547,8 @@
           Modals.close(modalId);
           if (admin || String(result.user.email || '').trim().toLowerCase() === 'admin@lovara.com') {
             setTimeout(() => this.openAdminPortal(), 600);
+          } else if (await this.openPartnerDashboardIfApproved(result.user)) {
+            return;
           }
           showToast('تم تسجيل الدخول بنجاح');
           if (isNewAccount) setTimeout(() => window.LovaraPartnerOnboarding?.offer(result.user), 350);
@@ -1542,7 +1560,7 @@
         const password = document.getElementById('loginPassword').value;
         try {
           const result = await firebase.auth().signInWithEmailAndPassword(email, password);
-          this.saveUser(result.user).catch(error => console.warn('[LOVARA] User profile sync failed:', error));
+          await this.saveUser(result.user).catch(error => console.warn('[LOVARA] User profile sync failed:', error));
           Modals.close('loginModal');
           const admin = await this.isAdmin(result.user);
           this.currentUser = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL, role: admin ? 'admin' : 'user' };
@@ -1550,6 +1568,8 @@
           this.updateUI(this.currentUser);
           if (admin || String(result.user.email || '').trim().toLowerCase() === 'admin@lovara.com') {
             setTimeout(() => this.openAdminPortal(), 600);
+          } else if (await this.openPartnerDashboardIfApproved(result.user)) {
+            return;
           }
           showToast('تم تسجيل الدخول بنجاح');
         } catch (error) { this.showAuthError(error); }
@@ -1757,7 +1777,7 @@
       },
       add(item) {
         const items = this.items;
-        const existing = items.find(i => i.id === item.id && i.size === (item.size||null) && i.color === (item.color||null));
+        const existing = items.find(i => i.id === item.id && (i.storeId || '') === (item.storeId || '') && i.size === (item.size||null) && i.color === (item.color||null));
         if (existing) {
           existing.qty = (existing.qty || existing.quantity || 1) + (item.qty || item.quantity || 1);
           existing.quantity = existing.qty;

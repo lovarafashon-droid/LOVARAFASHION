@@ -532,7 +532,7 @@ function addToCartFromCard(id, name, price, image, category, badge, comingSoon) 
   } else {
     // Fallback if CartApp not loaded yet
     let cart = JSON.parse(localStorage.getItem('lovara_cart')) || [];
-    const existing = cart.find(item => item.id === id);
+    const existing = cart.find(item => item.id === id && !item.storeId);
     if (existing) {
       existing.qty = (parseInt(existing.qty) || 1) + 1;
     } else {
@@ -570,7 +570,7 @@ function buyNow(id, name, price, image, category, badge, comingSoon) {
     });
   } else {
     let cart = JSON.parse(localStorage.getItem('lovara_cart')) || [];
-    const existing = cart.find(item => item.id === id);
+    const existing = cart.find(item => item.id === id && !item.storeId);
     if (existing) {
       existing.qty = (parseInt(existing.qty) || 1) + 1;
     } else {

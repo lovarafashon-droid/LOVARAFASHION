@@ -22,7 +22,7 @@
 
   function mergeById(local, remote) {
     const result = [];
-    const itemKey = item => `${item.id}::${item.size || ''}::${item.color || ''}`;
+    const itemKey = item => `${item.storeId || ''}::${item.id}::${item.size || ''}::${item.color || ''}`;
     const add = item => {
       if (!item || !item.id || result.some(existing => itemKey(existing) === itemKey(item))) return;
       result.push(item);
