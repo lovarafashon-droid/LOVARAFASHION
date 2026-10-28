@@ -63,7 +63,10 @@ module.exports = async (req, res) => {
     }
     const expectedAmount = Number(initialData.payment?.expectedAmountMinor);
     const eventAmount = Number(event.amount ?? event.amount_total ?? event.data?.amount ?? event.data?.amount_total);
-    if (paid && Number.isFinite(expectedAmount) && expectedAmount > 0 && Number.isFinite(eventAmount) && eventAmount > 0) {
+    if (paid) {
+      if (!Number.isFinite(expectedAmount) || expectedAmount <= 0 || !Number.isFinite(eventAmount) || eventAmount <= 0) {
+        return res.status(409).json({ error: 'Paid event is missing a verifiable payment amount.' });
+      }
       // Providers may express amount in minor units, or in major units for legacy payloads.
       const matchesMinor = Math.round(eventAmount) === expectedAmount;
       const matchesMajor = Math.abs(eventAmount * 100 - expectedAmount) <= 1;
@@ -86,7 +89,8 @@ module.exports = async (req, res) => {
         throw Object.assign(new Error('Payment method does not match this checkout.'), { statusCode: 409 });
       }
       const previousStatus = String(baseData.payment?.status || '').toLowerCase();
-      const alreadyPaid = previousStatus === 'paid' || previousStatus === 'succeeded' || previousStatus === 'completed';
+      const alreadyPaid = baseData.payment?.paid === true
+        || ['paid', 'succeeded', 'success', 'completed', 'approved'].includes(previousStatus);
       const timestamp = adminApp.firestore.FieldValue.serverTimestamp();
       if (alreadyPaid) {
         transaction.create(eventRef, { orderNumber, status, transactionId, processedAt: timestamp });

@@ -2662,7 +2662,10 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
       calculateAndRender() {
         const content = document.getElementById('financialContent');
         const t = translations[AppSettings.currentLang];
-        const filtered = this.filterByMonth(this.orders);
+        const filtered = this.filterByMonth(this.orders).filter(order => {
+          const items = Array.isArray(order.items) ? order.items : [];
+          return items.length === 0 || items.some(item => !(typeof item?.storeId === 'string' && item.storeId.trim()));
+        });
 
         if (filtered.length === 0) {
           const statusLabel = this.currentStatus === 'confirmed' ? t.confirmedOnly : this.currentStatus === 'rejected' ? t.rejected : this.currentStatus === 'pending' ? t.pending : t.allOrders;
@@ -2680,11 +2683,16 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
         let totalItems = 0;
 
         filtered.forEach(order => {
-          // If order has pre-calculated profit, use it for total
-          const orderProfit = parseFloat(order.profit) || 0;
-
           if (order.items && Array.isArray(order.items)) {
-            order.items.forEach(item => {
+            const allItems = order.items;
+            const hasPartnerItems = allItems.some(item => typeof item?.storeId === 'string' && item.storeId.trim());
+            const lovaraItems = allItems.filter(item => !(typeof item?.storeId === 'string' && item.storeId.trim()));
+            const orderProfit = hasPartnerItems ? 0 : (parseFloat(order.profit) || 0);
+            const allRevenue = allItems.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (item.quantity || 1)), 0);
+            const lovaraRevenue = lovaraItems.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (item.quantity || 1)), 0);
+            const checkoutDiscount = Number(String(order.totals?.discount || '').replace(/[^\d.-]/g, '')) || 0;
+            const lovaraDiscount = hasPartnerItems && allRevenue > 0 ? checkoutDiscount * lovaraRevenue / allRevenue : 0;
+            lovaraItems.forEach(item => {
               const cat = item.category || 'unknown';
               if (!categories[cat]) {
                 categories[cat] = {
@@ -2701,10 +2709,13 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               let itemProfit = itemRevenue - itemCost;
               if (itemCost === 0 && orderProfit > 0) {
                 // Distribute order profit proportionally
-                const orderRevenue = order.items.reduce((s, it) => s + ((parseFloat(it.price) || 0) * (it.quantity || 1)), 0);
+                const orderRevenue = lovaraRevenue;
                 if (orderRevenue > 0) {
                   itemProfit = (itemRevenue / orderRevenue) * orderProfit;
                 }
+              }
+              if (hasPartnerItems && lovaraRevenue > 0) {
+                itemProfit -= lovaraDiscount * itemRevenue / lovaraRevenue;
               }
 
               categories[cat].items += qty;
@@ -2717,15 +2728,16 @@ input, select, textarea, button { font-family: inherit; -webkit-appearance: none
               grandTotalProfit += itemProfit;
               totalItems += qty;
             });
-          } else if (orderProfit > 0) {
+          } else if ((parseFloat(order.profit) || 0) > 0) {
             // Order has profit but no items breakdown
-            grandTotalProfit += orderProfit;
+            grandTotalProfit += parseFloat(order.profit) || 0;
           }
         });
 
         // If we calculated profit from items but it's 0, use order.profit sum
         if (grandTotalProfit === 0) {
-          grandTotalProfit = filtered.reduce((sum, o) => sum + (parseFloat(o.profit) || 0), 0);
+          grandTotalProfit = filtered.filter(o => !Array.isArray(o.items) || o.items.length === 0)
+            .reduce((sum, o) => sum + (parseFloat(o.profit) || 0), 0);
         }
 
         const profitMargin = grandTotalRevenue > 0 ? ((grandTotalProfit / grandTotalRevenue) * 100).toFixed(1) : 0;

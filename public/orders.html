@@ -650,6 +650,38 @@
         } catch (err) { alert('Failed to update: ' + err.message); }
       },
 
+      isPartnerItem(item) {
+        return typeof item?.storeId === 'string' && item.storeId.trim() !== '';
+      },
+
+      hasLovaraItems(order) {
+        const items = Array.isArray(order?.items) ? order.items : [];
+        // Keep legacy orders that do not have line items; hide partner-only orders.
+        return items.length === 0 || items.some(item => !this.isPartnerItem(item));
+      },
+
+      getLovaraItemEntries(order) {
+        return (Array.isArray(order?.items) ? order.items : [])
+          .map((item, index) => ({ item, index }))
+          .filter(entry => !this.isPartnerItem(entry.item));
+      },
+
+      getLovaraProfit(order) {
+        const allItems = Array.isArray(order?.items) ? order.items : [];
+        const lovaraItems = allItems.filter(item => !this.isPartnerItem(item));
+        const allSubtotal = allItems.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1)), 0);
+        const lovaraSubtotal = lovaraItems.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1)), 0);
+        const discount = Number(String(order?.totals?.discount || '').replace(/[^\d.-]/g, '')) || 0;
+        const lovaraDiscount = allSubtotal > 0 ? discount * lovaraSubtotal / allSubtotal : 0;
+        const grossProfit = lovaraItems.reduce((sum, item) => {
+          const price = parseFloat(item.price) || 0;
+          const cost = parseFloat(item.cost) || 0;
+          const quantity = parseInt(item.quantity) || 1;
+          return sum + ((price - cost) * quantity);
+        }, 0);
+        return grossProfit - lovaraDiscount;
+      },
+
       loadFromFirestore() {
         if (!this.db) {
           this.loadFromLocalStorage();
@@ -668,7 +700,7 @@
             snapshot.forEach(doc => {
               const data = doc.data();
               data._docId = doc.id;
-              this.orders.push(data);
+              if (this.hasLovaraItems(data)) this.orders.push(data);
             });
             // Sort in the browser so legacy orders without `date` are not
             // silently excluded by Firestore's orderBy query.
@@ -692,7 +724,7 @@
       },
 
       loadFromLocalStorage() {
-        this.orders = JSON.parse(localStorage.getItem('lovara_orders')) || [];
+        this.orders = (JSON.parse(localStorage.getItem('lovara_orders')) || []).filter(order => this.hasLovaraItems(order));
         this.enrichWithSuppliers().then(() => this.renderOrders());
       },
 
@@ -703,6 +735,7 @@
           if (!order.items) continue;
           let updated = false;
           for (const item of order.items) {
+            if (this.isPartnerItem(item)) continue;
             if (item.supplier && item.supplier.trim() !== '') continue;
             const name = item.name;
             if (!name) continue;
@@ -779,6 +812,9 @@
       getDuplicateOrderGroups() {
         const groups = new Map();
         this.orders.forEach((order, index) => {
+          // Duplicate-merging writes a whole parent document. Never include a mixed
+          // checkout, because its partner sub-orders are managed separately.
+          if ((order.items || []).some(item => this.isPartnerItem(item))) return;
           const key = this.getDuplicateOrderKey(order);
           if (!key) return;
           const group = groups.get(key) || [];
@@ -1073,7 +1109,7 @@
       renderMergedProducts(order) {
         if (!order.mergedOrderCount || order.mergedOrderCount < 2) return '';
         const esc = this.escapeHTML.bind(this);
-        const products = (order.items || []).map(item => {
+        const products = (order.items || []).filter(item => !this.isPartnerItem(item)).map(item => {
           const image = this.safeImageUrl(item.imageUrl || item.image) || 'https://via.placeholder.com/65x65/c9a87c/ffffff?text=LOVARA';
           const price = (parseFloat(item.price) || 0).toFixed(2);
           const quantity = Math.max(1, parseInt(item.quantity) || 1);
@@ -1098,16 +1134,10 @@
         const rejectionReason = order.rejectionReason || '';
         const esc = this.escapeHTML.bind(this);
 
-        const items = order.items || [];
+        const items = this.getLovaraItemEntries(order);
+        const partnerItemsCount = Math.max(0, (Array.isArray(order.items) ? order.items.length : 0) - items.length);
         let profit = parseFloat(order.profit) || 0;
-        if (profit === 0 && items.length > 0) {
-          profit = items.reduce((sum, item) => {
-            const p = parseFloat(item.price) || 0;
-            const c = parseFloat(item.cost) || 0;
-            const q = parseInt(item.quantity) || 1;
-            return sum + ((p - c) * q);
-          }, 0);
-        }
+        if (partnerItemsCount > 0 || profit === 0) profit = this.getLovaraProfit(order);
 
         const customer = order.customer || {};
         const firstName = customer.firstName || '';
@@ -1174,7 +1204,7 @@
           </div>
         `;
 
-        const itemsHtml = items.map((item, itemIdx) => {
+        const itemsHtml = items.map(({ item, index: itemIdx }) => {
           const itemPrice = parseFloat(item.price) || 0;
           const itemCost = parseFloat(item.cost) || 0;
           const itemQty = parseInt(item.quantity) || 1;
@@ -1208,6 +1238,10 @@
             </div>
           `;
         }).join('');
+
+        const partnerItemsNotice = partnerItemsCount > 0
+          ? `<div class="return-details" style="margin:0 0 16px;border-color:#ffe082;background:#fff8e1;color:#765800;">تم فصل ${partnerItemsCount} منتج${partnerItemsCount === 1 ? '' : 'ات'} من متجر شريك عن تفاصيل طلبات LOVARA؛ يتابعها البائع من لوحة متجره. إجمالي الدفع المعروض يخص السلة الموحدة.</div>`
+          : '';
 
         const payment = order.payment || {};
         const paymentMethod = String(payment.method || '').toLowerCase();
@@ -1296,6 +1330,7 @@
                 <div class="box-title"><i class="fas fa-shopping-bag"></i> Ordered Items</div>
                 ${itemsHtml}
               </div>
+              ${partnerItemsNotice}
 
               <div class="info-grid" style="margin-bottom:20px;">
                 <div class="info-item">
@@ -1412,7 +1447,7 @@
             ` : confirmStatus !== 'pending' ? `
             <div class="confirmation-box ${confirmStatus === 'rejected' ? 'rejected' : ''}">
               <i class="fas ${confirmStatus === 'confirmed' ? 'fa-check-circle' : 'fa-times-circle'}"></i>
-              <span>${confirmStatus === 'confirmed' ? 'Order Confirmed ✓' : 'Order Rejected ✗' + (rejectionReason ? ' — Reason: ' + rejectionReason : '')}</span>
+              <span>${confirmStatus === 'confirmed' ? 'Order Confirmed ✓' : 'Order Rejected ✗' + (rejectionReason ? ' — Reason: ' + esc(rejectionReason) : '')}</span>
             </div>
             ` : ''}
           </div>
@@ -1441,18 +1476,17 @@
       updateItemCost(orderIndex, itemIndex, costValue) {
         const order = this.orders[orderIndex];
         if (!order || !order.items || !order.items[itemIndex]) return;
+        if (this.isPartnerItem(order.items[itemIndex])) {
+          this.showToast('تكلفة منتجات المتجر الشريك يديرها البائع من متجره.', 'error');
+          return;
+        }
         const cost = parseFloat(costValue);
         if (isNaN(cost) || cost < 0) {
           this.showToast('Please enter a valid cost', 'error');
           return;
         }
         order.items[itemIndex].cost = cost;
-        const totalProfit = order.items.reduce((sum, item) => {
-          const p = parseFloat(item.price) || 0;
-          const c = parseFloat(item.cost) || 0;
-          const q = parseInt(item.quantity) || 1;
-          return sum + ((p - c) * q);
-        }, 0);
+        const totalProfit = this.getLovaraProfit(order);
         order.profit = totalProfit;
         const profitValueEl = document.getElementById('profitValue-' + orderIndex);
         if (profitValueEl) profitValueEl.textContent = 'EGP ' + totalProfit.toFixed(2);
@@ -1477,6 +1511,7 @@
         let recalculated = false;
         for (let i = 0; i < order.items.length; i++) {
           const item = order.items[i];
+          if (this.isPartnerItem(item)) continue;
           if (item.cost !== undefined && item.cost !== null && parseFloat(item.cost) > 0) continue;
           try {
             if (this.db) {
@@ -1493,12 +1528,7 @@
             console.warn('[LOVARA Orders] Could not fetch cost for:', item.name);
           }
         }
-        const totalProfit = order.items.reduce((sum, item) => {
-          const p = parseFloat(item.price) || 0;
-          const c = parseFloat(item.cost) || 0;
-          const q = parseInt(item.quantity) || 1;
-          return sum + ((p - c) * q);
-        }, 0);
+        const totalProfit = this.getLovaraProfit(order);
         order.profit = totalProfit;
         if (recalculated && this.db && order._docId) {
           await this.db.collection('orders').doc(order._docId).update({
@@ -1767,9 +1797,13 @@
       },
 
       deleteOrder(index) {
-        if (!confirm('Are you sure you want to delete this order?')) return;
         const order = this.orders[index];
         if (!order) return;
+        if ((order.items || []).some(item => this.isPartnerItem(item))) {
+          this.showToast('لا يمكن حذف سلة موحدة تحتوي على طلب متجر شريك؛ استخدم الإلغاء حتى يبقى سجل البائع متسقًا.', 'error');
+          return;
+        }
+        if (!confirm('Are you sure you want to delete this order?')) return;
         if (this.db && order._docId) {
           this.db.collection('orders').doc(order._docId).delete()
             .then(() => {
@@ -1796,7 +1830,7 @@
         const esc = this.escapeHTML.bind(this);
         const groupedItems = new Map();
         confirmedOrders.forEach(({ order }) => {
-          (order.items || []).forEach(item => {
+          (order.items || []).filter(item => !this.isPartnerItem(item)).forEach(item => {
             const quantity = Math.max(1, parseInt(item.quantity) || 1);
             const colors = Array.isArray(item.color) ? item.color : [item.color || 'غير محدد'];
             const sizes = Array.isArray(item.size) ? item.size : [item.size || 'غير محدد'];
@@ -1821,7 +1855,8 @@
           const orderDate = order.date && order.date.toDate ? order.date.toDate() : (order.date ? new Date(order.date) : new Date());
           const dateText = esc(orderDate.toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }));
           const notes = String(customer.notes || order.notes || '').trim();
-          const items = order.items || [];
+          const partnerCount = Math.max(0, (Array.isArray(order.items) ? order.items.length : 0) - this.getLovaraItemEntries(order).length);
+          const items = this.getLovaraItemEntries(order).map(entry => entry.item);
           const itemsHtml = items.length ? items.map((item, itemIndex) => {
             const product = this.getProductForItem(item);
             const supplier = String(item.supplier || item.factory || item.madeBy || product?.supplier || '').trim();
@@ -1834,6 +1869,7 @@
           }).join('') : '<div class="muted">لا توجد منتجات</div>';
           return `<section class="bulk-order">
             <div class="bulk-order-head"><strong>طلب #${orderNum}</strong><span>${dateText}</span></div>
+            ${partnerCount ? `<div class="bulk-notes"><strong>تنبيه:</strong> هذا الطلب يحتوي أيضًا على ${partnerCount} منتج من متجر شريك، وهي غير مدرجة هنا. الإجمالي أدناه إجمالي Checkout الموحد وليس إجمالي منتجات LOVARA وحدها.</div>` : ''}
             ${isFull ? `<div class="bulk-customer"><strong>اسم العميل:</strong> ${esc(`${customer.firstName || ''} ${customer.lastName || ''}`.trim() || '—')} &nbsp; <strong>الهاتف:</strong> ${esc(customer.phone || '—')} &nbsp; <strong>العنوان:</strong> ${esc([customer.address, customer.city, customer.state || customer.governorate].filter(Boolean).join(', ') || '—')}</div>` : ''}
             <div class="bulk-items">${itemsHtml}</div>
             <div class="bulk-notes"><strong>الملاحظات:</strong> ${esc(notes || 'لا توجد ملاحظات')}</div>
@@ -1855,9 +1891,12 @@
       printInvoice(index) {
         const order = this.orders[index];
         if (!order) return;
-        const items = order.items || [];
+        const items = this.getLovaraItemEntries(order).map(entry => entry.item);
         const customer = order.customer || {};
         const orderNum = order.orderNumber || order._docId || ('ORD-' + index);
+        const esc = this.escapeHTML.bind(this);
+        const safeOrderNum = esc(orderNum);
+        const partnerItemsCount = Math.max(0, (Array.isArray(order.items) ? order.items.length : 0) - items.length);
         const dateStr = new Date().toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
         let itemsHtml = items.map((item, idx) => {
@@ -1867,15 +1906,15 @@
               <div style="font-size:11px; color:#555; margin-bottom:2px;">Item #${idx+1}</div>
               <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
                 <span style="font-weight:600;">Name:</span>
-                <span style="text-align:right; max-width:60%;">${item.name || 'Unknown'}</span>
+                <span style="text-align:right; max-width:60%;">${esc(item.name || 'Unknown')}</span>
               </div>
               <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
                 <span style="font-weight:600;">Color:</span>
-                <span>${item.color || 'N/A'}</span>
+                <span>${esc(item.color || 'N/A')}</span>
               </div>
               <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
                 <span style="font-weight:600;">Size:</span>
-                <span>${item.size || 'N/A'}</span>
+                <span>${esc(item.size || 'N/A')}</span>
               </div>
               <div style="display:flex; justify-content:space-between;">
                 <span style="font-weight:600;">Price:</span>
@@ -1898,30 +1937,31 @@
           <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px; margin-bottom:10px;">
             <div style="font-family:'Cormorant Garamond', serif; font-size:20px; font-weight:600; letter-spacing:3px; margin:0;">LOVARA</div>
             <div style="font-size:9px; color:#555; margin-top:4px;">Premium Women's Fashion</div>
-            <div style="font-size:10px; color:#333; margin-top:6px;">Order: <strong>#${orderNum}</strong></div>
+            <div style="font-size:10px; color:#333; margin-top:6px;">Order: <strong>#${safeOrderNum}</strong></div>
             <div style="font-size:9px; color:#777; margin-top:2px;">${dateStr}</div>
           </div>
           <div style="margin-bottom:10px; font-size:11px; line-height:1.5;">
-            <strong>Customer:</strong> ${(customer.firstName||'') + ' ' + (customer.lastName||'')}<br>
-            <strong>Phone 1:</strong> ${customer.phone||'-'}<br>
-            <strong>Phone 2:</strong> ${customer.phone2||'-'}<br>
-            <strong>Address:</strong> ${(customer.address||'') + (customer.city ? ', ' + customer.city : '') + (customer.state || customer.governorate ? ', ' + (customer.state || customer.governorate) : '')}
+            <strong>Customer:</strong> ${esc((customer.firstName||'') + ' ' + (customer.lastName||''))}<br>
+            <strong>Phone 1:</strong> ${esc(customer.phone||'-')}<br>
+            <strong>Phone 2:</strong> ${esc(customer.phone2||'-')}<br>
+            <strong>Address:</strong> ${esc((customer.address||'') + (customer.city ? ', ' + customer.city : '') + (customer.state || customer.governorate ? ', ' + (customer.state || customer.governorate) : ''))}
           </div>
+          ${partnerItemsCount ? `<div style="padding:6px;background:#fff8e1;border:1px solid #e0c66c;font-size:9px;">This unified checkout also contains ${partnerItemsCount} partner-store item(s), not listed on this LOVARA invoice. The totals below are for the full checkout.</div>` : ''}
           <div style="border-top:1px dashed #000; margin:8px 0;"></div>
           ${itemsHtml}
           <div style="border-top:1px dashed #000; margin:10px 0;"></div>
           <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
-            <span>Subtotal:</span><span>${subtotal}</span>
+            <span>Subtotal:</span><span>${esc(subtotal)}</span>
           </div>
           <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:6px;">
-            <span>Shipping:</span><span>${shipping}</span>
+            <span>Shipping:</span><span>${esc(shipping)}</span>
           </div>
-          ${totals.shippingBase ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>J&amp;T base:</span><span>${totals.shippingBase}</span></div>` : ''}
-          ${totals.vat ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>VAT 14%:</span><span>${totals.vat}</span></div>` : ''}
-          ${totals.codFee && !/^EGP 0(?:\.00)?$/.test(String(totals.codFee).trim()) ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>COD fee:</span><span>${totals.codFee}</span></div>` : ''}
-          ${totals.visaDiscount && !/^EGP 0(?:\.00)?$/.test(String(totals.visaDiscount).trim()) ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>Visa discount:</span><span>-${totals.visaDiscount}</span></div>` : ''}
+          ${totals.shippingBase ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>J&amp;T base:</span><span>${esc(totals.shippingBase)}</span></div>` : ''}
+          ${totals.vat ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>VAT 14%:</span><span>${esc(totals.vat)}</span></div>` : ''}
+          ${totals.codFee && !/^EGP 0(?:\.00)?$/.test(String(totals.codFee).trim()) ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>COD fee:</span><span>${esc(totals.codFee)}</span></div>` : ''}
+          ${totals.visaDiscount && !/^EGP 0(?:\.00)?$/.test(String(totals.visaDiscount).trim()) ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span>Visa discount:</span><span>-${esc(totals.visaDiscount)}</span></div>` : ''}
           <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:700; margin-top:8px; padding-top:6px; border-top:1px solid #000;">
-            <span>TOTAL:</span><span>${total}</span>
+            <span>TOTAL:</span><span>${esc(total)}</span>
           </div>
           <div style="text-align:center; margin-top:14px; padding-top:10px; border-top:1px dashed #000;">
             <img src="https://barcodeapi.org/api/128/${encodeURIComponent('https://lovarafashion.com')}?text=lovarafashion.com" 
@@ -1942,7 +1982,7 @@
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Invoice #${orderNum}</title>
+            <title>Invoice #${safeOrderNum}</title>
             <style>
               @page { size: 80mm auto; margin: 0; }
               body { margin: 0; padding: 0; font-family: 'Jost', sans-serif; background: #fff; color: #000; }

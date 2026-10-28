@@ -510,17 +510,18 @@
     async function cancelOrder(orderId){
       if(!confirm(currentLang==='ar'?'هل تريدين إلغاء هذا الطلب؟':'Cancel this order?')) return;
       try {
-        const orderSnap = await profileDb.collection('orders').doc(orderId).get();
-        const order = orderSnap.data() || {};
-        const promoNotice = order.promoCode ? `تم إلغاء الطلب ${order.orderNumber || orderId} المستخدم به كود الخصم ${order.promoCode}` : '';
-        await profileDb.collection('orders').doc(orderId).update({
-          status:'cancelled', cancellationReason:'Cancelled by customer', cancelledBy:'customer',
-          discountCancellationNotice: promoNotice,
-          cancelledAt:firebase.firestore.FieldValue.serverTimestamp()
+        if(!currentUser) throw new Error(currentLang==='ar'?'سجّل الدخول مرة أخرى ثم حاول.':'Please sign in again and retry.');
+        const token = await currentUser.getIdToken();
+        const response = await fetch('/api/cancel-order', {
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+          body:JSON.stringify({orderId})
         });
+        const result = await response.json().catch(()=>({}));
+        if(!response.ok) throw new Error(result.error || (currentLang==='ar'?'تعذر إلغاء الطلب الآن':'Unable to cancel this order'));
         showToast(currentLang==='ar'?'تم إلغاء الطلب':'Order cancelled');
         loadOrders();
-      } catch(err) { console.error(err); showToast(currentLang==='ar'?'لا يمكن إلغاء الطلب الآن':'Unable to cancel this order','error'); }
+      } catch(err) { console.error(err); showToast(err.message || (currentLang==='ar'?'لا يمكن إلغاء الطلب الآن':'Unable to cancel this order'),'error'); }
     }
 
     async function handleProfilePhoto(event){

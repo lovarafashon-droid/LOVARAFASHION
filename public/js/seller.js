@@ -64,15 +64,16 @@
         const options = [item.size && item.size !== '-' ? `المقاس: ${Array.isArray(item.size) ? item.size.join('، ') : item.size}` : '', item.color && item.color !== '-' ? `اللون: ${Array.isArray(item.color) ? item.color.join('، ') : item.color}` : ''].filter(Boolean).join(' · ');
         return `<li><strong>${escapeHtml(item.name || 'منتج')}</strong> × ${quantity} — EGP ${(Number(item.price || 0) * quantity).toFixed(2)}${options ? `<div class="muted">${escapeHtml(options)}</div>` : ''}</li>`;
       }).join('');
-      const options = Object.entries(sellerStatuses).map(([value, label]) => `<option value="${value}" ${value === status ? 'selected' : ''}>${label}</option>`).join('');
-      return `<article class="order-card" data-order-card="${escapeHtml(id)}"><div class="order-top"><div><h3>طلب #${escapeHtml(data.orderNumber || id)}</h3><div class="order-meta">${formattedDate(data.date || data.createdAt)} · <span class="status-pill">${sellerStatuses[status]}</span></div></div><strong>${escapeHtml(data.totals?.total || data.totals?.subtotal || 'المبلغ غير متاح')}</strong></div><div class="order-customer"><strong>${escapeHtml(fullName)}</strong><br>${phone ? `<a class="order-phone" href="tel:${escapeHtml(phoneHref)}">${escapeHtml(phone)}</a>` : 'لا يوجد رقم هاتف'}<br>${escapeHtml(address || 'لا يوجد عنوان')} ${customer.notes ? `<br><span class="muted">ملاحظات: ${escapeHtml(customer.notes)}</span>` : ''}</div><ul class="order-items">${itemHtml}</ul><div class="order-bottom"><div class="order-payment">طريقة الدفع: ${paymentLabel} · ${paymentState}</div><div class="order-controls"><label>حالة الطلب<select class="order-status-select">${options}</select></label><button class="btn" type="button" data-update-order="${escapeHtml(id)}">حفظ الحالة</button></div></div></article>`;
+      const cancelled = status === 'cancelled';
+      const options = Object.entries(sellerStatuses).filter(([value]) => value !== 'cancelled' || cancelled).map(([value, label]) => `<option value="${value}" ${value === status ? 'selected' : ''}>${label}</option>`).join('');
+      return `<article class="order-card" data-order-card="${escapeHtml(id)}"><div class="order-top"><div><h3>طلب #${escapeHtml(data.orderNumber || id)}</h3><div class="order-meta">${formattedDate(data.date || data.createdAt)} · <span class="status-pill">${sellerStatuses[status]}</span></div></div><strong>${escapeHtml(data.totals?.total || data.totals?.subtotal || 'المبلغ غير متاح')}</strong></div><div class="order-customer"><strong>${escapeHtml(fullName)}</strong><br>${phone ? `<a class="order-phone" href="tel:${escapeHtml(phoneHref)}">${escapeHtml(phone)}</a>` : 'لا يوجد رقم هاتف'}<br>${escapeHtml(address || 'لا يوجد عنوان')} ${customer.notes ? `<br><span class="muted">ملاحظات: ${escapeHtml(customer.notes)}</span>` : ''}</div><ul class="order-items">${itemHtml}</ul><div class="order-bottom"><div class="order-payment">طريقة الدفع: ${paymentLabel} · ${paymentState}</div><div class="order-controls"><label>حالة الطلب<select class="order-status-select" ${cancelled ? 'disabled' : ''}>${options}</select></label><button class="btn" type="button" data-update-order="${escapeHtml(id)}" ${cancelled ? 'disabled' : ''}>${cancelled ? 'تم الإلغاء' : 'حفظ الحالة'}</button></div></div></article>`;
     }).join('');
 
     list.querySelectorAll('[data-update-order]').forEach(button => button.addEventListener('click', async () => {
       if (!activeShop) return;
       const card = button.closest('[data-order-card]');
       const nextStatus = card?.querySelector('.order-status-select')?.value;
-      if (!sellerStatuses[nextStatus]) return;
+      if (!sellerStatuses[nextStatus] || sellerOrderDocs.find(order => order.id === button.dataset.updateOrder)?.data?.sellerStatus === 'cancelled') return;
       button.disabled = true;
       try {
         await db.collection('shops').doc(activeShop.id).collection('orders').doc(button.dataset.updateOrder).update({

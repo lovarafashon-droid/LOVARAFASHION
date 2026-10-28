@@ -149,7 +149,8 @@ service cloud.firestore {
           || (ownsShop(shopId)
             && resource.data.storeId == shopId
             && request.resource.data.storeId == shopId
-            && request.resource.data.sellerStatus in ['new', 'confirmed', 'preparing', 'shipped', 'delivered', 'cancelled']
+            && resource.data.sellerStatus != 'cancelled'
+            && request.resource.data.sellerStatus in ['new', 'confirmed', 'preparing', 'shipped', 'delivered']
             && request.resource.data.updatedAt == request.time
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sellerStatus', 'updatedAt']));
         allow delete: if isAdmin();
@@ -157,15 +158,10 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      // Orders are created only by trusted checkout endpoints and the signed XPay webhook.
+      // Orders are created and customer cancellations are processed only by trusted server endpoints.
       allow create: if false;
       allow read: if isAdmin() || (request.auth != null && (resource.data.userId == request.auth.uid || resource.data.customer.email == request.auth.token.email));
-      allow update: if isAdmin()
-        || (request.auth != null
-          && (resource.data.userId == request.auth.uid || resource.data.customer.email == request.auth.token.email)
-          && resource.data.status in ['pending', 'confirmed']
-          && request.resource.data.status == 'cancelled'
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancellationReason', 'cancelledBy', 'discountCancellationNotice', 'cancelledAt']));
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 

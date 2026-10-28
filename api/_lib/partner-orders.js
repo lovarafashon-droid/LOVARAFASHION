@@ -160,6 +160,10 @@ async function canonicalizeCheckoutOrder(orderData, db = admin().firestore()) {
     if (!productSnap.exists) throw new PartnerOrderError('أحد منتجات LOVARA لم يعد متاحًا. أزل المنتج من السلة وحاول مرة أخرى.', 409);
     const product = productSnap.data();
     const pricingUnit = item.pricingUnit === 'dozen' ? 'dozen' : 'piece';
+    const subcategory = String(product.subcategory || product.subCategory || '').trim().toLowerCase();
+    if (pricingUnit === 'dozen' && (!['bras', 'panties'].includes(subcategory) || positivePrice(product.priceDozen) <= 0)) {
+      throw new PartnerOrderError('طريقة شراء الدستة غير متاحة لهذا المنتج.', 422);
+    }
     const piecePrice = positivePrice(product.pricePiece ?? product.price);
     const dozenPrice = positivePrice(product.priceDozen || product.price);
     let basePrice = pricingUnit === 'dozen' ? dozenPrice : piecePrice;
@@ -237,8 +241,13 @@ async function canonicalizeCheckoutOrder(orderData, db = admin().firestore()) {
     ? Math.max(0, Number(commissionPercentValue) || 0)
     : Math.max(0, Number(promo?.commission ?? 10) || 10);
   const employeeCommission = promo ? calculatedSubtotal * commissionPercent / 100 : 0;
-  const productProfit = normalizedItems.reduce((sum, item) => sum + (amount(item.price) - amount(item.cost)) * item.quantity, 0);
-  const profit = productProfit - expectedDiscount;
+  const productProfit = normalizedItems.reduce((sum, item) => {
+    if (item.storeId) return sum;
+    return sum + (amount(item.price) - amount(item.cost)) * item.quantity;
+  }, 0);
+  const lovaraSubtotal = normalizedItems.reduce((sum, item) => sum + (!item.storeId ? amount(item.price) * item.quantity : 0), 0);
+  const lovaraDiscount = calculatedSubtotal > 0 ? expectedDiscount * lovaraSubtotal / calculatedSubtotal : 0;
+  const profit = productProfit - lovaraDiscount;
 
   return {
     ...orderData,
