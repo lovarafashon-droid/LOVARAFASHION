@@ -18,6 +18,29 @@ function hasPartnerItems(orderData) {
   return Array.isArray(orderData?.items) && orderData.items.some(item => typeof item?.storeId === 'string' && item.storeId.trim());
 }
 
+function assertCheckoutStoreScope(orderData, requestedStoreId = '') {
+  const bodyStoreId = String(orderData?.storeId || '').trim();
+  const routeStoreId = String(requestedStoreId || '').trim();
+  if (bodyStoreId && routeStoreId && bodyStoreId !== routeStoreId) {
+    throw new PartnerOrderError('رابط المتجر لا يطابق بيانات السلة.', 403);
+  }
+  const storeId = routeStoreId || bodyStoreId;
+  const items = Array.isArray(orderData?.items) ? orderData.items : [];
+  if (!storeId) {
+    if (items.some(item => String(item?.storeId || '').trim())) {
+      throw new PartnerOrderError('أكمل طلبات المتاجر الشريكة من صفحة Checkout الخاصة بكل متجر.', 422);
+    }
+    return '';
+  }
+  if (storeId.includes('/') || storeId.length > 150) {
+    throw new PartnerOrderError('معرف المتجر غير صالح.', 422);
+  }
+  if (!items.length || items.some(item => String(item?.storeId || '').trim() !== storeId)) {
+    throw new PartnerOrderError('يجب أن تحتوي سلة المتجر على منتجات هذا المتجر فقط.', 422);
+  }
+  return storeId;
+}
+
 function asDate(value) {
   if (value && typeof value.toDate === 'function') return value.toDate();
   return new Date(value || 0);
@@ -70,7 +93,7 @@ function validateQuantity(item) {
   return quantity;
 }
 
-async function canonicalizeCheckoutOrder(orderData, db = admin().firestore()) {
+async function canonicalizeCheckoutOrder(orderData, db = admin().firestore(), options = {}) {
   if (!orderData || !Array.isArray(orderData.items) || orderData.items.length === 0 || orderData.items.length > 60) {
     throw new PartnerOrderError('سلة الطلب غير صالحة. أعد تحميل السلة وحاول مرة أخرى.', 422);
   }
@@ -126,9 +149,24 @@ async function canonicalizeCheckoutOrder(orderData, db = admin().firestore()) {
       const salePrice = positivePrice(product.salePrice);
       const saleEndsAt = timestampMillis(product.saleEndsAt);
       const currentPrice = salePrice > 0 && salePrice < originalPrice && saleEndsAt > Date.now() ? salePrice : originalPrice;
-      if (Math.abs(currentPrice - submittedPrice) > 0.01) {
+      if (!options.useCanonicalPrices && Math.abs(currentPrice - submittedPrice) > 0.01) {
         throw new PartnerOrderError(`تغير سعر ${product.name || 'أحد المنتجات'}. حدّث السلة قبل تأكيد الطلب.`, 409);
       }
+      const availableColors = Array.isArray(product.colors) ? [...new Set(product.colors.map(value => String(value || '').trim()).filter(Boolean))] : [];
+      const requestedColors = Array.isArray(item.color)
+        ? item.color.map(value => String(value || '').trim()).filter(Boolean)
+        : Array(quantity).fill(String(item.color || '-').trim());
+      if (availableColors.length && (requestedColors.length !== quantity || requestedColors.some(color => !availableColors.includes(color)))) {
+        throw new PartnerOrderError(`اختاري لونًا متاحًا لكل قطعة من ${product.name || 'المنتج'}.`, 422);
+      }
+      const availableSizes = Array.isArray(product.sizes) ? product.sizes.map(value => String(value || '').trim()).filter(Boolean) : [];
+      const requestedSize = String(item.size || '-').trim();
+      if (availableSizes.length && requestedSize !== '-' && !availableSizes.includes(requestedSize)) {
+        throw new PartnerOrderError(`المقاس المحدد غير متاح لمنتج ${product.name || ''}.`, 422);
+      }
+      const normalizedColor = availableColors.length
+        ? (requestedColors.every(color => color === requestedColors[0]) ? requestedColors[0] : requestedColors)
+        : '-';
       normalizedItems.push({
         productId,
         storeId,
@@ -141,8 +179,10 @@ async function canonicalizeCheckoutOrder(orderData, db = admin().firestore()) {
         price: currentPrice,
         quantity,
         qty: quantity,
-        size: '-',
-        color: '-',
+        size: requestedSize,
+        color: normalizedColor,
+        sizes: availableSizes,
+        colors: availableColors,
         imageUrl: String(product.imageUrl || ''),
         images: product.imageUrl ? [String(product.imageUrl)] : [],
         cost: 0,
@@ -178,11 +218,26 @@ async function canonicalizeCheckoutOrder(orderData, db = admin().firestore()) {
       quantityDiscount = quantity >= 3 ? 20 : quantity === 2 ? 10 : 0;
     }
     const canonicalPrice = Math.max(0, basePrice - quantityDiscount);
-    if (Math.abs(canonicalPrice - submittedPrice) > 0.01) {
+    if (!options.useCanonicalPrices && Math.abs(canonicalPrice - submittedPrice) > 0.01) {
       throw new PartnerOrderError(`تغير سعر ${product.name || 'أحد المنتجات'}. حدّث السلة قبل تأكيد الطلب.`, 409);
     }
     const images = Array.isArray(product.images) ? product.images.filter(value => typeof value === 'string') : [];
     const imageUrl = String(product.imageUrl || product.image || images[0] || '');
+    const availableColors = Array.isArray(product.colors) ? [...new Set(product.colors.map(value => String(value || '').trim()).filter(Boolean))] : [];
+    const requestedColors = Array.isArray(item.color)
+      ? item.color.map(value => String(value || '').trim()).filter(Boolean)
+      : Array(quantity).fill(String(item.color || '-').trim());
+    if (availableColors.length && (requestedColors.length !== quantity || requestedColors.some(color => !availableColors.includes(color)))) {
+      throw new PartnerOrderError(`اختاري لونًا متاحًا لكل قطعة من ${product.name || 'المنتج'}.`, 422);
+    }
+    const availableSizes = Array.isArray(product.sizes) ? product.sizes.map(value => String(value || '').trim()).filter(Boolean) : [];
+    const requestedSize = String(item.size || '-').trim();
+    if (availableSizes.length && requestedSize !== '-' && !availableSizes.includes(requestedSize)) {
+      throw new PartnerOrderError(`المقاس المحدد غير متاح لمنتج ${product.name || ''}.`, 422);
+    }
+    const normalizedColor = availableColors.length
+      ? (requestedColors.every(color => color === requestedColors[0]) ? requestedColors[0] : requestedColors)
+      : '-';
     normalizedItems.push({
       productId,
       name: String(product.name || 'Product'),
@@ -193,10 +248,10 @@ async function canonicalizeCheckoutOrder(orderData, db = admin().firestore()) {
       basePrice,
       quantity,
       qty: quantity,
-      size: item.size ?? '-',
-      color: item.color ?? '-',
-      sizes: Array.isArray(product.sizes) ? product.sizes : [],
-      colors: Array.isArray(product.colors) ? product.colors : [],
+      size: requestedSize,
+      color: normalizedColor,
+      sizes: availableSizes,
+      colors: availableColors,
       imageUrl,
       images: images.length ? images : (imageUrl ? [imageUrl] : []),
       cost: positivePrice(product.cost),
@@ -213,7 +268,7 @@ async function canonicalizeCheckoutOrder(orderData, db = admin().firestore()) {
   const submittedDiscount = amount(totals.discount);
   const submittedTotal = amount(totals.total);
   const shippingExpected = expectedShipping(customer.governorate, calculatedSubtotal, paymentMethod);
-  if (Math.abs(calculatedSubtotal - submittedSubtotal) > 0.05 || Math.abs(shippingExpected - submittedShipping) > 0.05) {
+  if (!options.recalculateTotals && (Math.abs(calculatedSubtotal - submittedSubtotal) > 0.05 || Math.abs(shippingExpected - submittedShipping) > 0.05)) {
     throw new PartnerOrderError('إجمالي السلة تغير. أعد مراجعة الأسعار ورسوم الشحن قبل تأكيد الطلب.', 409);
   }
 
@@ -232,7 +287,7 @@ async function canonicalizeCheckoutOrder(orderData, db = admin().firestore()) {
   const nominalDiscount = promo ? (Number(promo.discount) || 0) * totalQuantity : 0;
   const expectedDiscount = Math.min(nominalDiscount, calculatedSubtotal + shippingExpected);
   const expectedTotal = Math.max(0, calculatedSubtotal + shippingExpected - expectedDiscount);
-  if (Math.abs(expectedDiscount - submittedDiscount) > 0.05 || Math.abs(expectedTotal - submittedTotal) > 0.05) {
+  if (!options.recalculateTotals && (Math.abs(expectedDiscount - submittedDiscount) > 0.05 || Math.abs(expectedTotal - submittedTotal) > 0.05)) {
     throw new PartnerOrderError('تغير الخصم أو إجمالي الطلب. راجع السلة ثم أعد المحاولة.', 409);
   }
 
@@ -345,6 +400,7 @@ module.exports = {
   amount,
   expectedShipping,
   hasPartnerItems,
+  assertCheckoutStoreScope,
   canonicalizeCheckoutOrder,
   buildPartnerOrderRecords
 };

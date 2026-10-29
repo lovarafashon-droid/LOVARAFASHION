@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { canonicalizeCheckoutOrder, expectedShipping } = require('../api/_lib/partner-orders');
+const { assertCheckoutStoreScope, canonicalizeCheckoutOrder, expectedShipping } = require('../api/_lib/partner-orders');
 
 const products = {
   lovaraBra: {
@@ -73,6 +73,33 @@ function checkout(items, subtotal) {
 }
 
 async function run() {
+  assert.strictEqual(assertCheckoutStoreScope(checkout([
+    { productId: 'lovaraDress', price: 800, quantity: 1 }
+  ], 800)), '', 'the main checkout remains scoped to LOVARA products');
+  assert.strictEqual(assertCheckoutStoreScope({ storeId: 'shop1', items: [{ productId: 'partnerItem', storeId: 'shop1' }] }, 'shop1'), 'shop1', 'a partner checkout is scoped to its requested shop');
+  assert.throws(
+    () => assertCheckoutStoreScope({ storeId: 'shop1', items: [{ productId: 'partnerItem', storeId: 'shop1' }] }, 'shop2'),
+    error => error.statusCode === 403,
+    'the route store cannot be changed independently of the submitted cart'
+  );
+  assert.throws(
+    () => assertCheckoutStoreScope({ items: [{ productId: 'partnerItem', storeId: 'shop1' }] }),
+    error => error.statusCode === 422,
+    'the main checkout cannot accept partner products'
+  );
+  assert.throws(
+    () => assertCheckoutStoreScope({ storeId: 'shop1', items: [{ productId: 'partnerItem', storeId: 'shop1' }, { productId: 'partnerItem', storeId: 'shop2' }] }, 'shop1'),
+    error => error.statusCode === 422,
+    'a partner checkout cannot mix products from two shops'
+  );
+  assert.throws(
+    () => assertCheckoutStoreScope({ storeId: 'shop1', items: [{ productId: 'lovaraDress' }] }, 'shop1'),
+    error => error.statusCode === 422,
+    'a partner checkout cannot include LOVARA catalog products'
+  );
+
+  // The canonicalizer remains compatible with legacy/internal mixed records;
+  // public checkout endpoints enforce the single-store rules above.
   const mixed = await canonicalizeCheckoutOrder(checkout([
     { productId: 'lovaraBra', price: 1200, quantity: 1 },
     { productId: 'partnerItem', storeId: 'shop1', price: 300, quantity: 1 }

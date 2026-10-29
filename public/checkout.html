@@ -89,6 +89,12 @@
     .checkout-header { text-align:center; margin-bottom:40px; animation:fadeInUp 0.8s ease; }
     .checkout-header h1 { font-family:'Cormorant Garamond',serif; font-size:42px; color:var(--secondary); margin-bottom:10px; }
     .checkout-header p { color:var(--text-light); font-size:15px; }
+    .store-checkout-banner,.partner-cart-notice { max-width:900px; margin:0 auto 22px; padding:13px 16px; border:1px solid var(--border); border-radius:12px; background:#fff; color:var(--text); font-size:13px; }
+    .store-checkout-banner { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .store-checkout-banner[hidden],.partner-cart-notice[hidden] { display:none; }
+    .store-checkout-banner a,.partner-cart-notice a { color:var(--primary-dark); font-weight:600; text-decoration:none; }
+    .store-checkout-banner span,.partner-cart-notice span { color:var(--text-light); }
+    .partner-cart-links { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; }
     .checkout-steps { display:flex; justify-content:center; align-items:center; gap:0; margin-bottom:50px; animation:fadeInUp 0.8s ease 0.1s both; }
     .step { display:flex; align-items:center; gap:10px; padding:12px 24px; border-radius:50px; font-size:13px; font-weight:500; transition:var(--transition); position:relative; }
     .step-number { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; background:var(--border); color:var(--text-light); transition:var(--transition); }
@@ -433,6 +439,13 @@
         <h1 data-i18n="checkoutTitle">Checkout</h1>
         <p data-i18n="checkoutDesc">Complete your order details below</p>
       </div>
+      <div id="storeCheckoutBanner" class="store-checkout-banner" hidden>
+        <a id="storeCheckoutBack" href="#"><i class="fas fa-arrow-right"></i> <span id="storeCheckoutBackLabel">العودة للمتجر</span></a>
+        <strong id="storeCheckoutName"></strong>
+        <span>سلة هذا المتجر فقط · الدفع الآمن عبر LOVARA</span>
+      </div>
+      <div id="partnerCartNotice" class="partner-cart-notice" hidden></div>
+      <div id="xpayReturnNotice" class="partner-cart-notice" role="status" aria-live="polite" hidden></div>
       <div class="checkout-steps" id="checkoutSteps">
         <div class="step active" data-step="1"><span class="step-number">1</span><span data-i18n="stepShipping">Shipping</span></div>
         <div class="step-connector"></div>
@@ -604,6 +617,69 @@
   <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg">تم تنفيذ العملية!</span></div>
 
   <script>
+    function checkoutShopCartKey(storeId) {
+      return `lovara_shop_cart:${encodeURIComponent(String(storeId || ''))}`;
+    }
+
+    function checkoutReadCart(key) {
+      try {
+        const value = JSON.parse(localStorage.getItem(key) || '[]');
+        return Array.isArray(value) ? value : [];
+      } catch (_) { return []; }
+    }
+
+    function checkoutMovePartnerItems(items, mergeExistingMode = 'add') {
+      const mainItems = [];
+      const groups = new Map();
+      (Array.isArray(items) ? items : []).forEach(item => {
+        const storeId = String(item?.storeId || item?.storeSlug || '').trim();
+        if (!storeId || storeId.includes('/') || storeId.length > 150) {
+          mainItems.push(item);
+          return;
+        }
+        if (!groups.has(storeId)) groups.set(storeId, []);
+        groups.get(storeId).push({ ...item, storeId });
+      });
+      groups.forEach((incoming, storeId) => {
+        const key = checkoutShopCartKey(storeId);
+        const cart = checkoutReadCart(key);
+        const incomingLines = new Map();
+        incoming.forEach(item => {
+          const lineKey = JSON.stringify([
+            item.productId || item.id || '',
+            item.size || '-',
+            item.color || '-'
+          ]);
+          const duplicate = incomingLines.get(lineKey);
+          if (duplicate) {
+            const quantity = Math.min(99, Math.max(1, Number(duplicate.qty || duplicate.quantity) || 1)
+              + Math.max(1, Number(item.qty || item.quantity) || 1));
+            duplicate.qty = quantity;
+            duplicate.quantity = quantity;
+          } else {
+            const quantity = Math.min(99, Math.max(1, Number(item.qty || item.quantity) || 1));
+            incomingLines.set(lineKey, { ...item, qty: quantity, quantity });
+          }
+        });
+        incomingLines.forEach(item => {
+          const existing = cart.find(row => String(row.productId || row.id || '') === String(item.productId || item.id || '')
+            && JSON.stringify(row.size || '-') === JSON.stringify(item.size || '-')
+            && JSON.stringify(row.color || '-') === JSON.stringify(item.color || '-'));
+          if (existing) {
+            const existingQuantity = Math.max(1, Number(existing.qty || existing.quantity) || 1);
+            const incomingQuantity = Math.max(1, Number(item.qty || item.quantity) || 1);
+            const quantity = Math.min(99, mergeExistingMode === 'max'
+              ? Math.max(existingQuantity, incomingQuantity)
+              : existingQuantity + incomingQuantity);
+            existing.qty = quantity;
+            existing.quantity = quantity;
+          } else cart.push(item);
+        });
+        localStorage.setItem(key, JSON.stringify(cart));
+      });
+      return { mainItems, storeIds: [...groups.keys()] };
+    }
+
     const CheckoutApp = {
       cart: [],
       currentLang: 'ar',
@@ -611,6 +687,11 @@
       firebaseReady: null,
       currentUser: null,
       draftKey: 'lovara_checkout_draft',
+      cartStorageKey: 'lovara_cart',
+      storeId: '',
+      storeName: '',
+      storeCheckoutBlocked: false,
+      migratedPartnerStores: [],
       promo: null,
       promoRequest: 0,
       promo: null,
@@ -646,24 +727,71 @@
         return JSON.stringify(['firstName', 'lastName', 'email', 'phone', 'phone2', 'address', 'city', 'governorate', 'orderNotes']
           .map(id => document.getElementById(id)?.value || ''));
       },
+      createXPayReturnToken(orderNumber) {
+        const key = `lovara_xpay_return:${orderNumber}`;
+        const existing = localStorage.getItem(key) || '';
+        if (/^[a-f0-9]{64}$/.test(existing)) return existing;
+        if (!window.crypto?.getRandomValues) throw new Error('تعذر تجهيز رمز آمن للتحقق من عودة الدفع.');
+        const bytes = new Uint8Array(32);
+        window.crypto.getRandomValues(bytes);
+        const token = Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+        localStorage.setItem(key, token);
+        return token;
+      },
 
       async init() {
-        const directBuy = JSON.parse(localStorage.getItem('lovara_direct_buy') || 'null');
-        const selectedCart = JSON.parse(localStorage.getItem('lovara_checkout_selection') || 'null');
+        const params = new URLSearchParams(window.location.search);
+        this.storeId = String(params.get('store') || '').trim();
+        this.storeCheckoutBlocked = !!this.storeId && (this.storeId.includes('/') || this.storeId.length > 150);
+        this.cartStorageKey = this.storeId ? checkoutShopCartKey(this.storeId) : 'lovara_cart';
+        this.draftKey = this.storeId ? `lovara_checkout_draft:${encodeURIComponent(this.storeId)}` : 'lovara_checkout_draft';
+        const legacyCart = checkoutMovePartnerItems(checkoutReadCart('lovara_cart'));
+        if (legacyCart.storeIds.length) {
+          this.migratedPartnerStores = legacyCart.storeIds;
+          localStorage.setItem('lovara_cart', JSON.stringify(legacyCart.mainItems));
+        }
+        let directBuy = null;
+        try { directBuy = JSON.parse(localStorage.getItem('lovara_direct_buy') || 'null'); } catch (_) {}
+        if (directBuy?.storeId || directBuy?.storeSlug) {
+          const moved = checkoutMovePartnerItems([directBuy]);
+          this.migratedPartnerStores = [...new Set([...this.migratedPartnerStores, ...moved.storeIds])];
+          directBuy = null;
+          localStorage.removeItem('lovara_direct_buy');
+        }
+        let selectedCart = null;
+        try { selectedCart = JSON.parse(localStorage.getItem('lovara_checkout_selection') || 'null'); } catch (_) {}
         const hasSelectedCart = localStorage.getItem('lovara_checkout_selection') !== null;
-        this.isDirectPurchase = !!directBuy;
+        if (Array.isArray(selectedCart)) {
+          const moved = checkoutMovePartnerItems(selectedCart, 'max');
+          if (moved.storeIds.length) {
+            this.migratedPartnerStores = [...new Set([...this.migratedPartnerStores, ...moved.storeIds])];
+            selectedCart = moved.mainItems;
+            localStorage.setItem('lovara_checkout_selection', JSON.stringify(selectedCart));
+          }
+        }
+        this.isDirectPurchase = !this.storeId && !!directBuy;
         // An empty selection is still a valid checkout state. Otherwise, after
         // removing the last item, refresh would fall back to the old full cart.
-        this.isSelectedCartPurchase = !directBuy && hasSelectedCart && Array.isArray(selectedCart);
-        this.cart = directBuy ? [directBuy] : (this.isSelectedCartPurchase ? selectedCart : (JSON.parse(localStorage.getItem('lovara_cart')) || []));
+        this.isSelectedCartPurchase = !this.storeId && !directBuy && hasSelectedCart && Array.isArray(selectedCart);
+        this.cart = this.storeId
+          ? checkoutReadCart(this.cartStorageKey).filter(item => String(item.storeId || '') === this.storeId)
+          : (directBuy ? [directBuy] : (this.isSelectedCartPurchase ? selectedCart : legacyCart.mainItems));
         this.firebaseReady = this.initFirebase();
         await this.firebaseReady.catch(() => null);
+        if (this.storeId && !(await this.loadStoreCheckoutInfo())) {
+          this.storeCheckoutBlocked = true;
+          this.cart = [];
+          document.getElementById('checkoutContent').innerHTML = '<div class="empty-cart-message"><i class="fas fa-store-slash"></i><h3>هذا المتجر غير متاح حاليًا</h3><p>لا يمكن بدء طلب جديد من متجر متوقف أو منتهي الاشتراك.</p><a href="/" class="btn-continue-shopping"><i class="fas fa-arrow-right"></i> العودة إلى LOVARA</a></div>';
+          this.renderPartnerCartNotice();
+          return;
+        }
         if (typeof firebase !== 'undefined' && firebase.auth) {
           this.currentUser = await new Promise(resolve => {
             let unsubscribe = () => {};
             unsubscribe = firebase.auth().onAuthStateChanged(user => { unsubscribe(); resolve(user); });
           });
         }
+        if (await this.handleXPayReturn(params)) return;
         await this.enrichCartCosts();
         this.loadOrderItems();
         this.setupPaymentMethods();
@@ -674,8 +802,115 @@
         this.renderCartItems();
         this.setupValidation();
         this.applyLang(this.currentLang);
+        this.renderPartnerCartNotice();
         this.updateSteps(1);
         this.setupGovernorateListener();
+      },
+
+      async loadStoreCheckoutInfo() {
+        if (!this.storeId || this.storeCheckoutBlocked || !this.db) return false;
+        try {
+          const snapshot = await this.db.collection('shops').doc(this.storeId).get();
+          if (!snapshot.exists) return false;
+          const shop = snapshot.data() || {};
+          const expiry = shop.expiresAt?.toDate ? shop.expiresAt.toDate() : new Date(shop.expiresAt || 0);
+          if (shop.active !== true || !Number.isFinite(expiry.getTime()) || expiry <= new Date()) return false;
+          this.storeName = String(shop.storeName || 'متجر الشريك');
+          const storeUrl = `/store/${encodeURIComponent(this.storeId)}`;
+          const banner = document.getElementById('storeCheckoutBanner');
+          const back = document.getElementById('storeCheckoutBack');
+          const name = document.getElementById('storeCheckoutName');
+          if (banner) banner.hidden = false;
+          if (back) back.href = storeUrl;
+          if (name) name.textContent = this.storeName;
+          const logo = document.querySelector('.nav-container .logo');
+          if (logo) logo.href = storeUrl;
+          const backButton = document.querySelector('.nav-actions .cart-btn');
+          if (backButton) {
+            backButton.onclick = () => { window.location.href = storeUrl; };
+            backButton.setAttribute('aria-label', 'العودة إلى المتجر');
+          }
+          return true;
+        } catch (error) {
+          console.warn('[LOVARA Checkout] Could not verify partner store:', error);
+          return false;
+        }
+      },
+
+      async handleXPayReturn(params) {
+        if (params.get('payment') !== 'return') return false;
+        const orderNumber = String(params.get('order') || '').trim();
+        const notice = document.getElementById('xpayReturnNotice');
+        const showNotice = message => {
+          if (notice) {
+            notice.textContent = message;
+            notice.hidden = false;
+          }
+        };
+        if (!/^LOV-[A-Z0-9]{5,40}$/.test(orderNumber)) {
+          showNotice('تعذر التحقق من مرجع دفعة XPay. سلتك ما زالت محفوظة.');
+          return false;
+        }
+
+        let status = 'pending';
+        try {
+          const headers = {};
+          if (this.currentUser) headers.Authorization = `Bearer ${await this.currentUser.getIdToken()}`;
+          const query = new URLSearchParams({ order: orderNumber, storeId: this.storeId || '' });
+          const returnToken = localStorage.getItem(`lovara_xpay_return:${orderNumber}`) || '';
+          if (returnToken) headers['X-Checkout-Return-Token'] = returnToken;
+          for (let attempt = 0; attempt < 8; attempt++) {
+            const response = await fetch(`/api/xpay/checkout-status?${query}`, { method: 'GET', headers, cache: 'no-store' });
+            const data = await response.json().catch(() => ({}));
+            if (response.ok) status = String(data.status || 'pending');
+            else if (response.status === 404) status = 'pending';
+            else if (response.status === 403 || response.status === 401) { status = 'unauthorized'; break; }
+            if (status === 'paid') {
+              this.showSuccess(orderNumber);
+              return true;
+            }
+            if (status === 'failed') {
+              localStorage.removeItem(`lovara_xpay_return:${orderNumber}`);
+              break;
+            }
+            if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 1200));
+          }
+        } catch (error) {
+          console.warn('[LOVARA Checkout] Could not verify XPay return:', error);
+        }
+
+        const messages = {
+          failed: 'لم يتم اعتماد دفعة XPay. لم نحذف سلتك؛ يمكنك اختيار طريقة دفع أخرى.',
+          not_found: 'لم نعثر على طلب مدفوع بهذا المرجع. سلتك ما زالت محفوظة، ويمكنك المحاولة مجددًا.',
+          unauthorized: 'تعذر التحقق من الطلب المرتبط بالحساب. سجّل الدخول بالحساب الذي أتم الدفع.',
+          pending: 'دفعتك قيد التحقق من XPay. سلتك محفوظة؛ حدّث الصفحة بعد لحظات لإعادة التحقق.'
+        };
+        showNotice(messages[status] || messages.pending);
+        const placeOrderButton = document.getElementById('placeOrderBtn');
+        if (status === 'pending') {
+          if (placeOrderButton) placeOrderButton.disabled = true;
+          const retryButton = document.createElement('button');
+          retryButton.type = 'button';
+          retryButton.textContent = 'إعادة التحقق من الدفع';
+          retryButton.addEventListener('click', async () => {
+            retryButton.disabled = true;
+            await this.handleXPayReturn(params);
+            retryButton.disabled = false;
+          });
+          notice?.appendChild(retryButton);
+        } else if (placeOrderButton) {
+          placeOrderButton.disabled = false;
+        }
+        return false;
+      },
+
+      renderPartnerCartNotice() {
+        const notice = document.getElementById('partnerCartNotice');
+        if (!notice || !this.migratedPartnerStores.length) return;
+        const stores = this.migratedPartnerStores.filter(storeId => storeId !== this.storeId);
+        if (!stores.length) return;
+        notice.innerHTML = `<strong>فصلنا منتجات المتاجر الشريكة عن سلة LOVARA.</strong><span>لإتمام طلب من متجر شريك، افتح سلته الخاصة:</span><div class="partner-cart-links">${stores.map(storeId => `<a href="/store/${encodeURIComponent(storeId)}/checkout">متابعة طلب المتجر</a>`).join('')}</div>`;
+        notice.hidden = false;
       },
 
       setupGovernorateListener() {
@@ -770,12 +1005,13 @@
       loadOrderItems() {
         const checkoutContent = document.getElementById('checkoutContent');
         if (this.cart.length === 0) {
+          const continueUrl = this.storeId ? `/store/${encodeURIComponent(this.storeId)}` : '/';
           checkoutContent.innerHTML = `
             <div class="empty-cart-message">
               <i class="fas fa-shopping-bag"></i>
               <h3 data-i18n="cartEmpty">Your cart is empty</h3>
               <p data-i18n="cartEmptyDesc">Add some products to your cart first!</p>
-              <a href="/" class="btn-continue-shopping">
+              <a href="${continueUrl}" class="btn-continue-shopping">
                 <i class="fas fa-arrow-left"></i> <span data-i18n="continueShopping">Continue Shopping</span>
               </a>
             </div>
@@ -1111,9 +1347,13 @@
       updateQty(index, delta) {
         const item = this.cart[index];
         if (!item) return;
-        const newQty = (item.quantity || item.qty || 1) + delta;
+        const oldQty = Math.min(99, Math.max(1, Number(item.quantity || item.qty) || 1));
+        const newQty = oldQty + Number(delta || 0);
         if (newQty < 1) return; // prevent going below 1
-        const oldQty = Math.max(1, Number(item.quantity || item.qty) || 1);
+        if (newQty > 99) {
+          this.showToast('الحد الأقصى للكمية هو 99 قطعة.', 'error');
+          return;
+        }
         item.quantity = newQty;
         item.qty = newQty;
         // Quantity changed in checkout should activate the quantity offer and
@@ -1145,7 +1385,7 @@
 
       saveCart() {
         const serializedCart = JSON.stringify(this.cart);
-        localStorage.setItem('lovara_cart', serializedCart);
+        localStorage.setItem(this.cartStorageKey, serializedCart);
 
         // Checkout can be opened from a selected-cart preview or as a direct
         // purchase. Keep the source key in sync with the visible cart too;
@@ -1157,7 +1397,7 @@
           localStorage.setItem('lovara_checkout_selection', serializedCart);
         }
 
-        window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_cart', newValue: serializedCart }));
+        window.dispatchEvent(new StorageEvent('storage', { key: this.cartStorageKey, newValue: serializedCart }));
       },
 
       updateMobileBadge() {
@@ -1303,6 +1543,7 @@
         const totalText = document.getElementById('total').textContent;
         return {
           orderNumber: this.newOrderNumber(),
+          storeId: this.storeId || '',
           userId: (this.currentUser ? this.currentUser.uid : 'guest'),
           // Firestore rules require every order, including Visa orders, to have a date.
           date: new Date().toISOString(),
@@ -1339,7 +1580,8 @@
         try {
           const headers = { 'Content-Type': 'application/json' };
           if (this.currentUser) headers.Authorization = `Bearer ${await this.currentUser.getIdToken()}`;
-          const payResponse = await fetch('/api/xpay/create-checkout', { method: 'POST', headers, body: JSON.stringify({ orderNumber: orderData.orderNumber, amount, orderData }) });
+          const returnToken = this.createXPayReturnToken(orderData.orderNumber);
+          const payResponse = await fetch('/api/xpay/create-checkout', { method: 'POST', headers, body: JSON.stringify({ storeId: this.storeId || '', returnToken, orderNumber: orderData.orderNumber, amount, orderData }) });
           const payData = await payResponse.json().catch(() => ({}));
           if (!payResponse.ok || !payData.clientSecret) throw new Error(payData.detail || payData.error || 'تعذر تجهيز الدفع بالفيزا.');
           await this.mountXPay(payData.clientSecret, orderData);
@@ -1357,6 +1599,10 @@
       },
 
       async placeOrder() {
+        if (this.storeCheckoutBlocked) {
+          this.showToast('هذا المتجر غير متاح حاليًا لإتمام الطلب.', 'error');
+          return;
+        }
         if (this.xpayCheckout) {
           if (!this.validateForm()) {
             const firstError = document.querySelector('.error');
@@ -1442,6 +1688,7 @@
             ? firebase.auth().currentUser : null);
           const orderData = {
             orderNumber: orderNumber,
+            storeId: this.storeId || '',
             userId: (currentUser ? currentUser.uid : 'guest'),
           date: (typeof firebase !== 'undefined' && firebase.firestore && firebase.firestore.FieldValue) ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString(),
           status: 'pending',
@@ -1481,7 +1728,7 @@
             const response = await fetch('/api/partner-orders', {
               method: 'POST',
               headers,
-              body: JSON.stringify({ orderData: { ...orderData, date: new Date().toISOString() } })
+              body: JSON.stringify({ storeId: this.storeId || '', orderData: { ...orderData, date: new Date().toISOString() } })
             });
             const result = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(result.error || 'تعذر حفظ الطلب. أعد المحاولة.');
@@ -1499,7 +1746,8 @@
             const amount = Number(String(totalText).replace(/[^0-9.]/g, '')) || 0;
             const headers = { 'Content-Type': 'application/json' };
             if (currentUser) headers.Authorization = `Bearer ${await currentUser.getIdToken()}`;
-            const payResponse = await fetch('/api/xpay/create-checkout', { method: 'POST', headers, body: JSON.stringify({ orderNumber, amount, orderData }) });
+            const returnToken = this.createXPayReturnToken(orderNumber);
+            const payResponse = await fetch('/api/xpay/create-checkout', { method: 'POST', headers, body: JSON.stringify({ storeId: this.storeId || '', returnToken, orderNumber, amount, orderData }) });
             const payData = await payResponse.json().catch(() => ({}));
             if (!payResponse.ok || !payData.clientSecret) throw new Error(payData.detail || payData.error || 'تعذر بدء الدفع عبر XPay.');
             await this.mountXPay(payData.clientSecret, orderData);
@@ -1602,19 +1850,22 @@
       showSuccess(orderNumber) {
         const purchasedKeys = new Set((this.cart || []).map(item => this.cartLineKey(item)).filter(Boolean));
         const purchasedIds = new Set((this.cart || []).map(item => item.id).filter(Boolean));
-        const remainingCart = (JSON.parse(localStorage.getItem('lovara_cart') || '[]') || []).filter(item => {
+        const remainingCart = checkoutReadCart(this.cartStorageKey).filter(item => {
           // A selected-cart checkout removes only the exact purchased lines.
           // Direct checkout has no source cart line, so it must not clear the cart.
           if (this.isDirectPurchase) return true;
           return !purchasedKeys.has(this.cartLineKey(item));
         });
-        localStorage.setItem('lovara_cart', JSON.stringify(remainingCart));
-        const remainingWishlist = (JSON.parse(localStorage.getItem('lovara_wishlist') || '[]') || []).filter(item => !purchasedIds.has(item.id));
-        localStorage.setItem('lovara_wishlist', JSON.stringify(remainingWishlist));
-        localStorage.removeItem('lovara_direct_buy');
-        localStorage.removeItem('lovara_checkout_selection');
-        window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_cart', newValue: JSON.stringify(remainingCart) }));
-        window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_wishlist', newValue: JSON.stringify(remainingWishlist) }));
+        localStorage.setItem(this.cartStorageKey, JSON.stringify(remainingCart));
+        localStorage.removeItem(`lovara_xpay_return:${orderNumber}`);
+        if (!this.storeId) {
+          const remainingWishlist = (JSON.parse(localStorage.getItem('lovara_wishlist') || '[]') || []).filter(item => !purchasedIds.has(item.id));
+          localStorage.setItem('lovara_wishlist', JSON.stringify(remainingWishlist));
+          localStorage.removeItem('lovara_direct_buy');
+          localStorage.removeItem('lovara_checkout_selection');
+          window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_wishlist', newValue: JSON.stringify(remainingWishlist) }));
+        }
+        window.dispatchEvent(new StorageEvent('storage', { key: this.cartStorageKey, newValue: JSON.stringify(remainingCart) }));
         let countdown = 5;
         const t = translations[this.currentLang] || translations.en;
         const updateMsg = () => {
@@ -1635,8 +1886,9 @@
           if (el) el.textContent = countdown;
           if (countdown <= 0) {
             clearInterval(timer);
-            localStorage.setItem('lovara_order_success', JSON.stringify({ message: t.orderSuccessMessage, orderNumber: orderNumber, timestamp: Date.now() }));
-            window.location.href = '/';
+            const successKey = this.storeId ? `lovara_order_success_shop:${encodeURIComponent(this.storeId)}` : 'lovara_order_success';
+            localStorage.setItem(successKey, JSON.stringify({ message: t.orderSuccessMessage, orderNumber: orderNumber, timestamp: Date.now() }));
+            window.location.href = this.storeId ? `/store/${encodeURIComponent(this.storeId)}` : '/';
           }
         }, 1000);
       },
@@ -1648,7 +1900,7 @@
 
       applyLang(lang) {
         const t = translations[lang] || translations.en;
-        document.title = t.pageTitle || 'LOVARA – Checkout';
+        document.title = this.storeId && this.storeName ? `${this.storeName} | ${t.pageTitle || 'LOVARA – Checkout'}` : (t.pageTitle || 'LOVARA – Checkout');
         document.querySelectorAll('[data-i18n]').forEach(el => {
           const key = el.getAttribute('data-i18n');
           if (t[key]) {
@@ -1661,6 +1913,10 @@
             }
           }
         });
+        if (this.storeId && this.storeName) {
+          const heading = document.querySelector('.checkout-header h1');
+          if (heading) heading.textContent = lang === 'ar' ? `إتمام الطلب من ${this.storeName}` : `Checkout · ${this.storeName}`;
+        }
         const html = document.documentElement;
         html.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
         html.setAttribute('lang', lang);

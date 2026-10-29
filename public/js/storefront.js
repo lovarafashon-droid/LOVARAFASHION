@@ -10,6 +10,7 @@
   const getDate = value => value?.toDate ? value.toDate() : (value instanceof Date ? value : new Date(value));
 
   let currentStore = null;
+  let currentStoreId = '';
   let allProducts = [];
   let activeCategory = 'all';
   let toastTimer = null;
@@ -167,11 +168,47 @@
     }));
   }
 
-  function readCart() {
+  function shopCartKey(storeId = currentStoreId) {
+    return `lovara_shop_cart:${encodeURIComponent(String(storeId || ''))}`;
+  }
+
+  function readCart(storeId = currentStoreId) {
     try {
-      const cart = JSON.parse(localStorage.getItem('lovara_cart') || '[]');
+      const cart = JSON.parse(localStorage.getItem(shopCartKey(storeId)) || '[]');
       return Array.isArray(cart) ? cart : [];
     } catch (_) { return []; }
+  }
+
+  function migrateLegacyPartnerCart(storeId, storeSlug) {
+    let legacy = [];
+    try { legacy = JSON.parse(localStorage.getItem('lovara_cart') || '[]') || []; } catch (_) {}
+    if (!Array.isArray(legacy) || !legacy.length) return readCart(storeId);
+    const moved = [];
+    const remaining = [];
+    legacy.forEach(item => {
+      const itemStoreId = String(item?.storeId || item?.storeSlug || '').trim();
+      if (itemStoreId === storeId || itemStoreId === storeSlug) moved.push({ ...item, storeId });
+      else remaining.push(item);
+    });
+    if (!moved.length) return readCart(storeId);
+
+    localStorage.setItem('lovara_cart', JSON.stringify(remaining));
+    const cart = readCart(storeId);
+    moved.forEach(item => {
+      const existing = cart.find(row => row.id === item.id
+        && String(row.storeId || '') === storeId
+        && JSON.stringify(row.size || '-') === JSON.stringify(item.size || '-')
+        && JSON.stringify(row.color || '-') === JSON.stringify(item.color || '-'));
+      if (existing) {
+        const quantity = Math.min(99, Math.max(1, Number(existing.qty || existing.quantity) || 1)
+          + Math.max(1, Number(item.qty || item.quantity) || 1));
+        existing.qty = quantity;
+        existing.quantity = quantity;
+      } else cart.push(item);
+    });
+    localStorage.setItem(shopCartKey(storeId), JSON.stringify(cart));
+    try { window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_cart', newValue: JSON.stringify(remaining) })); } catch (_) {}
+    return cart;
   }
 
   function updateCartCount(cart = readCart()) {
@@ -234,9 +271,9 @@
       } else cart.push(item);
     }
 
-    localStorage.setItem('lovara_cart', JSON.stringify(cart));
+    localStorage.setItem(shopCartKey(currentStore.id), JSON.stringify(cart));
     updateCartCount(cart);
-    try { window.dispatchEvent(new StorageEvent('storage', { key: 'lovara_cart', newValue: JSON.stringify(cart) })); } catch (_) {}
+    try { window.dispatchEvent(new StorageEvent('storage', { key: shopCartKey(currentStore.id), newValue: JSON.stringify(cart) })); } catch (_) {}
     showToast(`تمت إضافة ${quantity} قطعة من ${product.name || 'المنتج'} إلى السلة`);
   }
 
@@ -273,7 +310,7 @@
     $('storeSearch')?.addEventListener('input', renderProducts);
     $('storeSort')?.addEventListener('change', renderProducts);
     window.addEventListener('storage', event => {
-      if (event.key === 'lovara_cart') updateCartCount();
+      if (currentStoreId && event.key === shopCartKey(currentStoreId)) updateCartCount();
     });
 
     const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -287,6 +324,9 @@
     if (!slug || typeof firebase === 'undefined' || !firebase.firestore) {
       return showMessage('المتجر غير متاح', 'تعذر العثور على رابط متجر صالح.');
     }
+    currentStoreId = slug;
+    const cartLink = $('storeCartLink');
+    if (cartLink) cartLink.href = `/store/${encodeURIComponent(slug)}/checkout`;
     updateCartCount();
 
     try {
@@ -301,6 +341,8 @@
       }
 
       currentStore = store;
+      const storeCart = migrateLegacyPartnerCart(store.id, String(store.slug || store.id));
+      updateCartCount(storeCart);
       const productSnapshot = await firestore.collection('shops').doc(slug).collection('products').get();
       allProducts = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       document.title = `${store.storeName || 'متجر شريك'} | LOVARA`;

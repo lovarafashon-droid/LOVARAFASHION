@@ -1,5 +1,6 @@
+const crypto = require('crypto');
 const { orderTotal, admin } = require('../_lib/firestore');
-const { canonicalizeCheckoutOrder } = require('../_lib/partner-orders');
+const { assertCheckoutStoreScope, canonicalizeCheckoutOrder } = require('../_lib/partner-orders');
 
 const required = ['XPAY_CHECKOUT_URL', 'XPAY_API_KEY', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
 
@@ -10,8 +11,12 @@ module.exports = async (req, res) => {
 
   const submittedOrder = req.body?.orderData || null;
   const orderNumber = String(req.body?.orderNumber || '').trim();
+  const returnToken = String(req.body?.returnToken || '');
   if (!/^LOV-[A-Z0-9]{5,40}$/.test(orderNumber) || !submittedOrder) {
     return res.status(400).json({ error: 'Order data is invalid.' });
+  }
+  if (!/^[a-f0-9]{64}$/.test(returnToken)) {
+    return res.status(400).json({ error: 'A secure payment return token is required.' });
   }
   if (String(submittedOrder.orderNumber || '') !== orderNumber
     || String(submittedOrder.payment?.method || '').toLowerCase() !== 'visa') {
@@ -34,8 +39,10 @@ module.exports = async (req, res) => {
     }
 
     const db = adminApp.firestore();
+    const checkoutStoreId = assertCheckoutStoreScope(submittedOrder, req.body?.storeId || '');
     const orderData = await canonicalizeCheckoutOrder({
       ...submittedOrder,
+      storeId: checkoutStoreId,
       orderNumber,
       userId,
       date: new Date().toISOString(),
@@ -58,6 +65,7 @@ module.exports = async (req, res) => {
       status: 'pending',
       confirmationStatus: 'pending',
       payment: { ...orderData.payment, method: 'visa', status: 'awaiting_payment', expectedAmountMinor },
+      returnTokenHash: crypto.createHash('sha256').update(returnToken).digest('hex'),
       createdAt: adminApp.firestore.FieldValue.serverTimestamp(),
       updatedAt: adminApp.firestore.FieldValue.serverTimestamp()
     };
@@ -67,12 +75,15 @@ module.exports = async (req, res) => {
       transaction.create(orderRef, pendingOrder);
     });
 
-    const origin = process.env.PUBLIC_SITE_URL || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
+    const origin = (process.env.PUBLIC_SITE_URL || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`).replace(/\/+$/, '');
+    const returnPath = checkoutStoreId
+      ? `/store/${encodeURIComponent(checkoutStoreId)}/checkout`
+      : '/checkout.html';
     const payload = {
       uiMode: 'custom',
       afterCompletion: {
         type: 'redirect',
-        redirect: { url: `${origin}/checkout.html?payment=return&order=${encodeURIComponent(orderNumber)}` }
+        redirect: { url: `${origin}${returnPath}?payment=return&order=${encodeURIComponent(orderNumber)}` }
       },
       lineItems: [{
         priceData: {
@@ -82,7 +93,7 @@ module.exports = async (req, res) => {
         },
         quantity: 1
       }],
-      metadata: { orderNumber }
+      metadata: { orderNumber, ...(checkoutStoreId ? { storeId: checkoutStoreId } : {}) }
     };
     const response = await fetch(process.env.XPAY_CHECKOUT_URL, {
       method: 'POST',

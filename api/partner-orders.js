@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { admin } = require('./_lib/firestore');
 const {
   PartnerOrderError,
+  assertCheckoutStoreScope,
   canonicalizeCheckoutOrder,
   buildPartnerOrderRecords
 } = require('./_lib/partner-orders');
@@ -72,8 +73,10 @@ module.exports = async (req, res) => {
     }
 
     const db = adminApp.firestore();
+    const checkoutStoreId = assertCheckoutStoreScope(submitted, req.body?.storeId || '');
     const orderData = await canonicalizeCheckoutOrder({
       ...submitted,
+      storeId: checkoutStoreId,
       orderNumber,
       userId,
       date: new Date().toISOString(),
