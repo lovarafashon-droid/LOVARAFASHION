@@ -621,6 +621,15 @@
       return `lovara_shop_cart:${encodeURIComponent(String(storeId || ''))}`;
     }
 
+    function checkoutStoreIdFromLocation(pathname, search) {
+      const queryStoreId = new URLSearchParams(search || '').get('store');
+      if (queryStoreId) return String(queryStoreId).trim();
+      const parts = String(pathname || '').split('/').filter(Boolean);
+      if (parts.length !== 3 || parts[0] !== 'store' || parts[2] !== 'checkout') return '';
+      try { return decodeURIComponent(parts[1]).trim(); }
+      catch (_) { return ''; }
+    }
+
     function checkoutReadCart(key) {
       try {
         const value = JSON.parse(localStorage.getItem(key) || '[]');
@@ -741,7 +750,7 @@
 
       async init() {
         const params = new URLSearchParams(window.location.search);
-        this.storeId = String(params.get('store') || '').trim();
+        this.storeId = checkoutStoreIdFromLocation(window.location.pathname, window.location.search);
         this.storeCheckoutBlocked = !!this.storeId && (this.storeId.includes('/') || this.storeId.length > 150);
         this.cartStorageKey = this.storeId ? checkoutShopCartKey(this.storeId) : 'lovara_cart';
         this.draftKey = this.storeId ? `lovara_checkout_draft:${encodeURIComponent(this.storeId)}` : 'lovara_checkout_draft';

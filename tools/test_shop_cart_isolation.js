@@ -9,14 +9,18 @@ assert(start >= 0 && end > start, 'checkout cart helpers exist');
 const helperSource = checkoutHtml.slice(start, end);
 const values = new Map();
 const context = {
+  URLSearchParams,
   localStorage: {
     getItem(key) { return values.has(key) ? values.get(key) : null; },
     setItem(key, value) { values.set(key, String(value)); }
   }
 };
-vm.runInNewContext(`${helperSource}\nglobalThis.shopCartTest = { checkoutShopCartKey, checkoutReadCart, checkoutMovePartnerItems };`, context);
+vm.runInNewContext(`${helperSource}\nglobalThis.shopCartTest = { checkoutShopCartKey, checkoutStoreIdFromLocation, checkoutReadCart, checkoutMovePartnerItems };`, context);
 
-const { checkoutShopCartKey, checkoutReadCart, checkoutMovePartnerItems } = context.shopCartTest;
+const { checkoutShopCartKey, checkoutStoreIdFromLocation, checkoutReadCart, checkoutMovePartnerItems } = context.shopCartTest;
+assert.strictEqual(checkoutStoreIdFromLocation('/store/shop-a/checkout', ''), 'shop-a');
+assert.strictEqual(checkoutStoreIdFromLocation('/checkout', '?store=shop-b'), 'shop-b');
+assert.strictEqual(checkoutStoreIdFromLocation('/checkout', ''), '');
 const legacyCart = [
   { id: 'lovara-1', name: 'LOVARA item', quantity: 1 },
   { id: 'partner-a-1', storeId: 'shop-a', storeSlug: 'shop-a', qty: 2, color: 'Black' },
