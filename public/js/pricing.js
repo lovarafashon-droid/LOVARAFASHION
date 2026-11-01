@@ -23,7 +23,7 @@
   function isEligible(item) {
     // The offer is for individual pieces; do not apply it to a dozen-priced line.
     const unit = item?.pricingUnit || 'piece';
-    return unit !== 'dozen' && baseUnitPrice(item) > PRICE_THRESHOLD;
+    return !item?.storeId && unit !== 'dozen' && baseUnitPrice(item) > PRICE_THRESHOLD;
   }
 
   function getCartPricing(items) {
@@ -32,10 +32,9 @@
     const lines = cart.map(item => {
       const quantity = quantityOf(item);
       const basePrice = baseUnitPrice(item);
-      // A discount is activated only when this line was added with quantity > 1
-      // from the product preview. Cart +/- changes do not activate it.
-      const previewQuantity = item?.quantityDiscountEnabled ? quantity : 0;
-      const discountPerItem = isEligible(item) ? discountPerPiece(previewQuantity) : 0;
+      // Eligibility and quantity are visible to the customer and reproduced on the
+      // server from the canonical catalog price; do not trust the browser flag.
+      const discountPerItem = isEligible(item) ? discountPerPiece(quantity) : 0;
       const unitPrice = Math.max(0, basePrice - discountPerItem);
       return {
         item,

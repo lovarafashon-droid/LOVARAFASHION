@@ -117,6 +117,33 @@
     .status-delivered { background:#e8f5e9; color:#2e7d32; }
     .status-cancelled { background:#ffebee; color:#c62828; }
     .order-id { font-family:monospace; font-size:.85rem; color:var(--mid); }
+    .order-item-details { min-width:190px; }
+    .order-item-details summary { color:#7d6648; font-size:.82rem; font-weight:600; cursor:pointer; }
+    .order-item-details ul { padding:8px 18px 0 0; margin:0; color:#555; font-size:.8rem; line-height:1.75; }
+    .order-item-details li { margin-bottom:5px; }
+    .order-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .order-action { min-height:38px; padding:7px 11px; border:1px solid #e8e4e0; border-radius:9px; background:#fff; color:var(--off-black); font:500 .8rem var(--font-sans); cursor:pointer; }
+    .order-action:hover { border-color:var(--gold); color:#9a7447; background:#fffaf3; }
+    .order-action.danger { color:#b42318; border-color:#f3c5c5; }
+    .order-edit-modal[hidden] { display:none; }
+    .order-edit-modal { position:fixed; inset:0; z-index:2500; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(22,20,18,.58); backdrop-filter:blur(5px); }
+    .order-edit-panel { width:min(720px,100%); max-height:min(88vh,900px); overflow:auto; border-radius:20px; background:#fff; box-shadow:0 24px 80px rgba(0,0,0,.22); padding:clamp(20px,4vw,34px); }
+    .order-edit-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:20px; }
+    .order-edit-head h2 { font:600 1.65rem var(--font-serif); }
+    .order-edit-head p,.edit-note { color:var(--mid); font-size:.86rem; line-height:1.7; margin-top:5px; }
+    .order-edit-close { width:38px; height:38px; flex:0 0 38px; border:1px solid #eee; border-radius:50%; background:#fff; cursor:pointer; }
+    .edit-item-list { display:grid; gap:12px; }
+    .edit-item-card { border:1px solid #eee9e4; border-radius:14px; padding:16px; background:#fffdfb; }
+    .edit-item-title { font-weight:600; line-height:1.5; overflow-wrap:anywhere; }
+    .edit-item-meta { color:var(--mid); font-size:.82rem; margin-top:4px; }
+    .edit-item-controls { display:grid; grid-template-columns:140px minmax(150px,1fr); gap:12px; margin-top:14px; }
+    .edit-control label { display:block; margin-bottom:6px; color:var(--mid); font-size:.78rem; }
+    .edit-control input,.edit-control select { width:100%; min-height:42px; padding:9px 11px; border:1px solid #e5dfd8; border-radius:9px; background:#fff; font:inherit; }
+    .edit-colors { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-top:12px; }
+    .edit-colors:empty { display:none; }
+    .order-edit-footer { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:10px; margin-top:20px; }
+    .order-edit-footer .btn-primary:disabled { opacity:.6; cursor:wait; }
+    @media (max-width:640px) { .edit-item-controls { grid-template-columns:1fr; } .order-edit-panel { border-radius:16px; } }
 
     /* Wishlist Grid */
     .wishlist-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:16px; }
@@ -324,6 +351,23 @@
   <!-- Toast -->
   <div class="toast" id="toast"><i class="fas fa-check-circle"></i> <span id="toastMsg">Done</span></div>
 
+  <div id="orderEditModal" class="order-edit-modal" hidden role="dialog" aria-modal="true" aria-labelledby="orderEditTitle">
+    <section class="order-edit-panel">
+      <div class="order-edit-head">
+        <div><h2 id="orderEditTitle">تعديل الطلب</h2><p id="orderEditSubtitle"></p></div>
+        <button type="button" class="order-edit-close" data-close-order-editor aria-label="إغلاق"><i class="fas fa-times"></i></button>
+      </div>
+      <p class="edit-note" id="orderEditNote"></p>
+      <form id="orderEditForm">
+        <div id="orderEditItems" class="edit-item-list"></div>
+        <div class="order-edit-footer">
+          <button type="button" class="btn-outline" data-close-order-editor>إلغاء</button>
+          <button type="submit" id="saveOrderEdit" class="btn-primary"><i class="fas fa-check"></i><span>حفظ التعديل</span></button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <script>
     /* ========== TRANSLATIONS ========== */
     const translations = {
@@ -342,7 +386,12 @@
         btnUpdatePassword:"Update Password",
         toastSaved:"Saved successfully!", toastPasswordUpdated:"Password updated!", toastError:"Something went wrong", toastReauth:"Please login again to change password",
         orderId:"Order ID", orderDate:"Date", orderItems:"Items", orderTotal:"Total", orderStatus:"Status",
-        statusPending:"Pending", statusProcessing:"Processing", statusShipped:"Shipped", statusDelivered:"Delivered", statusCancelled:"Cancelled"
+        statusPending:"Pending", statusProcessing:"Processing", statusShipped:"Shipped", statusDelivered:"Delivered", statusCancelled:"Cancelled",
+        actionEditOrder:"Edit order", actionCancelOrder:"Cancel order", editOrderTitle:"Edit your order", editOrderHelp:"You can change this cash-on-delivery order while it is still pending. Updated prices and delivery fees are recalculated securely.",
+        editQty:"Quantity", editSize:"Size", editColorPiece:"Color for piece", editColorChoice:"Choose a color", editNoColors:"No color choices are available for this item.",
+        editRemoveHint:"Set quantity to 0 to remove this item.", editSave:"Save changes", editSaving:"Saving…", editCancel:"Close", editEmptyColors:"Please choose a color for every piece.",
+        editSuccess:"Your order was updated.", editFailed:"Could not update this order.", editUnavailable:"Only pending cash-on-delivery orders can be edited.",
+        orderItemsCount:"items", orderUnitPrice:"Unit price", orderStore:"Store", viewOrderItems:"View products"
       },
       ar: {
         tabDashboard:"لوحة التحكم", tabOrders:"طلباتي", tabWishlist:"المفضلة", tabAccount:"بيانات الحساب", tabSecurity:"الأمان", logout:"تسجيل الخروج",
@@ -359,7 +408,12 @@
         btnUpdatePassword:"تحديث كلمة المرور",
         toastSaved:"تم الحفظ بنجاح!", toastPasswordUpdated:"تم تحديث كلمة المرور!", toastError:"حدث خطأ", toastReauth:"يرجى تسجيل الدخول مرة أخرى لتغيير كلمة المرور",
         orderId:"رقم الطلب", orderDate:"التاريخ", orderItems:"المنتجات", orderTotal:"الإجمالي", orderStatus:"الحالة",
-        statusPending:"معلق", statusProcessing:"جاري التجهيز", statusShipped:"تم الشحن", statusDelivered:"تم التوصيل", statusCancelled:"ملغي"
+        statusPending:"معلق", statusProcessing:"جاري التجهيز", statusShipped:"تم الشحن", statusDelivered:"تم التوصيل", statusCancelled:"ملغي",
+        actionEditOrder:"تعديل الطلب", actionCancelOrder:"إلغاء الطلب", editOrderTitle:"تعديل طلبك", editOrderHelp:"يمكنك تعديل طلب الدفع عند الاستلام ما دام قيد الانتظار. سيُعاد حساب السعر ورسوم التوصيل بأمان.",
+        editQty:"الكمية", editSize:"المقاس", editColorPiece:"لون القطعة", editColorChoice:"اختاري لونًا", editNoColors:"لا توجد اختيارات ألوان لهذا المنتج.",
+        editRemoveHint:"اجعلي الكمية صفرًا لحذف المنتج من الطلب.", editSave:"حفظ التعديل", editSaving:"جارٍ الحفظ…", editCancel:"إغلاق", editEmptyColors:"اختاري لونًا لكل قطعة.",
+        editSuccess:"تم تعديل طلبك.", editFailed:"تعذر تعديل الطلب.", editUnavailable:"التعديل متاح لطلبات الدفع عند الاستلام المعلّقة فقط.",
+        orderItemsCount:"منتج", orderUnitPrice:"سعر القطعة", orderStore:"المتجر", viewOrderItems:"تفاصيل المنتجات"
       }
     };
     let currentLang = localStorage.getItem('lovara_lang') || 'ar';
@@ -374,7 +428,7 @@
     applyLang();
 
     /* ========== GLOBALS ========== */
-    let profileDb, profileAuth, currentUser, userData={};
+    let profileDb, profileAuth, currentUser, userData={}, customerOrders=[], editingOrder=null, orderEditDraft=[];
 
     /* ========== FIREBASE INIT ========== */
     function initFirebase(){
@@ -448,21 +502,79 @@
     }
 
     /* ========== ORDERS ========== */
+    function escapeHTML(value){
+      return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    }
+    function orderStatusClass(status){
+      const value=String(status||'pending').toLowerCase();
+      return ['pending','confirmed','processing','preparing','shipped','delivered','cancelled'].includes(value) ? (value==='preparing'?'processing':value) : 'pending';
+    }
+    function orderStatusText(status){
+      const raw=String(status||'pending');
+      const key='status'+raw.charAt(0).toUpperCase()+raw.slice(1).toLowerCase();
+      return escapeHTML(t(key)===key ? raw : t(key));
+    }
+    function orderDateText(value){
+      try {
+        const date=value?.toDate ? value.toDate() : new Date(value);
+        return Number.isFinite(date.getTime()) ? date.toLocaleDateString(currentLang==='ar'?'ar-EG':'en-US') : '—';
+      } catch (_) { return '—'; }
+    }
+    function canEditOrder(order){
+      const payment=order?.payment||{};
+      return String(order?.status||'pending').toLowerCase()==='pending'
+        && String(payment.method||'').toLowerCase()==='cod'
+        && payment.paid!==true
+        && !['paid','succeeded','success','completed','approved'].includes(String(payment.status||'').toLowerCase());
+    }
+    function orderItemsDetails(items){
+      const rows=(Array.isArray(items)?items:[]).map(item=>{
+        const quantity=Math.max(1,Math.floor(Number(item.quantity??item.qty)||1));
+        const colors=(Array.isArray(item.color)?item.color:[item.color]).filter(value=>value&&value!=='-');
+        const colorText=colors.length?` · ${escapeHTML(currentLang==='ar'?'اللون':'Color')}: ${colors.map(escapeHTML).join('، ')}`:'';
+        const size=item.size&&item.size!=='-'?` · ${escapeHTML(currentLang==='ar'?'المقاس':'Size')}: ${escapeHTML(item.size)}`:'';
+        return `<li><strong>${escapeHTML(item.name||'منتج')}</strong> × ${quantity}${size}${colorText}</li>`;
+      }).join('');
+      if(!rows) return '—';
+      return `<details class="order-item-details"><summary>${escapeHTML(t('viewOrderItems'))} (${Array.isArray(items)?items.length:0})</summary><ul>${rows}</ul></details>`;
+    }
+    function bindOrderActions(){
+      const container=document.getElementById('ordersTableWrap');
+      if(!container || container.dataset.actionsBound==='true') return;
+      container.dataset.actionsBound='true';
+      container.addEventListener('click',event=>{
+        const button=event.target.closest('[data-order-action][data-order-id]');
+        if(!button) return;
+        if(button.dataset.orderAction==='edit') openOrderEditor(button.dataset.orderId);
+        if(button.dataset.orderAction==='cancel') cancelOrder(button.dataset.orderId);
+      });
+    }
     async function loadOrders(){
       const container = document.getElementById('ordersTableWrap');
+      bindOrderActions();
       if(!profileDb || !currentUser){
         container.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>${t('noOrdersYet')}</p></div>`;
         return;
       }
       try {
+        const emailQuery = currentUser.emailVerified && currentUser.email
+          ? profileDb.collection('orders').where('customer.email','==',currentUser.email).get().catch(error=>{
+              console.warn('[profile] verified-email order lookup failed',error);
+              return null;
+            })
+          : Promise.resolve(null);
         const [ownedSnap, emailSnap] = await Promise.all([
           profileDb.collection('orders').where('userId','==',currentUser.uid).get(),
-          profileDb.collection('orders').where('customer.email','==',currentUser.email).get()
+          emailQuery
         ]);
         const docs = new Map();
-        [...ownedSnap.docs, ...emailSnap.docs].forEach(d=>docs.set(d.id,d));
+        [...ownedSnap.docs, ...(emailSnap?.docs||[])].forEach(d=>docs.set(d.id,d));
         const orders = [...docs.values()].map(d=>({id:d.id, ...d.data()}));
-        orders.sort((a,b)=>((b.date?.seconds||0)-(a.date?.seconds||0)));
+        orders.sort((a,b)=>{
+          const dateOf=value=>value?.date?.toMillis ? value.date.toMillis() : new Date(value?.date||0).getTime()||0;
+          return dateOf(b)-dateOf(a);
+        });
+        customerOrders=orders;
         document.getElementById('statOrders').textContent = orders.length;
         const totalSpent = orders.reduce((s,o)=>s+(parseFloat(String(o.totals?.total||o.total||'').replace(/[^0-9.]/g,''))||0),0);
         document.getElementById('statSpent').textContent = 'EGP ' + totalSpent.toFixed(2);
@@ -477,26 +589,27 @@
         document.getElementById('recentOrderContainer').innerHTML = `
           <div style="background:var(--off-white); border-radius:12px; padding:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
             <div>
-              <div class="order-id">#${recent.id.slice(-6).toUpperCase()}</div>
-              <div style="font-weight:500; margin-top:4px;">${recent.items ? recent.items.length : 0} ${currentLang==='ar'?'منتج':'items'} — ${recent.totals?.total || recent.total || '—'}</div>
+              <div class="order-id">#${escapeHTML(recent.id.slice(-6).toUpperCase())}</div>
+              <div style="font-weight:500; margin-top:4px;">${Array.isArray(recent.items) ? recent.items.length : 0} ${escapeHTML(currentLang==='ar'?'منتج':'items')} — ${escapeHTML(recent.totals?.total || recent.total || '—')}</div>
             </div>
-            <span class="order-status status-${(recent.status||'pending').toLowerCase()}">${t('status'+((recent.status||'Pending').replace(/\s/g,''))) || recent.status}</span>
+            <span class="order-status status-${orderStatusClass(recent.status)}">${orderStatusText(recent.status)}</span>
           </div>`;
 
         let html = `<table class="orders-table"><thead><tr>
           <th>${t('orderId')}</th><th>${t('orderDate')}</th><th>${t('orderItems')}</th><th>${t('orderTotal')}</th><th>${t('orderStatus')}</th><th>${currentLang==='ar'?'إجراء':'Action'}</th>
         </tr></thead><tbody>`;
         orders.forEach(o=>{
-          const date = o.date ? (o.date.toDate ? o.date.toDate().toLocaleDateString() : '-') : '-';
+          const date = orderDateText(o.date);
           const canCancel = ['pending','confirmed'].includes(String(o.status||'pending').toLowerCase());
+          const canEdit = canEditOrder(o);
           const orderTotal = o.totals?.total || o.total || '—';
           html += `<tr>
-            <td class="order-id">#${o.id.slice(-6).toUpperCase()}</td>
-            <td>${date}</td>
-            <td>${o.items ? o.items.length : 0} ${currentLang==='ar'?'منتج':'items'}</td>
-            <td style="font-weight:600; color:var(--gold);">${orderTotal}</td>
-            <td><span class="order-status status-${(o.status||'pending').toLowerCase()}">${t('status'+((o.status||'Pending').replace(/\s/g,''))) || o.status}</span></td>
-            <td>${canCancel ? `<button class="btn-outline" style="padding:6px 10px;color:#c62828;border-color:#f3c5c5;" onclick="cancelOrder('${o.id}')">${currentLang==='ar'?'إلغاء':'Cancel'}</button>` : '—'}</td>
+            <td class="order-id">#${escapeHTML(o.id.slice(-6).toUpperCase())}</td>
+            <td>${escapeHTML(date)}</td>
+            <td>${orderItemsDetails(o.items)}</td>
+            <td style="font-weight:600; color:var(--gold);">${escapeHTML(orderTotal)}</td>
+            <td><span class="order-status status-${orderStatusClass(o.status)}">${orderStatusText(o.status)}</span></td>
+            <td><div class="order-actions">${canEdit ? `<button type="button" class="order-action" data-order-action="edit" data-order-id="${escapeHTML(o.id)}"><i class="fas fa-pen"></i> ${escapeHTML(t('actionEditOrder'))}</button>` : ''}${canCancel ? `<button type="button" class="order-action danger" data-order-action="cancel" data-order-id="${escapeHTML(o.id)}"><i class="fas fa-times"></i> ${escapeHTML(t('actionCancelOrder'))}</button>` : ''}${!canEdit&&!canCancel?'—':''}</div></td>
           </tr>`;
         });
         html += `</tbody></table>`;
@@ -505,6 +618,103 @@
         console.error(e);
         container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>${t('toastError')}</p></div>`;
       }
+    }
+
+    function openOrderEditor(orderId){
+      const order=customerOrders.find(item=>item.id===orderId);
+      if(!order || !canEditOrder(order)){ showToast(t('editUnavailable'),'error'); return; }
+      editingOrder=order;
+      orderEditDraft=(Array.isArray(order.items)?order.items:[]).map(item=>{
+        const quantity=Math.min(99,Math.max(1,Math.floor(Number(item.quantity??item.qty)||1)));
+        const colors=Array.isArray(item.colors)?[...new Set(item.colors.map(value=>String(value||'').trim()).filter(Boolean))].slice(0,40):[];
+        const sizes=Array.isArray(item.sizes)?[...new Set(item.sizes.map(value=>String(value||'').trim()).filter(Boolean))].slice(0,40):[];
+        const selected=Array.isArray(item.color)?item.color.map(value=>String(value||'')):Array(quantity).fill(String(item.color||''));
+        return {item,quantity,colors,sizes,size:String(item.size||'-'),selectedColors:Array.from({length:quantity},(_,index)=>colors.includes(selected[index])?selected[index]:(colors[0]||''))};
+      });
+      document.getElementById('orderEditTitle').textContent=t('editOrderTitle');
+      document.getElementById('orderEditSubtitle').textContent=`#${order.id.slice(-6).toUpperCase()}`;
+      document.getElementById('orderEditNote').textContent=t('editOrderHelp')+' '+t('editRemoveHint');
+      renderOrderEditItems();
+      const modal=document.getElementById('orderEditModal');
+      modal.hidden=false;
+      document.body.style.overflow='hidden';
+      modal.querySelector('input[type="number"]')?.focus();
+    }
+
+    function renderOrderEditItems(){
+      const list=document.getElementById('orderEditItems');
+      list.replaceChildren();
+      orderEditDraft.forEach((draft,itemIndex)=>{
+        const card=document.createElement('article'); card.className='edit-item-card';
+        const title=document.createElement('div'); title.className='edit-item-title'; title.textContent=String(draft.item.name||'منتج');
+        const meta=document.createElement('div'); meta.className='edit-item-meta';
+        const merchant=draft.item.storeName||'LOVARA';
+        meta.textContent=`${t('orderStore')}: ${merchant} · ${t('orderUnitPrice')}: ${String(draft.item.price??'—')} EGP`;
+        card.append(title,meta);
+        const controls=document.createElement('div'); controls.className='edit-item-controls';
+        const qtyWrap=document.createElement('div'); qtyWrap.className='edit-control';
+        const qtyLabel=document.createElement('label'); qtyLabel.textContent=t('editQty');
+        const qty=document.createElement('input'); qty.type='number'; qty.min='0'; qty.max='99'; qty.step='1'; qty.value=String(draft.quantity); qty.setAttribute('aria-label',t('editQty'));
+        qty.addEventListener('change',()=>{
+          const next=Math.min(99,Math.max(0,Math.floor(Number(qty.value)||0)));
+          draft.quantity=next; qty.value=String(next);
+          draft.selectedColors=Array.from({length:next},(_,index)=>draft.selectedColors[index]||draft.colors[0]||'');
+          renderOrderEditItems();
+        });
+        qtyWrap.append(qtyLabel,qty); controls.append(qtyWrap);
+        if(draft.sizes.length){
+          const sizeWrap=document.createElement('div'); sizeWrap.className='edit-control';
+          const sizeLabel=document.createElement('label'); sizeLabel.textContent=t('editSize');
+          const size=document.createElement('select'); size.setAttribute('aria-label',t('editSize'));
+          draft.sizes.forEach(value=>{const option=document.createElement('option');option.value=value;option.textContent=value;size.append(option);});
+          if(draft.sizes.includes(draft.size)) size.value=draft.size; else draft.size=draft.sizes[0];
+          size.addEventListener('change',()=>{draft.size=size.value;});
+          sizeWrap.append(sizeLabel,size); controls.append(sizeWrap);
+        }
+        card.append(controls);
+        const colorList=document.createElement('div'); colorList.className='edit-colors';
+        if(draft.quantity && draft.colors.length){
+          for(let unit=0;unit<draft.quantity;unit++){
+            const wrap=document.createElement('div'); wrap.className='edit-control';
+            const label=document.createElement('label'); label.textContent=`${t('editColorPiece')} ${unit+1}`;
+            const select=document.createElement('select'); select.setAttribute('aria-label',`${t('editColorPiece')} ${unit+1}`);
+            draft.colors.forEach(color=>{const option=document.createElement('option');option.value=color;option.textContent=color;select.append(option);});
+            select.value=draft.selectedColors[unit]||draft.colors[0];
+            select.addEventListener('change',()=>{draft.selectedColors[unit]=select.value;});
+            wrap.append(label,select); colorList.append(wrap);
+          }
+        } else if(draft.quantity && !draft.colors.length){
+          const note=document.createElement('small'); note.className='edit-item-meta'; note.textContent=t('editNoColors'); colorList.append(note);
+        }
+        card.append(colorList);
+        list.append(card);
+      });
+    }
+
+    function closeOrderEditor(){
+      const modal=document.getElementById('orderEditModal');
+      if(modal) modal.hidden=true;
+      document.body.style.overflow='';
+      editingOrder=null; orderEditDraft=[];
+    }
+
+    async function saveOrderEdit(event){
+      event.preventDefault();
+      if(!editingOrder || !currentUser) return;
+      const button=document.getElementById('saveOrderEdit');
+      const edits=orderEditDraft.map((draft,itemIndex)=>({itemIndex,quantity:draft.quantity,size:draft.size,colors:draft.selectedColors.slice(0,draft.quantity)}));
+      for(const draft of orderEditDraft){
+        if(draft.quantity>0 && draft.colors.length && draft.selectedColors.slice(0,draft.quantity).some(color=>!draft.colors.includes(color))){showToast(t('editEmptyColors'),'error');return;}
+      }
+      button.disabled=true; button.querySelector('span').textContent=t('editSaving');
+      try{
+        const token=await currentUser.getIdToken();
+        const response=await fetch('/api/update-order',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({orderId:editingOrder.id,items:edits})});
+        const result=await response.json().catch(()=>({}));
+        if(!response.ok) throw new Error(result.error||t('editFailed'));
+        closeOrderEditor(); showToast(t('editSuccess')); await loadOrders();
+      }catch(error){console.error('[profile] update order failed',error);showToast(error.message||t('editFailed'),'error');}
+      finally{button.disabled=false;button.querySelector('span').textContent=t('editSave');}
     }
 
     async function cancelOrder(orderId){
@@ -615,6 +825,10 @@
     document.addEventListener('DOMContentLoaded', ()=>{
       setupAccountForm();
       setupSecurityForm();
+      document.getElementById('orderEditForm')?.addEventListener('submit',saveOrderEdit);
+      document.querySelectorAll('[data-close-order-editor]').forEach(button=>button.addEventListener('click',closeOrderEditor));
+      document.getElementById('orderEditModal')?.addEventListener('click',event=>{if(event.target.id==='orderEditModal') closeOrderEditor();});
+      document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!document.getElementById('orderEditModal')?.hidden) closeOrderEditor();});
       document.getElementById('profilePhotoInput')?.addEventListener('change', handleProfilePhoto);
       initFirebase().then(ok=>{
         if(ok && profileAuth){

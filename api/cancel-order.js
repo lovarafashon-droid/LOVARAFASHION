@@ -29,7 +29,8 @@ module.exports = async (req, res) => {
       const orderSnapshot = await transaction.get(orderRef);
       if (!orderSnapshot.exists) throw Object.assign(new Error('الطلب غير موجود.'), { statusCode: 404 });
       const order = orderSnapshot.data() || {};
-      const emailMatches = user.email && String(order.customer?.email || '').trim().toLowerCase() === String(user.email).trim().toLowerCase();
+      const emailMatches = user.email_verified === true && user.email
+        && String(order.customer?.email || '').trim().toLowerCase() === String(user.email).trim().toLowerCase();
       if (order.userId !== user.uid && !emailMatches) {
         throw Object.assign(new Error('ليس لديك صلاحية إلغاء هذا الطلب.'), { statusCode: 403 });
       }

@@ -212,7 +212,9 @@ async function canonicalizeCheckoutOrder(orderData, db = admin().firestore(), op
       const saleEndsAt = timestampMillis(product.saleEndsAt);
       if (salePrice > 0 && saleEndsAt > Date.now()) basePrice = salePrice;
     }
-    const discountEnabled = pricingUnit !== 'dozen' && item.quantityDiscountEnabled === true;
+    // The browser flag is untrusted. Eligibility is derived from canonical catalog
+    // price and unit; the same per-line quantity bands are applied by the UI.
+    const discountEnabled = pricingUnit !== 'dozen' && basePrice > 100;
     let quantityDiscount = 0;
     if (discountEnabled && basePrice > 100) {
       quantityDiscount = quantity >= 3 ? 20 : quantity === 2 ? 10 : 0;

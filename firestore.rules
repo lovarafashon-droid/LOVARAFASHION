@@ -160,7 +160,10 @@ service cloud.firestore {
     match /orders/{orderId} {
       // Orders are created and customer cancellations are processed only by trusted server endpoints.
       allow create: if false;
-      allow read: if isAdmin() || (request.auth != null && (resource.data.userId == request.auth.uid || resource.data.customer.email == request.auth.token.email));
+      allow read: if isAdmin() || (request.auth != null && (
+        resource.data.userId == request.auth.uid
+        || (request.auth.token.email_verified == true && resource.data.customer.email == request.auth.token.email)
+      ));
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }

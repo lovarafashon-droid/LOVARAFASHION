@@ -112,6 +112,16 @@ async function run() {
   ], 9000), db);
   assert.strictEqual(dozen.items[0].pricingUnit, 'dozen', 'supported lingerie dozen pricing remains available');
 
+  const quantityDiscount = await canonicalizeCheckoutOrder(checkout([
+    { productId: 'lovaraDress', price: 790, quantity: 2, quantityDiscountEnabled: false }
+  ], 1580), db);
+  assert.strictEqual(quantityDiscount.items[0].price, 790, 'eligible quantity discount is recalculated from canonical price and quantity');
+  assert.strictEqual(quantityDiscount.items[0].quantityDiscountEnabled, true, 'discount eligibility is derived by the server, not the submitted false flag');
+  const forgedDiscount = await canonicalizeCheckoutOrder(checkout([
+    { productId: 'lovaraDress', price: 800, quantity: 1, quantityDiscountEnabled: true }
+  ], 800), db);
+  assert.strictEqual(forgedDiscount.items[0].price, 800, 'a client true flag cannot grant a discount to a single item');
+
   await assert.rejects(
     () => canonicalizeCheckoutOrder(checkout([
       { productId: 'lovaraDress', price: 800, quantity: 1, pricingUnit: 'dozen' }
