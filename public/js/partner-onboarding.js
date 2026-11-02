@@ -130,8 +130,28 @@
 
   async function answerPrompt(answer, user) {
     const activeUser = user || auth().currentUser;
-    if (activeUser) {
-      await db().collection('users').doc(activeUser.uid).set({ partnerPromptAnswered: answer }, { merge: true });
+    if (!activeUser) throw new Error(text('سجّل الدخول أولًا.', 'Please sign in first.'));
+    const userRef = db().collection('users').doc(activeUser.uid);
+    const snapshot = await userRef.get();
+    if (snapshot.exists) await userRef.set({ partnerPromptAnswered: answer }, { merge: true });
+    else await userRef.set({ role: 'user', partnerPromptAnswered: answer }, { merge: true });
+  }
+
+  async function acceptAndContinue(destination = '/partnership.html?fromSignup=1') {
+    let navigated = false;
+    const navigate = () => {
+      if (navigated) return;
+      navigated = true;
+      window.location.assign(destination);
+    };
+    const timeout = window.setTimeout(navigate, 1000);
+    try {
+      await answerPrompt('accepted');
+    } catch (error) {
+      console.warn('[LOVARA partner] Could not save prompt answer:', error.message);
+    } finally {
+      window.clearTimeout(timeout);
+      navigate();
     }
   }
 
@@ -155,11 +175,9 @@
       } catch (error) { notify(error.message, true); }
     });
 
-    $('partnerAccept')?.addEventListener('click', async () => {
-      try {
-        await answerPrompt('accepted');
-        window.location.href = '/partnership.html?fromSignup=1';
-      } catch (error) { notify(error.message, true); }
+    $('partnerAccept')?.addEventListener('click', event => {
+      event.preventDefault();
+      void acceptAndContinue(event.currentTarget.href);
     });
 
     $('partnerOfferClose')?.addEventListener('click', () => hideModal('partnerOfferModal'));
@@ -215,7 +233,7 @@
     });
   }
 
-  window.LovaraPartnerOnboarding = { offer, submitApplication, uploadImage, showModal, hideModal };
+  window.LovaraPartnerOnboarding = { offer, submitApplication, uploadImage, showModal, hideModal, acceptAndContinue };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
