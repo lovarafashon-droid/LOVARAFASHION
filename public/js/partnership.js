@@ -1,6 +1,8 @@
 (() => {
   const $ = id => document.getElementById(id);
   const storeName = $('storeName');
+  const supportPhone = $('supportPhone');
+  const storeImage = $('storeImage');
   const notice = $('notice');
   const visaMethod = $('visaMethod');
   const vodafoneMethod = $('vodafoneMethod');
@@ -10,6 +12,7 @@
   const whatsappNumber = '201066730225';
   let checkout = null;
   let paymentReady = false;
+  let applicationSubmitted = false;
 
   function showNotice(message) { notice.textContent = message; notice.classList.add('show'); }
   function clearNotice() { notice.textContent = ''; notice.classList.remove('show'); }
@@ -26,6 +29,22 @@
     vodafonePanel.hidden = visa;
     clearNotice();
   }
+  async function ensureApplication() {
+    if (applicationSubmitted) return true;
+    const name = storeName.value.trim();
+    const phone = supportPhone.value.trim();
+    const file = storeImage.files?.[0];
+    if (name.length < 2) { showNotice('اكتبي اسم المتجر أولاً.'); return false; }
+    if (!/^\+?[0-9]{8,16}$/.test(phone.replace(/[\s()-]/g, ''))) { showNotice('اكتبي رقم دعم صحيحاً مع مفتاح الدولة.'); return false; }
+    if (!file) { showNotice('اختاري صورة للمتجر أولاً.'); return false; }
+    if (!window.LovaraPartnerOnboarding?.submitApplication) { showNotice('تعذر تجهيز طلب المتجر. أعيدي تحميل الصفحة.'); return false; }
+    try {
+      await window.LovaraPartnerOnboarding.submitApplication(name, phone, file);
+      applicationSubmitted = true;
+      showNotice('تم تسجيل طلبك كمعلّق. بعد الدفع، الموافقة النهائية تتم يدوياً من إدارة LOVARA.');
+      return true;
+    } catch (error) { showNotice(error.message || 'تعذر تسجيل طلب المتجر.'); return false; }
+  }
   visaMethod.addEventListener('click', () => selectMethod('visa'));
   vodafoneMethod.addEventListener('click', () => selectMethod('vodafone'));
   storeName.addEventListener('input', updateWhatsapp);
@@ -33,9 +52,15 @@
     try { await navigator.clipboard.writeText('01066730225'); showNotice('تم نسخ رقم فودافون كاش.'); }
     catch (_) { showNotice('انسخي الرقم يدوياً: 01066730225'); }
   });
+  $('whatsappLink').addEventListener('click', async event => {
+    event.preventDefault();
+    if (!(await ensureApplication())) return;
+    updateWhatsapp();
+    window.open(whatsappLink.href, '_blank', 'noopener');
+  });
   $('startVisa').addEventListener('click', async () => {
+    if (!(await ensureApplication())) return;
     const name = storeName.value.trim();
-    if (name.length < 2) return showNotice('اكتبي اسم المتجر أولاً.');
     clearNotice();
     $('loading').classList.add('show');
     $('startVisa').disabled = true;
@@ -60,7 +85,7 @@
     try {
       const result = await checkout.confirm({ customerDetails: { name: storeName.value.trim() }, redirect: 'if_required' });
       if (result?.type === 'error') throw new Error(result.error?.message || 'تعذر إتمام الدفع.');
-      showNotice('تم إرسال عملية الدفع للمراجعة بنجاح.');
+      showNotice('تم إرسال عملية الدفع. طلبك ما زال بانتظار موافقة إدارة LOVARA يدوياً.');
     } catch (error) { showNotice(error.message || 'تعذر إتمام الدفع.'); $('confirmVisa').disabled = false; }
   });
   updateWhatsapp();

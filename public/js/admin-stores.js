@@ -38,7 +38,7 @@
       const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(req => req.status === 'pending').sort((a,b) => asDate(b.createdAt) - asDate(a.createdAt));
       $('pendingCount').textContent = String(requests.length);
       if (!requests.length) { container.innerHTML = '<div class="empty">لا توجد طلبات معلّقة حاليًا.</div>'; return; }
-      container.innerHTML = requests.map(request => `<article class="card"><img src="${escapeHtml(request.imageUrl || '')}" alt="${escapeHtml(request.storeName)}"><div><h2>${escapeHtml(request.storeName)}</h2><div class="meta">صاحب الطلب: ${escapeHtml(request.ownerEmail || request.ownerUid)}<br>رقم الدعم: ${escapeHtml(request.supportPhone)}<br>تاريخ الطلب: ${dateLabel(request.createdAt)}</div><div class="subscription"><label>مدة البداية: <input type="number" min="0" max="60" value="1" data-months="${escapeHtml(request.id)}"> شهر</label><label><input type="number" min="0" max="365" value="0" data-days="${escapeHtml(request.id)}"> يوم</label></div><div class="card-actions"><button class="btn" data-approve="${escapeHtml(request.id)}"><i class="fas fa-check"></i> موافقة</button><button class="btn red" data-reject="${escapeHtml(request.id)}"><i class="fas fa-xmark"></i> رفض</button><a class="btn green" href="${escapeHtml(waLink(request.supportPhone, `مرحبًا ${request.storeName}، نتواصل معك بخصوص طلب الشراكة في LOVARA.`))}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> واتساب</a></div></div></article>`).join('');
+      container.innerHTML = requests.map(request => `<article class="card"><img src="${escapeHtml(request.imageUrl || '')}" alt="${escapeHtml(request.storeName)}"><div><h2>${escapeHtml(request.storeName)}</h2><div class="meta">صاحب الطلب: ${escapeHtml(request.ownerEmail || request.ownerUid)}<br>رقم الدعم: ${escapeHtml(request.supportPhone)}<br>تاريخ الطلب: ${dateLabel(request.createdAt)}<br>الموافقة: يدوية بعد مراجعة الدفع</div><div class="subscription"><strong>مدة الاشتراك: 30 يومًا من لحظة الموافقة</strong></div><div class="card-actions"><button class="btn" data-approve="${escapeHtml(request.id)}"><i class="fas fa-check"></i> موافقة يدوية</button><button class="btn red" data-reject="${escapeHtml(request.id)}"><i class="fas fa-xmark"></i> رفض</button><a class="btn green" href="${escapeHtml(waLink(request.supportPhone, `مرحبًا ${request.storeName}، نتواصل معك بخصوص طلب الشراكة في LOVARA.`))}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> واتساب</a></div></div></article>`).join('');
       container.querySelectorAll('[data-approve]').forEach(button => button.addEventListener('click', () => approveRequest(button.dataset.approve, button)));
       container.querySelectorAll('[data-reject]').forEach(button => button.addEventListener('click', () => rejectRequest(button.dataset.reject, button)));
     } catch (error) {
@@ -58,15 +58,12 @@
       const base = slug;
       let suffix = 2;
       while ((await db.collection('shops').doc(slug).get()).exists) slug = `${base}-${suffix++}`;
-      const months = Math.min(60, Math.max(0, Number(document.querySelector(`[data-months="${CSS.escape(uid)}"]`)?.value || 1)));
-      const days = Math.min(365, Math.max(0, Number(document.querySelector(`[data-days="${CSS.escape(uid)}"]`)?.value || 0)));
-      if (months === 0 && days === 0) throw new Error('حددي مدة اشتراك أكبر من صفر.');
-      const expiresAt = addDuration(new Date(), months, days);
+      const expiresAt = addDuration(new Date(), 0, 30);
       const batch = db.batch();
       batch.set(db.collection('shops').doc(slug), {
         slug, ownerUid: uid, ownerEmail: request.ownerEmail || '', storeName: request.storeName,
         supportPhone: request.supportPhone, imageUrl: request.imageUrl,
-        active: true, status: 'active', approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        active: true, status: 'active', durationDays: 30, approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
         expiresAt: firebase.firestore.Timestamp.fromDate(expiresAt), createdAt: request.createdAt || firebase.firestore.FieldValue.serverTimestamp()
       });
       batch.update(requestRef, { status: 'approved', shopId: slug, reviewedAt: firebase.firestore.FieldValue.serverTimestamp(), reviewedBy: currentAdmin.uid });

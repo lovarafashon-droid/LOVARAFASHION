@@ -14,12 +14,38 @@
   let allProducts = [];
   let activeCategory = 'all';
   let toastTimer = null;
+  let subscriptionTimer = null;
 
   function showMessage(title, body, icon = 'fa-circle-info') {
+    if (subscriptionTimer) {
+      clearInterval(subscriptionTimer);
+      subscriptionTimer = null;
+    }
     message.classList.remove('hidden');
     message.innerHTML = `<i class="fas ${icon}"></i><h1>${escapeHtml(title)}</h1><p>${escapeHtml(body)}</p>`;
     hero.classList.add('hidden');
     content.classList.add('hidden');
+  }
+
+  function startSubscriptionCountdown(expiry) {
+    const countdown = $('storeSubscriptionCountdown');
+    if (!countdown) return;
+    const expiryMs = expiry.getTime();
+    const render = () => {
+      const remaining = expiryMs - Date.now();
+      if (remaining <= 0) {
+        showMessage('المتجر غير متاح حاليًا', 'انتهت مدة اشتراك هذا المتجر. يرجى العودة لاحقًا أو التواصل مع إدارة LOVARA.', 'fa-lock');
+        return;
+      }
+      const totalSeconds = Math.floor(remaining / 1000);
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      countdown.innerHTML = `<i class="fas fa-hourglass-half"></i> متبقي ${days} يوم ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    };
+    render();
+    subscriptionTimer = setInterval(render, 1000);
   }
 
   function whatsappHref(phone, storeName, productName) {
@@ -513,7 +539,7 @@
       const store = { id: shopSnapshot.id, ...shopSnapshot.data() };
       const expiry = getDate(store.expiresAt);
       if (store.active !== true || !Number.isFinite(expiry.getTime()) || expiry <= new Date()) {
-        return showMessage('المتجر غير متاح حاليًا', 'قد يكون الاشتراك منتهيًا أو أوقف صاحب المتجر عرضه.');
+        return showMessage('المتجر متوقف حاليًا', 'انتهت مدة الاشتراك أو أوقف الأدمن المتجر.');
       }
 
       currentStore = store;
@@ -529,6 +555,7 @@
       $('storeWhatsApp').href = whatsappHref(store.supportPhone, store.storeName, '');
       $('storeNavContact').href = whatsappHref(store.supportPhone, store.storeName, '');
       $('productsTitle').textContent = `تسوق منتجات ${store.storeName || 'المتجر'}`;
+      startSubscriptionCountdown(expiry);
       renderCategoryFilters();
       renderProducts();
       message.classList.add('hidden');

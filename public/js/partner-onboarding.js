@@ -102,6 +102,7 @@
         supportPhone: phone,
         imageUrl: '',
         status: 'draft',
+        approvalMode: 'manual', paymentStatus: 'manual_review',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
@@ -118,6 +119,7 @@
         supportPhone: phone,
         imageUrl: '',
         status: 'draft',
+        approvalMode: 'manual', paymentStatus: 'manual_review',
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await requestRef.update(requestData);
