@@ -67,7 +67,8 @@
   }
 
   function checkoutUrl() {
-    return `/store/${encodeURIComponent(currentStoreId)}/checkout`;
+    const storeId = encodeURIComponent(currentStoreId);
+    return `/store/${storeId}/checkout?store=${storeId}`;
   }
 
   function closeProductPreview() {
@@ -296,6 +297,88 @@
     if (countEl) countEl.textContent = String(count);
   }
 
+  function renderStoreCart(cart = readCart()) {
+    const itemsEl = $('storeCartItems');
+    const totalEl = $('storeCartTotal');
+    const checkoutButton = $('storeCartCheckout');
+    if (!itemsEl) return;
+    updateCartCount(cart);
+    const total = cart.reduce((sum, item) => sum + (Number(item.price) || 0) * Math.max(1, Number(item.qty || item.quantity) || 1), 0);
+    if (totalEl) totalEl.textContent = `EGP ${total.toFixed(2)}`;
+    if (checkoutButton) checkoutButton.disabled = cart.length === 0;
+    if (!cart.length) {
+      itemsEl.innerHTML = '<div class="store-cart-empty"><i class="fas fa-bag-shopping"></i><strong>السلة فارغة</strong><p>اختاري منتجات من المتجر وستظهر هنا.</p></div>';
+      return;
+    }
+    itemsEl.innerHTML = cart.map((item, index) => {
+      const quantity = Math.max(1, Number(item.qty || item.quantity) || 1);
+      const size = Array.isArray(item.size) ? item.size.join('، ') : String(item.size || '');
+      const color = Array.isArray(item.color) ? item.color.join('، ') : String(item.color || '');
+      const details = [size && size !== '-' ? `المقاس: ${size}` : '', color && color !== '-' ? `اللون: ${color}` : ''].filter(Boolean).join(' · ');
+      const image = item.imageUrl || item.image || 'https://via.placeholder.com/160x200?text=LOVARA';
+      return `<article class="store-cart-item">
+        <img class="store-cart-item-image" src="${escapeHtml(image)}" alt="${escapeHtml(item.name || 'منتج')}" onerror="this.src='https://via.placeholder.com/160x200?text=LOVARA'">
+        <div class="store-cart-item-info"><h3>${escapeHtml(item.name || 'منتج')}</h3><p class="store-cart-item-meta">${details ? escapeHtml(details) : 'منتج من المتجر'}</p><span class="store-cart-item-price">EGP ${((Number(item.price) || 0) * quantity).toFixed(2)}</span><div class="store-cart-item-actions"><button type="button" data-cart-qty data-index="${index}" data-delta="-1" aria-label="تقليل الكمية">−</button><span>${quantity}</span><button type="button" data-cart-qty data-index="${index}" data-delta="1" aria-label="زيادة الكمية">+</button><button type="button" class="cart-remove" data-cart-remove data-index="${index}">حذف</button></div></div>
+      </article>`;
+    }).join('');
+  }
+
+  function openStoreCart() {
+    const modal = $('storeCartModal');
+    if (!modal) return;
+    renderStoreCart();
+    modal.hidden = false;
+    requestAnimationFrame(() => modal.classList.add('show'));
+    document.body.classList.add('cart-modal-open');
+    modal.querySelector('[data-cart-close]')?.focus();
+  }
+
+  function closeStoreCart() {
+    const modal = $('storeCartModal');
+    if (!modal) return;
+    modal.classList.remove('show');
+    modal.hidden = true;
+    document.body.classList.remove('cart-modal-open');
+  }
+
+  function saveStoreCart(cart) {
+    localStorage.setItem(shopCartKey(currentStoreId), JSON.stringify(cart));
+    renderStoreCart(cart);
+    try { window.dispatchEvent(new StorageEvent('storage', { key: shopCartKey(currentStoreId), newValue: JSON.stringify(cart) })); } catch (_) {}
+  }
+
+  function setupStoreCart() {
+    $('storeCartLink')?.addEventListener('click', event => {
+      event.preventDefault();
+      openStoreCart();
+    });
+    const modal = $('storeCartModal');
+    modal?.addEventListener('click', event => {
+      if (event.target === modal) closeStoreCart();
+    });
+    modal?.querySelector('[data-cart-close]')?.addEventListener('click', closeStoreCart);
+    modal?.querySelector('[data-cart-continue]')?.addEventListener('click', closeStoreCart);
+    modal?.querySelector('#storeCartCheckout')?.addEventListener('click', () => {
+      if (!readCart().length) return;
+      window.location.assign(checkoutUrl());
+    });
+    $('storeCartItems')?.addEventListener('click', event => {
+      const button = event.target.closest('[data-cart-qty], [data-cart-remove]');
+      if (!button) return;
+      const index = Number(button.dataset.index);
+      const cart = readCart();
+      if (!Number.isInteger(index) || index < 0 || index >= cart.length) return;
+      if (button.hasAttribute('data-cart-remove')) cart.splice(index, 1);
+      else {
+        const item = cart[index];
+        const quantity = Math.max(1, Number(item.qty || item.quantity) || 1) + Number(button.dataset.delta || 0);
+        if (quantity <= 0) cart.splice(index, 1);
+        else item.qty = item.quantity = Math.min(99, quantity);
+      }
+      saveStoreCart(cart);
+    });
+  }
+
   function showToast(text) {
     const toast = $('storeToast');
     if (!toast) return;
@@ -357,7 +440,7 @@
     }
 
     localStorage.setItem(shopCartKey(currentStore.id), JSON.stringify(cart));
-    updateCartCount(cart);
+    renderStoreCart(cart);
     try { window.dispatchEvent(new StorageEvent('storage', { key: shopCartKey(currentStore.id), newValue: JSON.stringify(cart) })); } catch (_) {}
     showToast(`تمت إضافة ${quantity} قطعة من ${product.name || 'المنتج'} إلى السلة`);
     return true;
@@ -393,13 +476,17 @@
 
   async function init() {
     setupAccountMenu();
+    setupStoreCart();
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') closeProductPreview();
+      if (event.key === 'Escape') {
+        closeProductPreview();
+        closeStoreCart();
+      }
     });
     $('storeSearch')?.addEventListener('input', renderProducts);
     $('storeSort')?.addEventListener('change', renderProducts);
     window.addEventListener('storage', event => {
-      if (currentStoreId && event.key === shopCartKey(currentStoreId)) updateCartCount();
+      if (currentStoreId && event.key === shopCartKey(currentStoreId)) renderStoreCart();
     });
 
     const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -415,7 +502,7 @@
     }
     currentStoreId = slug;
     const cartLink = $('storeCartLink');
-    if (cartLink) cartLink.href = `/store/${encodeURIComponent(slug)}/checkout`;
+    if (cartLink) cartLink.href = checkoutUrl();
     updateCartCount();
 
     try {

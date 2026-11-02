@@ -789,8 +789,7 @@
         await this.firebaseReady.catch(() => null);
         if (this.storeId && !(await this.loadStoreCheckoutInfo())) {
           this.storeCheckoutBlocked = true;
-          this.cart = [];
-          document.getElementById('checkoutContent').innerHTML = '<div class="empty-cart-message"><i class="fas fa-store-slash"></i><h3>هذا المتجر غير متاح حاليًا</h3><p>لا يمكن بدء طلب جديد من متجر متوقف أو منتهي الاشتراك.</p><a href="/" class="btn-continue-shopping"><i class="fas fa-arrow-right"></i> العودة إلى LOVARA</a></div>';
+          this.renderUnavailableStoreCart();
           this.renderPartnerCartNotice();
           return;
         }
@@ -814,6 +813,23 @@
         this.renderPartnerCartNotice();
         this.updateSteps(1);
         this.setupGovernorateListener();
+      },
+
+      renderUnavailableStoreCart() {
+        const content = document.getElementById('checkoutContent');
+        if (!content) return;
+        const storeUrl = `/store/${encodeURIComponent(this.storeId)}`;
+        const itemsHtml = this.cart.map(item => {
+          const quantity = Math.max(1, Number(item.quantity || item.qty) || 1);
+          const image = this.escapeHtml(this.safeImageUrl(item.imageUrl || item.image));
+          const name = this.escapeHtml(item.name || 'منتج');
+          const color = Array.isArray(item.color) ? item.color.join('، ') : String(item.color || '');
+          const size = Array.isArray(item.size) ? item.size.join('، ') : String(item.size || '');
+          const details = [color && color !== '-' ? `اللون: ${color}` : '', size && size !== '-' ? `المقاس: ${size}` : ''].filter(Boolean).join(' · ');
+          const lineTotal = (Number(item.price) || 0) * quantity;
+          return `<article class="order-item"><img src="${image}" alt="${name}"><div class="order-item-info"><h4>${name}</h4><p>${details ? this.escapeHtml(details) + ' · ' : ''}الكمية: ${quantity}</p><span class="order-item-price">EGP ${lineTotal.toFixed(2)}</span></div></article>`;
+        }).join('');
+        content.innerHTML = `<div class="empty-cart-message"><i class="fas fa-store-slash"></i><h3>تعذر إتمام الطلب من هذا المتجر</h3><p>قد يكون المتجر موقوفًا أو انتهى اشتراكه، أو تعذر التحقق من حالته. احتفظنا بمنتجات سلتك؛ لا يمكن إرسال الطلب حتى يصبح المتجر متاحًا.</p>${itemsHtml ? `<div class="order-items blocked-store-items">${itemsHtml}</div>` : '<p>السلة المحفوظة فارغة.</p>'}<a href="${storeUrl}" class="btn-continue-shopping"><i class="fas fa-arrow-right"></i> العودة إلى المتجر</a></div>`;
       },
 
       async loadStoreCheckoutInfo() {
