@@ -3,27 +3,139 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1d3440">
+  <meta name="description" content="ابدأ شراكتك مع LOVARA بخيارات دفع مرنة وآمنة.">
   <title>شراكة المتجر والدفع | LOVARA</title>
   <link rel="icon" type="image/jpeg" href="/LOVARA.jpeg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/partnership.css?v=partnerpay-ui-1">
   <script src="https://checkout.xpay.app/v1/sdk.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="/js/firebase-config.js"></script>
-  <script src="/js/partner-onboarding.js?v=manual-redirect-2"></script>
-  <style>
-    :root{--ink:#1d2a35;--muted:#69747c;--paper:#fffdf9;--ivory:#f7f4ee;--line:#e9e4da;--coral:#e87961;--navy:#1d3440;--green:#20b868;--red:#e60000}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 95% 0,rgba(232,121,97,.14),transparent 28rem),var(--ivory);color:var(--ink);font-family:'Noto Sans Arabic',Arial,sans-serif}.top{max-width:1080px;height:76px;margin:auto;padding:0 22px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;font-weight:700}.mark{width:38px;height:38px;display:grid;place-items:center;background:var(--navy);color:white;border-radius:13px 13px 13px 4px;box-shadow:5px 5px 0 #f5c8bb}.back{color:var(--muted);font-size:12px;text-decoration:none}.wrap{max-width:1080px;margin:auto;padding:45px 22px 60px}.eyebrow{color:#c95c47;font-size:12px;font-weight:700}.hero h1{font-family:'Cormorant Garamond','Noto Sans Arabic',serif;font-size:clamp(40px,7vw,68px);line-height:1.05;margin:14px 0 8px;color:var(--navy)}.hero p{color:var(--muted);line-height:1.9;margin:0;max-width:560px;font-size:15px}.grid{display:grid;grid-template-columns:1fr 300px;gap:22px;margin-top:38px}.card{background:rgba(255,253,249,.95);border:1px solid var(--line);border-radius:22px;box-shadow:0 15px 40px rgba(73,57,39,.07);padding:30px}.steps{display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--line);padding-bottom:18px;color:#8f9692;font-size:11px}.steps b{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:var(--coral);color:#fff}.steps span{height:1px;flex:1;background:#e5e1d8}.card h2{font-size:25px;margin:26px 0 6px;color:var(--navy)}.lead{font-size:13px;line-height:1.8;color:var(--muted);margin:0 0 22px}.label{display:block;font-weight:700;font-size:12px;margin:18px 0 8px}.label i{color:var(--coral)}input{width:100%;height:46px;border:1px solid #dcd7cf;border-radius:10px;padding:0 13px;background:#fff;font:inherit;font-size:13px;outline:0}input:focus{border-color:var(--coral);box-shadow:0 0 0 4px rgba(232,121,97,.12)}.methods{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}.method{padding:13px;border:1px solid #ded9d0;border-radius:12px;background:#fff;text-align:right;cursor:pointer}.method.active{border-color:var(--coral);box-shadow:0 0 0 3px rgba(232,121,97,.1);background:#fffaf7}.method strong{display:block;font-size:12px}.method small{display:block;color:var(--muted);font-size:10px;margin-top:4px}.panel{margin-top:17px;padding:17px;border-radius:14px;background:#fbfaf6;border:1px solid #ece7df}.number{display:flex;align-items:center;gap:10px;margin:13px 0;padding:12px;border:1px dashed #efaaa4;border-radius:10px;background:#fff8f7}.number b{font-size:20px;direction:ltr;margin-right:auto;color:#a90000;letter-spacing:.6px}.number button{border:0;border-radius:7px;background:#fee3e1;color:var(--red);padding:7px;cursor:pointer}.btn{width:100%;min-height:46px;border:0;border-radius:11px;cursor:pointer;font:inherit;font-size:13px;font-weight:700}.visa{background:var(--navy);color:#fff}.whatsapp{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--green);color:#fff;text-decoration:none}.notice{display:none;margin-top:13px;padding:11px;border-radius:9px;background:#fff0ed;color:#a64f43;font-size:12px;line-height:1.7}.notice.show{display:block}.secure{color:#71817d;text-align:center;font-size:10px;margin:10px 0 0}.side{background:var(--navy);color:white;border-radius:22px;padding:30px;position:relative;overflow:hidden}.side:before{content:'';position:absolute;width:240px;height:240px;border:1px solid rgba(255,255,255,.12);border-radius:50%;top:-100px;left:-100px}.side h3{position:relative;font-size:24px;line-height:1.5;margin:12px 0 24px}.side em{color:#ffad98;font-style:normal}.price{display:flex;align-items:center;gap:10px;position:relative}.price b{font-size:45px}.price span{font-size:11px;color:#a6b7bb;line-height:1.5}.side hr{border:0;border-top:1px solid rgba(255,255,255,.13);margin:25px 0}.benefit{font-size:11px;color:#d6e4e2;margin:12px 0}.benefit:before{content:'✓';color:#77d6b1;margin-left:7px}.xpay-box{display:none;margin-top:15px}.xpay-box.show{display:block}.xpay-message{color:#8b9995;font-size:11px;margin-top:8px}.loading{display:none;color:var(--muted);font-size:11px}.loading.show{display:block}@media(max-width:760px){.grid{grid-template-columns:1fr}.side{order:-1}.methods{grid-template-columns:1fr}.wrap{padding-top:30px}.card{padding:22px}.side{padding:23px}}
-  </style>
+  <script src="/js/partner-onboarding.js?v=partnerpay-ui-1"></script>
 </head>
 <body>
-  <header class="top"><a class="brand" href="/"><span class="mark">L</span><span>LOVARA <small>شراكة المتجر</small></span></a><a class="back" href="/">العودة إلى LOVARA</a></header>
-  <main class="wrap">
-    <section class="hero"><div class="eyebrow">برنامج الشراكة</div><h1>خلّي متجرك يكبر <em style="color:var(--coral);font-style:normal">معانا.</em></h1><p>اختاري طريقة الدفع المناسبة، وابدئي اشتراك الشراكة الشهري مع LOVARA بخطوات واضحة وآمنة.</p></section>
-    <div class="grid"><section class="card"><div class="steps"><b>١</b><strong>اختيار الدفع</strong><span></span><i>٢ التأكيد</i></div><h2>اشتراك الشراكة</h2><p class="lead">الاشتراك الشهري ثابت بقيمة <strong>55 جنيه</strong>.</p><label class="label" for="storeName">اسم المتجر <i>*</i></label><input id="storeName" maxlength="80" placeholder="مثال: متجر لمسة"><label class="label" for="supportPhone">رقم دعم العملاء مع مفتاح الدولة <i>*</i></label><input id="supportPhone" type="tel" maxlength="20" placeholder="+201234567890"><label class="label" for="storeImage">صورة المتجر <i>*</i></label><input id="storeImage" type="file" accept="image/*"><div class="methods"><button class="method active" id="visaMethod" type="button"><strong>فيزا / بطاقة بنكية</strong><small>دفع آمن عبر XPAY</small></button><button class="method" id="vodafoneMethod" type="button"><strong>فودافون كاش</strong><small>حوّلي وابعتِ سكرين على واتساب</small></button></div><div id="notice" class="notice" role="alert"></div><div id="visaPanel" class="panel"><button class="btn visa" id="startVisa" type="button">افتحي بوابة الدفع — 55 جنيه</button><p class="loading" id="loading">جارٍ تجهيز بوابة الدفع الآمنة...</p><div class="xpay-box" id="xpayBox"><div id="xpay-payment-element"></div><p class="xpay-message">بيانات البطاقة لا تمر على LOVARA.</p><button class="btn visa" id="confirmVisa" type="button" style="margin-top:12px">إتمام الدفع بأمان</button></div><p class="secure">دفع مشفّر وآمن</p></div><div id="vodafonePanel" class="panel" hidden><strong>حوّلي من فودافون كاش</strong><div class="number"><span>رقم التحويل</span><b>01066730225</b><button id="copyNumber" type="button">نسخ</button></div><p class="lead" style="margin:0 0 14px">حوّلي 55 جنيه، احتفظي بسكرين التحويل، وبعدها ابعتيه على واتساب.</p><a class="btn whatsapp" id="whatsappLink" href="#" target="_blank" rel="noopener">ابعتِ سكرين على واتساب ↗</a></div></section><aside class="side"><div class="eyebrow">ملخص الاشتراك</div><h3>كل اللي تحتاجيه<br><em>في خطوة.</em></h3><div class="price"><b>55</b><span>جنيه مصري<br>كل شهر</span></div><hr><div class="benefit">اختيار دفع مرن</div><div class="benefit">تأكيد سريع على واتساب</div><div class="benefit">مساعدة في بداية الشراكة</div></aside></div>
+  <main class="partner-page" dir="rtl">
+    <header class="partner-topbar">
+      <a class="partner-brand" href="/" aria-label="العودة إلى LOVARA">
+        <span class="partner-brand-mark" aria-hidden="true">L</span>
+        <span><strong>LOVARA</strong><small>نبدأها مع بعض</small></span>
+      </a>
+      <div class="partner-topbar-note"><span class="partner-shield" aria-hidden="true">✓</span><span>دفع آمن وخطوات واضحة</span></div>
+    </header>
+
+    <div class="partner-content">
+      <section class="partner-intro">
+        <div class="partner-eyebrow"><span class="partner-eyebrow-dot"></span> برنامج الشراكة</div>
+        <h1>خلّي متجرك يكبر <em>معانا.</em></h1>
+        <p>خطوة بسيطة تفصلك عن بداية جديدة لمتجرك. اختار قرارك، وإحنا نكمّل معاك الباقي.</p>
+      </section>
+
+      <div class="partner-layout">
+        <section class="partner-journey-card" aria-live="polite">
+          <div class="partner-steps" aria-label="مراحل الشراكة">
+            <div class="partner-step is-active" data-step-indicator="decision"><span class="partner-step-number">١</span><span>قرار الشراكة</span></div>
+            <span class="partner-step-line"></span>
+            <div class="partner-step" data-step-indicator="payment"><span class="partner-step-number">٢</span><span>طريقة الدفع</span></div>
+            <span class="partner-step-line"></span>
+            <div class="partner-step partner-step-muted"><span class="partner-step-number">٣</span><span>التأكيد</span></div>
+          </div>
+
+          <section class="partner-journey-body partner-decision-view" data-step-view="decision">
+            <div class="partner-kicker">الخطوة الأولى</div>
+            <h2>حابب تعمل شراكة معانا؟</h2>
+            <p class="partner-lead">اختار ردك عشان نوجّهك للخطوة المناسبة من غير تعقيد.</p>
+            <div class="partner-decision-actions">
+              <button class="partner-primary-button" id="partnerContinue" type="button"><span>موافق، نبدأ</span><span aria-hidden="true">←</span></button>
+              <button class="partner-secondary-button" id="partnerDeclineFlow" type="button"><span>لا، مش دلوقتي</span><span aria-hidden="true">×</span></button>
+            </div>
+            <div class="partner-micro-trust"><span aria-hidden="true">✓</span> مفيش التزام قبل ما تختار طريقة الدفع</div>
+          </section>
+
+          <section class="partner-journey-body partner-rejected-view" data-step-view="rejected" hidden>
+            <div class="partner-status-icon" aria-hidden="true">×</div>
+            <div class="partner-kicker">تم تسجيل ردك</div>
+            <h2>ولا يهمك، نتمنى نشوفك قريب.</h2>
+            <p class="partner-lead">لو غيرت رأيك في أي وقت، هنكون مبسوطين نبدأ معاك.</p>
+            <button class="partner-outline-button" id="partnerRestart" type="button"><span aria-hidden="true">↻</span> ابدأ من جديد</button>
+          </section>
+
+          <section class="partner-journey-body partner-payment-view" data-step-view="payment" hidden>
+            <div class="partner-payment-heading">
+              <div><div class="partner-kicker">الخطوة الثانية</div><h2>اختار طريقة الدفع</h2></div>
+              <div class="partner-price-badge"><strong>55</strong><span>جنيه<br>شهرياً</span></div>
+            </div>
+            <p class="partner-lead">الاشتراك الشهري ثابت، واختار القناة اللي تناسبك.</p>
+
+            <div class="partner-application-fields">
+              <label class="partner-field-label" for="partnerStoreName">اسم المتجر <span>*</span></label>
+              <div class="partner-input-wrap"><span aria-hidden="true">▣</span><input id="partnerStoreName" name="storeName" type="text" maxlength="80" placeholder="مثال: متجر لمسة" autocomplete="organization" required></div>
+              <label class="partner-field-label" for="partnerSupportPhone">رقم دعم العملاء مع مفتاح الدولة <span>*</span></label>
+              <div class="partner-input-wrap"><span aria-hidden="true">☎</span><input id="partnerSupportPhone" name="supportPhone" type="tel" maxlength="20" placeholder="+201234567890" autocomplete="tel" required></div>
+              <label class="partner-field-label" for="partnerStoreImage">صورة المتجر <span>*</span></label>
+              <input class="partner-file-input" id="partnerStoreImage" name="storeImage" type="file" accept="image/*" required>
+              <img id="partnerStoreImagePreview" class="partner-image-preview" alt="معاينة صورة المتجر" hidden>
+              <p class="partner-field-hint">نحتاج البيانات دي لإرسال طلب الشراكة للإدارة للمراجعة.</p>
+            </div>
+
+            <div class="partner-payment-options" role="radiogroup" aria-label="طرق الدفع">
+              <button class="partner-payment-option is-selected" id="partnerVisaMethod" type="button" role="radio" aria-checked="true">
+                <span class="partner-payment-icon" aria-hidden="true">▤</span>
+                <span class="partner-payment-option-copy"><strong>فيزا / بطاقة بنكية</strong><small>بوابة دفع آمنة ومباشرة</small></span>
+                <span class="partner-radio-mark" aria-hidden="true">✓</span>
+              </button>
+              <button class="partner-payment-option" id="partnerVodafoneMethod" type="button" role="radio" aria-checked="false">
+                <span class="partner-payment-icon partner-wallet-icon" aria-hidden="true">▣</span>
+                <span class="partner-payment-option-copy"><strong>فودافون كاش</strong><small>حوّل وابعت سكرين على واتساب</small></span>
+                <span class="partner-radio-mark" aria-hidden="true"></span>
+              </button>
+            </div>
+
+            <div class="partner-notice" id="partnerNotice" role="alert" hidden></div>
+
+            <div class="partner-payment-panel" id="partnerVisaPanel">
+              <div class="partner-panel-copy"><strong>الدفع بالفيزا</strong><span>هتنتقل لبوابة دفع آمنة لإتمام اشتراك 55 جنيه شهرياً.</span></div>
+              <button class="partner-primary-button partner-full-button" id="partnerStartVisa" type="button"><span>افتح بوابة الدفع</span><span aria-hidden="true">←</span></button>
+              <p class="partner-loading" id="partnerLoading" hidden>جارٍ تجهيز بوابة الدفع الآمنة...</p>
+              <div class="partner-xpay-box" id="partnerXpayBox" hidden>
+                <div id="xpay-payment-element"></div>
+                <p class="partner-secure-note">بيانات بطاقتك لا تمر على LOVARA.</p>
+                <button class="partner-primary-button partner-full-button" id="partnerConfirmVisa" type="button" disabled>إتمام الدفع بأمان</button>
+              </div>
+              <div class="partner-secure-note"><span aria-hidden="true">✓</span> بيانات بطاقتك لا تمر على LOVARA</div>
+            </div>
+
+            <div class="partner-payment-panel partner-vodafone-panel" id="partnerVodafonePanel" hidden>
+              <div class="partner-vodafone-title"><span class="partner-vodafone-logo">V</span><span><strong>حوّل من فودافون كاش</strong><small>وبعدها ابعتلنا إثبات التحويل</small></span></div>
+              <div class="partner-transfer-number"><span>رقم التحويل</span><strong dir="ltr">01066730225</strong><button id="partnerCopyNumber" type="button" aria-label="نسخ رقم فودافون كاش">نسخ</button></div>
+              <ol class="partner-transfer-steps"><li>حوّل <strong>55 جنيه</strong> على الرقم الموضح.</li><li>احتفظ بسكرين من التحويل.</li><li>اكتب بيانات متجرك واضغط زر واتساب.</li></ol>
+              <a class="partner-whatsapp-button" id="partnerWhatsappLink" href="#" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">◉</span> ابعت سكرين على واتساب <span aria-hidden="true">↗</span></a>
+              <div class="partner-secure-note"><span aria-hidden="true">☎</span> الرسالة هتتجهز تلقائياً باسم متجرك</div>
+            </div>
+            <button class="partner-back-link" id="partnerBackToDecision" type="button"><span aria-hidden="true">→</span> رجوع لقرار الشراكة</button>
+          </section>
+        </section>
+
+        <aside class="partner-side-card">
+          <span class="partner-side-accent"></span>
+          <div class="partner-side-icon" aria-hidden="true">✦</div>
+          <span class="partner-side-label">ملخص الاشتراك</span>
+          <h3>كل اللي تحتاجه<br><em>في خطوة.</em></h3>
+          <div class="partner-side-price"><strong>55</strong><span>جنيه مصري<br>كل شهر</span></div>
+          <div class="partner-side-divider"></div>
+          <div class="partner-side-benefit">اختيار دفع مرن</div>
+          <div class="partner-side-benefit">تأكيد سريع على واتساب</div>
+          <div class="partner-side-benefit">مساعدة في بداية الشراكة</div>
+          <p class="partner-side-footer">مش متأكد؟ ابدأ بسؤال الشراكة، ومفيش أي دفع قبل موافقتك.</p>
+        </aside>
+      </div>
+    </div>
+    <footer class="partner-footer"><span>© 2026 LOVARA</span><span>مصمم للمتاجر اللي عايزة تكبر</span></footer>
   </main>
-  <script src="/js/partnership.js"></script>
+  <script src="/js/partnership.js?v=partnerpay-ui-1"></script>
 </body>
 </html>

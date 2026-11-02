@@ -89,7 +89,7 @@
     const name = String(storeName || '').trim();
     const phone = normalizePhone(supportPhone);
     if (name.length < 2 || name.length > 80) throw new Error(text('اسم المتجر مطلوب (من حرفين إلى 80 حرفًا).', 'Store name must be 2–80 characters.'));
-    if (!/^\+?[0-9]{8,16}$/.test(phone)) throw new Error(text('أدخلي رقم دعم صحيحًا مع مفتاح الدولة.', 'Enter a valid support number with country code.'));
+    if (!/^\+[1-9][0-9]{7,14}$/.test(phone)) throw new Error(text('أدخلي رقم دعم دوليًا صحيحًا يبدأ بعلامة + ومفتاح الدولة.', 'Enter a valid international support number with + and a country code.'));
 
     const requestRef = db().collection('storeRequests').doc(user.uid);
     const old = await requestRef.get();
@@ -102,7 +102,6 @@
         supportPhone: phone,
         imageUrl: '',
         status: 'draft',
-        approvalMode: 'manual', paymentStatus: 'manual_review',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
@@ -119,7 +118,6 @@
         supportPhone: phone,
         imageUrl: '',
         status: 'draft',
-        approvalMode: 'manual', paymentStatus: 'manual_review',
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await requestRef.update(requestData);
@@ -160,7 +158,7 @@
     $('partnerAccept')?.addEventListener('click', async () => {
       try {
         await answerPrompt('accepted');
-        window.location.href = '/partnership.html';
+        window.location.href = '/partnership.html?fromSignup=1';
       } catch (error) { notify(error.message, true); }
     });
 
@@ -172,10 +170,19 @@
 
     const imageInput = $('partnerStoreImage');
     const preview = $('partnerStoreImagePreview');
+    let previewUrl = '';
     imageInput?.addEventListener('change', () => {
       const file = imageInput.files?.[0];
-      if (!file || !preview) return;
-      preview.src = URL.createObjectURL(file);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = '';
+      if (!preview) return;
+      if (!file) {
+        preview.hidden = true;
+        preview.removeAttribute('src');
+        return;
+      }
+      previewUrl = URL.createObjectURL(file);
+      preview.src = previewUrl;
       preview.hidden = false;
     });
 
