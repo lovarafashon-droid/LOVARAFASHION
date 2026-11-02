@@ -22,6 +22,23 @@
     .section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.section-head h2{margin:0}.order-card{border:1px solid var(--line);border-radius:14px;padding:18px;background:#fff}.order-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:12px}.order-top h3{margin:0 0 5px;font-size:17px}.order-meta,.order-customer,.order-payment{font-size:13px;line-height:1.8;color:#57534e}.order-items{margin:10px 0;padding:0 20px;line-height:1.9}.order-bottom{display:flex;justify-content:space-between;align-items:end;gap:14px;flex-wrap:wrap}.order-controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap}.order-controls label{font-size:12px;color:var(--muted)}.order-controls .btn{padding:10px 14px}.status-pill{display:inline-block;border-radius:20px;padding:4px 10px;background:#f4efe7;color:#765c34;font-size:12px}.order-phone{direction:ltr;display:inline-block;color:#287443;text-decoration:none}
     @media(max-width:650px){.grid,.page-choices{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}.product{grid-template-columns:62px 1fr}.product img{width:62px;height:68px}.product-actions{grid-column:1/-1;justify-content:flex-end}.panel{padding:17px}.head h1{font-size:30px}.order-card{padding:14px}.order-bottom{align-items:stretch}}
   </style>
+  <style>
+    .order-tabs{display:flex;gap:8px;overflow-x:auto;padding:0 0 8px;margin:0 0 16px;scrollbar-width:thin}
+    .order-tab{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:10px 14px;background:#fff;color:var(--ink);font:600 13px inherit;cursor:pointer;white-space:nowrap}
+    .order-tab[aria-selected="true"]{background:#2c2925;border-color:#2c2925;color:#fff}
+    .order-tab-count{min-width:22px;height:22px;padding:0 6px;display:inline-flex;justify-content:center;align-items:center;border-radius:20px;background:#f2eee8;color:#59452d;font-size:11px}
+    .order-tab[aria-selected="true"] .order-tab-count{background:#ffffff2b;color:#fff}
+    .order-cancel-reason{margin:12px 0 0;padding:12px 14px;border-radius:10px;background:#fff2f1;color:#783732;font-size:13px;line-height:1.7}
+    .seller-modal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:18px}
+    .seller-modal-backdrop{position:absolute;inset:0;background:#17141199}
+    .seller-modal-card{position:relative;width:min(100%,480px);padding:24px;border-radius:16px;background:#fff;box-shadow:0 18px 55px #0003}
+    .seller-modal-card h2{margin:0 0 8px;font-size:22px}.seller-modal-card p{color:var(--muted);line-height:1.7}
+    .seller-modal-card label{display:block;margin:16px 0 7px;font-size:13px;font-weight:600}
+    .seller-modal-card textarea{width:100%;min-height:110px;resize:vertical;border:1px solid var(--line);border-radius:9px;padding:12px;font:inherit}
+    .seller-modal-actions{display:flex;justify-content:flex-start;gap:9px;margin-top:16px;flex-wrap:wrap}
+    #orderActionMessage{min-height:22px;margin:0 0 12px;font-size:13px}
+    @media(max-width:650px){.order-tab{padding:9px 12px}.seller-modal-card{padding:19px}}
+  </style>
 </head>
 <body>
   <header class="top"><a class="brand" href="/">LOVARA</a><a href="/profile">حسابي</a></header>
@@ -38,10 +55,40 @@
         <div class="panel"><h2 id="productFormTitle">إضافة منتج</h2><form id="productForm" class="grid"><div class="field"><label for="productName">اسم المنتج</label><input id="productName" required maxlength="120"></div><div class="field"><label for="productCategory">القسم / النوع</label><input id="productCategory" required maxlength="60" placeholder="مثال: موتوسيكلات"></div><div class="field"><label for="productPrice">السعر الأصلي (جنيه)</label><input id="productPrice" type="number" min="0" step="0.01" required></div><div class="field"><label for="productImage">صورة المنتج <small class="muted">(اختيارية عند التعديل)</small></label><input id="productImage" type="file" accept="image/*"><img id="productPreview" class="preview hidden" alt="معاينة صورة المنتج"></div><div class="field"><label for="productSalePrice">سعر العرض (اختياري)</label><input id="productSalePrice" type="number" min="0" step="0.01" placeholder="اتركه فارغًا بلا عرض"></div><div class="field"><label for="productSaleEnds">ينتهي العرض في</label><input id="productSaleEnds" type="datetime-local"></div><div class="field full"><label for="productDescription">وصف المنتج</label><textarea id="productDescription" maxlength="1000"></textarea></div><div class="field full action"><button class="btn" id="saveProduct" type="submit">إضافة المنتج</button><button class="btn ghost hidden" id="cancelProductEdit" type="button">إلغاء التعديل</button><span id="productMessage" class="muted"></span></div></form></div>
         <div class="panel"><h2>منتجات متجري</h2><div id="sellerProducts" class="product-list"><p class="muted">جارٍ التحميل…</p></div></div>
       </section>
-      <section id="sellerOrdersView" class="hidden"><div class="panel"><div class="section-head"><div><h2>طلبات متجري</h2><p class="muted">تظهر الطلبات تلقائيًا عند إتمام Checkout لمنتج من متجرك.</p></div><button id="backFromOrders" class="btn ghost" type="button"><i class="fas fa-arrow-right"></i> اختيار صفحة أخرى</button></div></div><div id="sellerOrders" class="order-list"><div class="panel muted">جارٍ تحميل الطلبات…</div></div></section>
+      <section id="sellerOrdersView" class="hidden">
+        <div class="panel">
+          <div class="section-head"><div><h2>طلبات متجري</h2><p class="muted">كل طلب ينتقل إلى قائمته تلقائيًا عند تحديث حالته.</p></div><button id="backFromOrders" class="btn ghost" type="button"><i class="fas fa-arrow-right"></i> اختيار صفحة أخرى</button></div>
+        </div>
+        <div class="panel">
+          <nav id="sellerOrderTabs" class="order-tabs" role="tablist" aria-label="تصنيف طلبات المتجر">
+            <button class="order-tab" type="button" role="tab" aria-selected="true" data-seller-filter="new">جديدة <span class="order-tab-count" data-seller-count="new">0</span></button>
+            <button class="order-tab" type="button" role="tab" aria-selected="false" data-seller-filter="confirmed">مؤكدة <span class="order-tab-count" data-seller-count="confirmed">0</span></button>
+            <button class="order-tab" type="button" role="tab" aria-selected="false" data-seller-filter="preparing">قيد التجهيز <span class="order-tab-count" data-seller-count="preparing">0</span></button>
+            <button class="order-tab" type="button" role="tab" aria-selected="false" data-seller-filter="shipped">في الطريق <span class="order-tab-count" data-seller-count="shipped">0</span></button>
+            <button class="order-tab" type="button" role="tab" aria-selected="false" data-seller-filter="delivered">تم التسليم <span class="order-tab-count" data-seller-count="delivered">0</span></button>
+            <button class="order-tab" type="button" role="tab" aria-selected="false" data-seller-filter="cancelled">ملغاة <span class="order-tab-count" data-seller-count="cancelled">0</span></button>
+            <button class="order-tab" type="button" role="tab" aria-selected="false" data-seller-filter="all">كل الطلبات <span class="order-tab-count" data-seller-count="all">0</span></button>
+          </nav>
+          <p id="orderActionMessage" aria-live="polite"></p>
+          <div id="sellerOrders" class="order-list"><div class="muted">جارٍ تحميل الطلبات…</div></div>
+        </div>
+      </section>
+      <div id="cancelOrderModal" class="seller-modal hidden" role="dialog" aria-modal="true" aria-labelledby="cancelOrderTitle">
+        <div class="seller-modal-backdrop" data-cancel-dismiss></div>
+        <div class="seller-modal-card">
+          <h2 id="cancelOrderTitle">إلغاء طلب</h2>
+          <p id="cancelOrderDescription">اكتب سبب الإلغاء ليظهر في سجل الطلب.</p>
+          <form id="cancelOrderForm">
+            <label for="cancelOrderReason">سبب الإلغاء</label>
+            <textarea id="cancelOrderReason" minlength="5" maxlength="300" required placeholder="مثال: المنتج غير متوفر حاليًا"></textarea>
+            <div id="cancelOrderError" class="error" role="alert"></div>
+            <div class="seller-modal-actions"><button id="confirmSellerCancellation" class="btn danger" type="submit">تأكيد الإلغاء</button><button id="dismissSellerCancellation" class="btn ghost" type="button">رجوع</button></div>
+          </form>
+        </div>
+      </div>
     </section>
   </main>
   <script src="/js/partner-onboarding.js?v=manual-redirect-2"></script>
-  <script src="/js/seller.js?v=partner-management-2"></script>
+  <script src="/js/seller.js?v=partner-management-3"></script>
 </body>
 </html>

@@ -62,16 +62,17 @@ module.exports = async (req, res) => {
         }
       }
 
+      const cancellationReason = 'ألغى العميل الطلب.';
       transaction.update(orderRef, {
         status: 'cancelled',
-        cancellationReason: 'Cancelled by customer',
+        cancellationReason,
         cancelledBy: 'customer',
         cancelledAt: timestamp,
         updatedAt: timestamp
       });
       childRefs.forEach((ref, index) => {
         if (childSnapshots[index].exists) {
-          transaction.update(ref, { sellerStatus: 'cancelled', updatedAt: timestamp });
+          transaction.update(ref, { sellerStatus: 'cancelled', cancellationReason, cancelledBy: 'customer', cancelledAt: timestamp, updatedAt: timestamp });
         }
       });
     });

@@ -9,7 +9,10 @@
   let editingProduct = null;
   let ordersUnsubscribe = null;
   let sellerOrderDocs = [];
+  let sellerOrderFilter = 'new';
+  let pendingCancelOrderId = '';
   const sellerStatuses = { new: 'جديد', confirmed: 'تم التأكيد', preparing: 'قيد التجهيز', shipped: 'تم الشحن', delivered: 'تم التسليم', cancelled: 'ملغي' };
+  const sellerTransitions = { new: ['confirmed'], confirmed: ['preparing', 'shipped'], preparing: ['shipped'], shipped: ['delivered'], delivered: [], cancelled: [] };
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const stampDate = value => value?.toDate ? value.toDate() : new Date(value || 0);
   function show(id) { $(id)?.classList.remove('hidden'); }
@@ -41,17 +44,89 @@
     return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(date) : 'تاريخ غير متاح';
   }
 
+  function statusForSellerOrder(data) {
+    const status = String(data?.sellerStatus || '').toLowerCase();
+    if (sellerStatuses[status]) return status;
+    return String(data?.status || '').toLowerCase() === 'cancelled' ? 'cancelled' : 'new';
+  }
+
+  function isPaidPayment(payment = {}) {
+    return payment.paid === true || ['paid', 'succeeded', 'success', 'completed', 'approved'].includes(String(payment.status || '').toLowerCase());
+  }
+
+  function canSellerCancel(data, status) {
+    return ['new', 'confirmed', 'preparing'].includes(status)
+      && String(data?.payment?.method || '').toLowerCase() === 'cod'
+      && !isPaidPayment(data?.payment || {});
+  }
+
+  function updateOrderTabCounts() {
+    const counts = { new: 0, confirmed: 0, preparing: 0, shipped: 0, delivered: 0, cancelled: 0, all: sellerOrderDocs.length };
+    sellerOrderDocs.forEach(order => { counts[statusForSellerOrder(order.data)] += 1; });
+    Object.entries(counts).forEach(([status, count]) => {
+      const badge = document.querySelector(`[data-seller-count="${status}"]`);
+      if (badge) badge.textContent = String(count);
+    });
+    const newCount = $('sellerOrderCount');
+    if (newCount) newCount.textContent = String(counts.new);
+  }
+
+  function setSellerOrderFilter(status) {
+    sellerOrderFilter = status;
+    $('sellerOrderTabs')?.querySelectorAll('[data-seller-filter]').forEach(button => {
+      button.setAttribute('aria-selected', button.dataset.sellerFilter === status ? 'true' : 'false');
+    });
+    renderSellerOrders();
+  }
+
+  function setOrderActionMessage(text, error = false) {
+    const message = $('orderActionMessage');
+    if (!message) return;
+    message.textContent = text;
+    message.className = error ? 'error' : 'ok';
+  }
+
+  async function sendSellerOrderUpdate(orderId, status, reason = '') {
+    if (!activeUser) throw new Error('سجّل الدخول مرة أخرى قبل تحديث الطلب.');
+    const token = await activeUser.getIdToken();
+    const response = await fetch('/api/update-partner-order-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ orderId, status, ...(reason ? { reason } : {}) })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'تعذر تحديث الطلب. حاول مرة أخرى.');
+    return result;
+  }
+
   function renderSellerOrders() {
     const list = $('sellerOrders');
     if (!list) return;
+    updateOrderTabCounts();
     if (!sellerOrderDocs.length) {
-      list.innerHTML = '<div class="panel muted">لا توجد طلبات لمتجرك حتى الآن. ستظهر الطلبات الجديدة هنا تلقائيًا.</div>';
+      list.innerHTML = '<div class="muted">لا توجد طلبات لمتجرك حتى الآن.</div>';
       return;
     }
-    list.innerHTML = sellerOrderDocs.map(({ id, data }) => {
+    const visibleOrders = sellerOrderFilter === 'all'
+      ? sellerOrderDocs
+      : sellerOrderDocs.filter(order => statusForSellerOrder(order.data) === sellerOrderFilter);
+    if (!visibleOrders.length) {
+      const emptyMessages = {
+        new: 'لا توجد طلبات جديدة بانتظار التأكيد.',
+        confirmed: 'لا توجد طلبات مؤكدة حاليًا.',
+        preparing: 'لا توجد طلبات قيد التجهيز.',
+        shipped: 'لا توجد طلبات في الطريق.',
+        delivered: 'لا توجد طلبات تم تسليمها بعد.',
+        cancelled: 'لا توجد طلبات ملغاة.',
+        all: 'لا توجد طلبات لمتجرك حتى الآن.'
+      };
+      list.innerHTML = `<div class="muted">${emptyMessages[sellerOrderFilter] || emptyMessages.all}</div>`;
+      return;
+    }
+    list.innerHTML = visibleOrders.map(({ id, data }) => {
       const customer = data.customer || {};
       const items = Array.isArray(data.items) ? data.items : [];
-      const status = sellerStatuses[data.sellerStatus] ? data.sellerStatus : 'new';
+      const status = statusForSellerOrder(data);
       const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عميل';
       const phone = String(customer.phone || '');
       const phoneHref = phone.replace(/[^0-9+]/g, '');
@@ -64,36 +139,106 @@
         const options = [item.size && item.size !== '-' ? `المقاس: ${Array.isArray(item.size) ? item.size.join('، ') : item.size}` : '', item.color && item.color !== '-' ? `اللون: ${Array.isArray(item.color) ? item.color.join('، ') : item.color}` : ''].filter(Boolean).join(' · ');
         return `<li><strong>${escapeHtml(item.name || 'منتج')}</strong> × ${quantity} — EGP ${(Number(item.price || 0) * quantity).toFixed(2)}${options ? `<div class="muted">${escapeHtml(options)}</div>` : ''}</li>`;
       }).join('');
-      const cancelled = status === 'cancelled';
-      const options = Object.entries(sellerStatuses).filter(([value]) => value !== 'cancelled' || cancelled).map(([value, label]) => `<option value="${value}" ${value === status ? 'selected' : ''}>${label}</option>`).join('');
-      return `<article class="order-card" data-order-card="${escapeHtml(id)}"><div class="order-top"><div><h3>طلب #${escapeHtml(data.orderNumber || id)}</h3><div class="order-meta">${formattedDate(data.date || data.createdAt)} · <span class="status-pill">${sellerStatuses[status]}</span></div></div><strong>${escapeHtml(data.totals?.total || data.totals?.subtotal || 'المبلغ غير متاح')}</strong></div><div class="order-customer"><strong>${escapeHtml(fullName)}</strong><br>${phone ? `<a class="order-phone" href="tel:${escapeHtml(phoneHref)}">${escapeHtml(phone)}</a>` : 'لا يوجد رقم هاتف'}<br>${escapeHtml(address || 'لا يوجد عنوان')} ${customer.notes ? `<br><span class="muted">ملاحظات: ${escapeHtml(customer.notes)}</span>` : ''}</div><ul class="order-items">${itemHtml}</ul><div class="order-bottom"><div class="order-payment">طريقة الدفع: ${paymentLabel} · ${paymentState}</div><div class="order-controls"><label>حالة الطلب<select class="order-status-select" ${cancelled ? 'disabled' : ''}>${options}</select></label><button class="btn" type="button" data-update-order="${escapeHtml(id)}" ${cancelled ? 'disabled' : ''}>${cancelled ? 'تم الإلغاء' : 'حفظ الحالة'}</button></div></div></article>`;
+      const nextOptions = (sellerTransitions[status] || []).map(value => `<option value="${value}">${sellerStatuses[value]}</option>`).join('');
+      const canCancel = canSellerCancel(data, status);
+      const controls = nextOptions
+        ? `<div class="order-controls"><label>نقل الطلب إلى<select class="order-status-select"><option value="">اختاري الحالة التالية</option>${nextOptions}</select></label><button class="btn" type="button" data-update-order="${escapeHtml(id)}" disabled>حفظ الحالة</button>${canCancel ? `<button class="btn danger" type="button" data-cancel-order="${escapeHtml(id)}">إلغاء الطلب</button>` : ''}</div>`
+        : `<div class="order-controls">${canCancel ? `<button class="btn danger" type="button" data-cancel-order="${escapeHtml(id)}">إلغاء الطلب</button>` : '<span class="muted">لا توجد إجراءات أخرى لهذا الطلب.</span>'}</div>`;
+      const reason = String(data.cancellationReason || '').trim();
+      const cancellationBlock = status === 'cancelled'
+        ? `<div class="order-cancel-reason"><strong>سبب الإلغاء:</strong> ${escapeHtml(reason || (data.cancelledBy === 'customer' ? 'ألغى العميل الطلب.' : 'لم يُسجل سبب الإلغاء.'))}</div>`
+        : '';
+      const paymentCancelNote = status !== 'cancelled' && ['new', 'confirmed', 'preparing'].includes(status)
+        && String(payment.method || '').toLowerCase() !== 'cod'
+        ? '<span class="muted">الطلب الإلكتروني لا يُلغى من لوحة المتجر.</span>'
+        : '';
+      return `<article class="order-card" data-order-card="${escapeHtml(id)}"><div class="order-top"><div><h3>طلب #${escapeHtml(data.orderNumber || id)}</h3><div class="order-meta">${formattedDate(data.date || data.createdAt)} · <span class="status-pill">${sellerStatuses[status]}</span>${data.cancelledBy ? ` · ${data.cancelledBy === 'customer' ? 'إلغاء العميل' : 'إلغاء المتجر'}` : ''}</div></div><strong>${escapeHtml(data.totals?.total || data.totals?.subtotal || 'المبلغ غير متاح')}</strong></div><div class="order-customer"><strong>${escapeHtml(fullName)}</strong><br>${phone ? `<a class="order-phone" href="tel:${escapeHtml(phoneHref)}">${escapeHtml(phone)}</a>` : 'لا يوجد رقم هاتف'}<br>${escapeHtml(address || 'لا يوجد عنوان')} ${customer.notes ? `<br><span class="muted">ملاحظات: ${escapeHtml(customer.notes)}</span>` : ''}</div><ul class="order-items">${itemHtml}</ul><div class="order-bottom"><div class="order-payment">طريقة الدفع: ${paymentLabel} · ${paymentState}</div>${controls}${paymentCancelNote}</div>${cancellationBlock}</article>`;
     }).join('');
+  }
 
-    list.querySelectorAll('[data-update-order]').forEach(button => button.addEventListener('click', async () => {
-      if (!activeShop) return;
+  function openSellerCancelModal(orderId) {
+    const order = sellerOrderDocs.find(item => item.id === orderId);
+    if (!order || !canSellerCancel(order.data, statusForSellerOrder(order.data))) return;
+    pendingCancelOrderId = orderId;
+    $('cancelOrderDescription').textContent = `اكتب سبب إلغاء الطلب رقم ${order.data.orderNumber || orderId}. سيظهر السبب في سجل الطلب.`;
+    $('cancelOrderReason').value = '';
+    $('cancelOrderError').textContent = '';
+    show('cancelOrderModal');
+    $('cancelOrderReason').focus();
+  }
+
+  function closeSellerCancelModal() {
+    hide('cancelOrderModal');
+    $('cancelOrderForm')?.reset();
+    $('cancelOrderError').textContent = '';
+    pendingCancelOrderId = '';
+  }
+
+  function bindSellerOrderActions() {
+    const list = $('sellerOrders');
+    list?.addEventListener('change', event => {
+      if (!event.target.matches('.order-status-select')) return;
+      const button = event.target.closest('[data-order-card]')?.querySelector('[data-update-order]');
+      if (button) button.disabled = !event.target.value;
+    });
+    list?.addEventListener('click', async event => {
+      const cancelButton = event.target.closest('[data-cancel-order]');
+      if (cancelButton) {
+        openSellerCancelModal(cancelButton.dataset.cancelOrder);
+        return;
+      }
+      const button = event.target.closest('[data-update-order]');
+      if (!button) return;
       const card = button.closest('[data-order-card]');
       const nextStatus = card?.querySelector('.order-status-select')?.value;
-      if (!sellerStatuses[nextStatus] || sellerOrderDocs.find(order => order.id === button.dataset.updateOrder)?.data?.sellerStatus === 'cancelled') return;
+      if (!nextStatus || !sellerTransitions[statusForSellerOrder(sellerOrderDocs.find(order => order.id === button.dataset.updateOrder)?.data || {})]?.includes(nextStatus)) return;
       button.disabled = true;
+      setOrderActionMessage('جارٍ تحديث حالة الطلب…');
       try {
-        await db.collection('shops').doc(activeShop.id).collection('orders').doc(button.dataset.updateOrder).update({
-          sellerStatus: nextStatus,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        await sendSellerOrderUpdate(button.dataset.updateOrder, nextStatus);
+        setOrderActionMessage(`تم نقل الطلب إلى قائمة «${sellerStatuses[nextStatus]}».`);
       } catch (error) {
-        console.error('[LOVARA seller order status]', error);
-        alert(error.code === 'permission-denied' ? 'ليس لديك صلاحية لتعديل حالة هذا الطلب.' : 'تعذر تحديث حالة الطلب. حاول مرة أخرى.');
+        setOrderActionMessage(error.message || 'تعذر تحديث حالة الطلب. حاول مرة أخرى.', true);
+        if (button.isConnected) button.disabled = false;
+      }
+    });
+    $('sellerOrderTabs')?.addEventListener('click', event => {
+      const button = event.target.closest('[data-seller-filter]');
+      if (button) setSellerOrderFilter(button.dataset.sellerFilter);
+    });
+    $('cancelOrderForm')?.addEventListener('submit', async event => {
+      event.preventDefault();
+      const reason = $('cancelOrderReason').value.trim();
+      if (reason.length < 5) {
+        $('cancelOrderError').textContent = 'اكتب سببًا واضحًا لا يقل عن 5 أحرف.';
+        return;
+      }
+      const button = $('confirmSellerCancellation');
+      button.disabled = true;
+      $('cancelOrderError').textContent = '';
+      try {
+        await sendSellerOrderUpdate(pendingCancelOrderId, 'cancelled', reason);
+        closeSellerCancelModal();
+        setOrderActionMessage('تم إلغاء الطلب ونقله إلى قائمة الطلبات الملغاة.');
+        setSellerOrderFilter('cancelled');
+      } catch (error) {
+        $('cancelOrderError').textContent = error.message || 'تعذر إلغاء الطلب. حاول مرة أخرى.';
       } finally { button.disabled = false; }
-    }));
+    });
+    $('dismissSellerCancellation')?.addEventListener('click', closeSellerCancelModal);
+    $('cancelOrderModal')?.addEventListener('click', event => {
+      if (event.target.matches('[data-cancel-dismiss]')) closeSellerCancelModal();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && !$('cancelOrderModal')?.classList.contains('hidden')) closeSellerCancelModal();
+    });
   }
 
   function watchSellerOrders() {
     if (!activeShop || ordersUnsubscribe) return;
     ordersUnsubscribe = db.collection('shops').doc(activeShop.id).collection('orders').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
       sellerOrderDocs = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() || {} }));
-      const newCount = sellerOrderDocs.filter(order => !order.data.sellerStatus || order.data.sellerStatus === 'new').length;
-      const badge = $('sellerOrderCount');
-      if (badge) badge.textContent = String(newCount);
+      updateOrderTabCounts();
       if (!$('sellerOrdersView')?.classList.contains('hidden')) renderSellerOrders();
     }, error => {
       console.error('[LOVARA seller orders]', error);
@@ -336,11 +481,14 @@
   $('cancelProductEdit')?.addEventListener('click', cancelProductEdit);
   preview('applicationImage', 'applicationPreview');
   preview('productImage', 'productPreview');
+  bindSellerOrderActions();
   auth.onAuthStateChanged(user => {
     if (!user) {
       if (ordersUnsubscribe) ordersUnsubscribe();
       ordersUnsubscribe = null;
       sellerOrderDocs = [];
+      sellerOrderFilter = 'new';
+      closeSellerCancelModal();
       activeUser = null;
       activeShop = null;
       hide('loadingPanel');

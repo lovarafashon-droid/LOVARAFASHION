@@ -208,6 +208,8 @@ module.exports = async (req, res) => {
         if (!record) {
           if (snapshot.exists) transaction.set(childRefs[index], {
             sellerStatus: 'cancelled', status: 'cancelled', removedByCustomer: true,
+            cancellationReason: 'أزال العميل منتجات هذا المتجر أثناء تعديل الطلب.',
+            cancelledBy: 'customer', cancelledAt: timestamp,
             items: [], totals: { subtotal: 'EGP 0.00', shipping: 'EGP 0.00', discount: 'EGP 0.00', total: 'EGP 0.00' },
             updatedAt: timestamp
           }, { merge: true });

@@ -136,14 +136,18 @@ async function run() {
   verifiedUser = { uid: 'attacker', email: 'customer@example.test', email_verified: false };
   result = await call({ orderId: 'LOV-ABCDE', items: [{ itemIndex: 0, quantity: 1, colors: ['Black'] }, { itemIndex: 1, quantity: 1, colors: ['Red'] }] });
   assert.strictEqual(result.statusCode, 403, 'an unverified matching email cannot claim another account’s order');
-  data.set('orders/LOV-EMAIL', { orderNumber: 'LOV-EMAIL', userId: 'legacy-owner', status: 'pending', customer: { email: 'customer@example.test' }, payment: { method: 'cod' }, items: [] });
+  data.set('orders/LOV-EMAIL', { orderNumber: 'LOV-EMAIL', userId: 'legacy-owner', status: 'pending', customer: { email: 'customer@example.test' }, payment: { method: 'cod' }, items: [{ storeId: 'shop-a', productId: 'partner-item' }] });
   versions.set('orders/LOV-EMAIL', 1);
+  data.set('shops/shop-a/orders/LOV-EMAIL', { orderNumber: 'LOV-EMAIL', storeId: 'shop-a', sellerStatus: 'new' });
   result = await callCancel({ orderId: 'LOV-EMAIL' });
   assert.strictEqual(result.statusCode, 403, 'an unverified matching email cannot cancel a legacy order');
   verifiedUser = { uid: 'attacker', email: 'customer@example.test', email_verified: true };
   result = await callCancel({ orderId: 'LOV-EMAIL' });
   assert.strictEqual(result.statusCode, 200, 'a verified matching email may cancel a legacy email-owned order');
   assert.strictEqual(data.get('orders/LOV-EMAIL').status, 'cancelled', 'verified email cancellation is committed');
+  assert.strictEqual(data.get('shops/shop-a/orders/LOV-EMAIL').sellerStatus, 'cancelled', 'customer cancellation moves the partner order to its cancelled list');
+  assert.strictEqual(data.get('shops/shop-a/orders/LOV-EMAIL').cancellationReason, 'ألغى العميل الطلب.', 'the partner order records why the customer cancelled');
+  assert.strictEqual(data.get('shops/shop-a/orders/LOV-EMAIL').cancelledBy, 'customer', 'the partner order records who cancelled it');
   verifiedUser = { uid: 'customer-1', email: 'customer@example.test' };
 
   seedOrder('LOV-PART1');

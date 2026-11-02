@@ -140,19 +140,12 @@ service cloud.firestore {
       }
 
       // Partner checkout orders are created by trusted server endpoints/webhooks.
-      // A merchant can read only their own shop's orders and update the fulfilment status;
-      // customer details, items, payment and totals remain immutable to the merchant.
+      // Merchants can read only their own shop's orders. Status updates and cancellations
+      // must pass through the server API, which validates ownership and legal transitions.
       match /orders/{orderId} {
         allow get, list: if isAdmin() || ownsShop(shopId);
         allow create: if false;
-        allow update: if isAdmin()
-          || (ownsShop(shopId)
-            && resource.data.storeId == shopId
-            && request.resource.data.storeId == shopId
-            && resource.data.sellerStatus != 'cancelled'
-            && request.resource.data.sellerStatus in ['new', 'confirmed', 'preparing', 'shipped', 'delivered']
-            && request.resource.data.updatedAt == request.time
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sellerStatus', 'updatedAt']));
+        allow update: if isAdmin();
         allow delete: if isAdmin();
       }
     }
