@@ -89,7 +89,7 @@
     const name = String(storeName || '').trim();
     const phone = normalizePhone(supportPhone);
     if (name.length < 2 || name.length > 80) throw new Error(text('اسم المتجر مطلوب (من حرفين إلى 80 حرفًا).', 'Store name must be 2–80 characters.'));
-    if (!/^\+[1-9][0-9]{7,14}$/.test(phone)) throw new Error(text('أدخلي رقم دعم دوليًا صحيحًا يبدأ بعلامة + ومفتاح الدولة.', 'Enter a valid international support number with + and a country code.'));
+    if (!/^\+?[0-9]{8,16}$/.test(phone)) throw new Error(text('أدخلي رقم دعم صحيحًا مع مفتاح الدولة.', 'Enter a valid support number with country code.'));
 
     const requestRef = db().collection('storeRequests').doc(user.uid);
     const old = await requestRef.get();
@@ -102,6 +102,7 @@
         supportPhone: phone,
         imageUrl: '',
         status: 'draft',
+        approvalMode: 'manual', paymentStatus: 'manual_review',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
@@ -118,6 +119,7 @@
         supportPhone: phone,
         imageUrl: '',
         status: 'draft',
+        approvalMode: 'manual', paymentStatus: 'manual_review',
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await requestRef.update(requestData);
@@ -130,28 +132,8 @@
 
   async function answerPrompt(answer, user) {
     const activeUser = user || auth().currentUser;
-    if (!activeUser) throw new Error(text('سجّل الدخول أولًا.', 'Please sign in first.'));
-    const userRef = db().collection('users').doc(activeUser.uid);
-    const snapshot = await userRef.get();
-    if (snapshot.exists) await userRef.set({ partnerPromptAnswered: answer }, { merge: true });
-    else await userRef.set({ role: 'user', partnerPromptAnswered: answer }, { merge: true });
-  }
-
-  async function acceptAndContinue(destination = '/partnership.html?fromSignup=1') {
-    let navigated = false;
-    const navigate = () => {
-      if (navigated) return;
-      navigated = true;
-      window.location.assign(destination);
-    };
-    const timeout = window.setTimeout(navigate, 1000);
-    try {
-      await answerPrompt('accepted');
-    } catch (error) {
-      console.warn('[LOVARA partner] Could not save prompt answer:', error.message);
-    } finally {
-      window.clearTimeout(timeout);
-      navigate();
+    if (activeUser) {
+      await db().collection('users').doc(activeUser.uid).set({ partnerPromptAnswered: answer }, { merge: true });
     }
   }
 
@@ -175,9 +157,11 @@
       } catch (error) { notify(error.message, true); }
     });
 
-    $('partnerAccept')?.addEventListener('click', event => {
-      event.preventDefault();
-      void acceptAndContinue(event.currentTarget.href);
+    $('partnerAccept')?.addEventListener('click', async () => {
+      try {
+        await answerPrompt('accepted');
+        window.location.href = '/partnership.html';
+      } catch (error) { notify(error.message, true); }
     });
 
     $('partnerOfferClose')?.addEventListener('click', () => hideModal('partnerOfferModal'));
@@ -188,19 +172,10 @@
 
     const imageInput = $('partnerStoreImage');
     const preview = $('partnerStoreImagePreview');
-    let previewUrl = '';
     imageInput?.addEventListener('change', () => {
       const file = imageInput.files?.[0];
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      previewUrl = '';
-      if (!preview) return;
-      if (!file) {
-        preview.hidden = true;
-        preview.removeAttribute('src');
-        return;
-      }
-      previewUrl = URL.createObjectURL(file);
-      preview.src = previewUrl;
+      if (!file || !preview) return;
+      preview.src = URL.createObjectURL(file);
       preview.hidden = false;
     });
 
@@ -233,7 +208,7 @@
     });
   }
 
-  window.LovaraPartnerOnboarding = { offer, submitApplication, uploadImage, showModal, hideModal, acceptAndContinue };
+  window.LovaraPartnerOnboarding = { offer, submitApplication, uploadImage, showModal, hideModal };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
