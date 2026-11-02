@@ -158,8 +158,7 @@
     $('partnerAccept')?.addEventListener('click', async () => {
       try {
         await answerPrompt('accepted');
-        hideModal('partnerOfferModal');
-        showModal('partnerApplicationModal');
+        window.location.href = '/partnership.html';
       } catch (error) { notify(error.message, true); }
     });
 
