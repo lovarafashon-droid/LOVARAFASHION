@@ -43,6 +43,7 @@ assert.strictEqual(checkoutReadCart(checkoutShopCartKey('shop-a'))[0].qty, 3, 'a
 
 const storefront = fs.readFileSync('public/js/storefront.js', 'utf8');
 const storeHtml = fs.readFileSync('public/store.html', 'utf8');
+const homepage = fs.readFileSync('public/index.html', 'utf8');
 const addStart = storefront.indexOf('function addToCart(');
 const addEnd = storefront.indexOf('\n  function setupAccountMenu', addStart);
 const addSource = storefront.slice(addStart, addEnd);
@@ -54,6 +55,10 @@ assert(storeHtml.includes('store-product-preview.css?v=2'), 'store preview and c
 assert(storeHtml.includes('id="storeCartModal"'), 'the partner storefront includes its own cart modal');
 assert(storefront.includes('openStoreCart();'), 'the cart control opens the cart modal instead of navigating immediately');
 assert(storefront.includes('/checkout?store=${storeId}'), 'partner checkout receives an explicit store identifier');
+assert(homepage.includes('/store/${encodeURIComponent(storeId)}/checkout?store=${encodeURIComponent(storeId)}'), 'Buy Now from the main product modal routes partner products to the matching shop checkout');
+assert(checkoutHtml.includes('if (directBuyStoreId && this.storeId !== directBuyStoreId)'), 'checkout restores partner scope from a direct-buy item before loading its cart');
+assert(checkoutHtml.includes('src="/js/firebase-config.js"'), 'Firebase config uses a root-relative URL on nested partner checkout routes');
+assert(!checkoutHtml.includes('src="js/firebase-config.js"'), 'no broken relative Firebase config path remains');
 assert(checkoutHtml.includes('this.renderUnavailableStoreCart();'), 'unavailable-store checkout keeps the cart visible');
 assert(!checkoutHtml.includes('this.cart = [];\n          document.getElementById(\'checkoutContent\')'), 'unavailable-store handling does not clear the shopper cart');
 const routes = JSON.parse(fs.readFileSync('vercel.json', 'utf8')).rewrites;

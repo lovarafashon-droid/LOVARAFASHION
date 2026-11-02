@@ -1913,8 +1913,12 @@
         const color = colorEl ? colorEl.value : null;
         this.closeBuyNowModal();
         if (isDirectBuy) {
-          localStorage.setItem('lovara_direct_buy', JSON.stringify({ ...product, size: size || null, color: color || null, quantity: 1, qty: 1 }));
-          window.location.href = '/checkout';
+          const item = { ...product, size: size || null, color: color || null, quantity: 1, qty: 1 };
+          localStorage.setItem('lovara_direct_buy', JSON.stringify(item));
+          const storeId = String(item.storeId || item.storeSlug || '').trim();
+          window.location.href = storeId && !storeId.includes('/') && storeId.length <= 150
+            ? `/store/${encodeURIComponent(storeId)}/checkout?store=${encodeURIComponent(storeId)}`
+            : '/checkout';
         } else {
           this.add({...product, size, color, qty: 1});
         }
@@ -2274,8 +2278,11 @@
         console.error('[LOVARA] Could not save direct purchase:', error);
       }
       closeProductModal();
-      // Use the physical file so this also works when clean URL rewrites are unavailable.
-      window.location.assign('/checkout.html');
+      const storeId = String(item.storeId || item.storeSlug || '').trim();
+      const checkoutUrl = storeId && !storeId.includes('/') && storeId.length <= 150
+        ? `/store/${encodeURIComponent(storeId)}/checkout?store=${encodeURIComponent(storeId)}`
+        : '/checkout.html';
+      window.location.assign(checkoutUrl);
     }
 
     function pmToggleWishlist() {
