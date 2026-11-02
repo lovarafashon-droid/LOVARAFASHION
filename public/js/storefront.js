@@ -66,10 +66,78 @@
       </label>`).join('');
   }
 
+  function checkoutUrl() {
+    return `/store/${encodeURIComponent(currentStoreId)}/checkout`;
+  }
+
+  function closeProductPreview() {
+    const modal = document.getElementById('storeProductPreview');
+    if (!modal) return;
+    modal.remove();
+    document.body.style.overflow = '';
+  }
+
+  function openProductPreview(product) {
+    if (!product) return;
+    const image = String(product.imageUrl || product.image || '');
+    const offer = currentProductPrice(product);
+    const colors = colorsFor(product);
+    const sizes = sizesFor(product);
+    const modal = document.createElement('div');
+    modal.id = 'storeProductPreview';
+    modal.className = 'product-preview-overlay';
+    modal.setAttribute('role', 'presentation');
+    modal.innerHTML = `
+      <section class="product-preview-panel" role="dialog" aria-modal="true" aria-labelledby="previewProductName" dir="rtl">
+        <button class="preview-close" type="button" data-preview-close aria-label="إغلاق المعاينة"><i class="fas fa-xmark"></i></button>
+        <div class="preview-image-wrap">${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(product.name || 'صورة المنتج')}" onerror="this.style.display='none'">` : '<div class="preview-no-image"><i class="fas fa-image"></i></div>'}</div>
+        <div class="preview-details">
+          ${product.category ? `<span class="preview-category">${escapeHtml(product.category)}</span>` : ''}
+          <h2 id="previewProductName">${escapeHtml(product.name || 'منتج')}</h2>
+          ${product.description ? `<p class="preview-description">${escapeHtml(product.description)}</p>` : ''}
+          <div class="preview-price">${offer.saleActive ? `<del>EGP ${Number(product.price).toFixed(2)}</del>` : ''}<strong>EGP ${offer.price.toFixed(2)}</strong>${offer.saleActive ? '<span>عرض خاص</span>' : ''}</div>
+          <div class="preview-variants">
+            <label class="preview-quantity"><span>الكمية</span><input data-product-qty type="number" min="1" max="${colors.length ? 20 : 99}" step="1" value="1" aria-label="الكمية"></label>
+            ${sizes.length ? `<label class="preview-size"><span>المقاس</span><select data-product-size aria-label="المقاس">${sizes.map(size => `<option value="${escapeHtml(size)}">${escapeHtml(size)}</option>`).join('')}</select></label>` : ''}
+            <div data-piece-colors></div>
+          </div>
+          <div class="preview-actions">
+            <button class="preview-add" type="button" data-preview-add><i class="fas fa-bag-shopping"></i> أضف للسلة</button>
+            <button class="preview-buy" type="button" data-preview-buy><i class="fas fa-bolt"></i> شراء الآن</button>
+          </div>
+        </div>
+      </section>`;
+
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    renderColorSelectors(modal, colors, 1);
+    modal.querySelector('[data-preview-close]')?.addEventListener('click', closeProductPreview);
+    modal.addEventListener('click', event => {
+      if (event.target === modal) closeProductPreview();
+    });
+    const quantityField = modal.querySelector('[data-product-qty]');
+    quantityField?.addEventListener('input', () => {
+      const maximum = colors.length ? 20 : 99;
+      const quantity = Math.min(maximum, Math.max(1, Math.floor(Number(quantityField.value) || 1)));
+      quantityField.value = String(quantity);
+      renderColorSelectors(modal, colors, quantity);
+    });
+    modal.querySelector('[data-preview-add]')?.addEventListener('click', () => {
+      if (addToCart(product, modal)) closeProductPreview();
+    });
+    modal.querySelector('[data-preview-buy]')?.addEventListener('click', () => {
+      if (!addToCart(product, modal)) return;
+      closeProductPreview();
+      window.location.assign(checkoutUrl());
+    });
+    modal.querySelector('.preview-close')?.focus();
+  }
+
   function renderProduct(product, store) {
     const card = document.createElement('article');
     card.className = 'card';
     card.dataset.productId = product.id;
+    card.style.cursor = 'pointer';
 
     const image = String(product.imageUrl || product.image || '');
     const offer = currentProductPrice(product);
@@ -104,7 +172,10 @@
         <p class="desc">${escapeHtml(product.description || '')}</p>
         ${priceHtml}
         ${variantHtml}
-        <button class="add-cart" type="button" data-add-cart><i class="fas fa-bag-shopping"></i> أضف إلى السلة</button>
+        <div class="card-actions">
+          <button class="add-cart" type="button" data-add-cart><i class="fas fa-bag-shopping"></i> أضف للسلة</button>
+          <button class="buy-now" type="button" data-buy-product><i class="fas fa-bolt"></i> شراء الآن</button>
+        </div>
       </div>`;
 
     renderColorSelectors(card, colors, 1);
@@ -116,6 +187,14 @@
       renderColorSelectors(card, colors, quantity);
     });
     card.querySelector('[data-add-cart]').addEventListener('click', () => addToCart(product, card));
+    card.querySelector('[data-buy-product]').addEventListener('click', () => {
+      if (!addToCart(product, card)) return;
+      window.location.assign(checkoutUrl());
+    });
+    card.addEventListener('click', event => {
+      if (event.target.closest('button, a, input, select, label')) return;
+      openProductPreview(product);
+    });
     return card;
   }
 
@@ -227,17 +306,23 @@
   }
 
   function addToCart(product, card) {
-    if (!currentStore || !product?.id || !card) return;
+    if (!currentStore || !product?.id || !card) return false;
     const colors = colorsFor(product);
     const sizes = sizesFor(product);
     const maxQuantity = colors.length ? 20 : 99;
     const quantity = Math.min(maxQuantity, Math.max(1, Math.floor(Number(card.querySelector('[data-product-qty]')?.value) || 1)));
     const selectedColors = colors.length
       ? [...card.querySelectorAll('[data-piece-color]')].map(select => select.value)
-      : ['-'];
-    if (colors.length && selectedColors.length !== quantity) return showToast('اختاري لونًا لكل قطعة.');
+      : Array(quantity).fill('-');
+    if (colors.length && selectedColors.length !== quantity) {
+      showToast('اختاري لونًا لكل قطعة.');
+      return false;
+    }
     const selectedSize = String(card.querySelector('[data-product-size]')?.value || sizes[0] || '-');
-    if (sizes.length && !sizes.includes(selectedSize)) return showToast('اختاري مقاسًا متاحًا.');
+    if (sizes.length && !sizes.includes(selectedSize)) {
+      showToast('اختاري مقاسًا متاحًا.');
+      return false;
+    }
 
     const unitsByColor = new Map();
     selectedColors.forEach(color => unitsByColor.set(color || colors[0] || '-', (unitsByColor.get(color || colors[0] || '-') || 0) + 1));
@@ -275,6 +360,7 @@
     updateCartCount(cart);
     try { window.dispatchEvent(new StorageEvent('storage', { key: shopCartKey(currentStore.id), newValue: JSON.stringify(cart) })); } catch (_) {}
     showToast(`تمت إضافة ${quantity} قطعة من ${product.name || 'المنتج'} إلى السلة`);
+    return true;
   }
 
   function setupAccountMenu() {
@@ -307,6 +393,9 @@
 
   async function init() {
     setupAccountMenu();
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeProductPreview();
+    });
     $('storeSearch')?.addEventListener('input', renderProducts);
     $('storeSort')?.addEventListener('change', renderProducts);
     window.addEventListener('storage', event => {

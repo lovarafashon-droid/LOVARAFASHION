@@ -49,7 +49,7 @@ const addSource = storefront.slice(addStart, addEnd);
 assert(addSource.includes("localStorage.setItem(shopCartKey(currentStore.id)"), 'storefront writes to the current shop cart');
 assert(!addSource.includes("localStorage.setItem('lovara_cart'"), 'storefront never adds partner products to the LOVARA cart');
 assert(storeHtml.includes('href="/checkout"'), 'the store cart link has a safe fallback before JavaScript loads');
-assert(storeHtml.includes('storefront.js?v=shopify-style-6'), 'storefront cart logic uses a cache-busted asset URL');
+assert(storeHtml.includes('storefront.js?v=shopify-style-7'), 'storefront cart logic uses a cache-busted asset URL');
 const routes = JSON.parse(fs.readFileSync('vercel.json', 'utf8')).rewrites;
 assert.strictEqual(routes[0].source, '/store/:slug/checkout', 'the store checkout rewrite precedes the generic store route');
 
