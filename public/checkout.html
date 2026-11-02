@@ -5,11 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>إتمام الطلب | LOVARA</title>
+  <title>إتمام الطلب | LOVARA FASHION</title>
 <link rel="icon" type="image/jpeg" href="/LOVARA.jpeg">
 
 
-  <title data-i18n="pageTitle">LOVARA – Checkout</title>
+  <title data-i18n="pageTitle">LOVARA FASHION – Checkout</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&family=Noto+Sans+Arabic:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1933,7 +1933,7 @@
 
       applyLang(lang) {
         const t = translations[lang] || translations.en;
-        document.title = this.storeId && this.storeName ? `${this.storeName} | ${t.pageTitle || 'LOVARA – Checkout'}` : (t.pageTitle || 'LOVARA – Checkout');
+        document.title = this.storeId && this.storeName ? `${this.storeName} | ${t.pageTitle || 'LOVARA FASHION – Checkout'}` : (t.pageTitle || 'LOVARA FASHION – Checkout');
         document.querySelectorAll('[data-i18n]').forEach(el => {
           const key = el.getAttribute('data-i18n');
           if (t[key]) {
@@ -2027,7 +2027,7 @@
 
     const translations = {
       en: {
-        pageTitle: 'LOVARA \u2013 Checkout',
+        pageTitle: 'LOVARA FASHION \u2013 Checkout',
         checkoutTitle: 'Checkout',
         checkoutDesc: 'Complete your order details below',
         stepShipping: 'Shipping',
@@ -2096,7 +2096,7 @@
         profit: 'Profit'
       },
       ar: {
-        pageTitle: '\u0644\u0648\u06a4\u0627\u0631\u0627 \u2013 \u0625\u062a\u0645\u0627\u0645 \u0627\u0644\u0634\u0631\u0627\u0621',
+        pageTitle: 'LOVARA FASHION \u2013 \u0625\u062a\u0645\u0627\u0645 \u0627\u0644\u0634\u0631\u0627\u0621',
         checkoutTitle: '\u0625\u062a\u0645\u0627\u0645 \u0627\u0644\u0634\u0631\u0627\u0621',
         checkoutDesc: '\u0623\u0643\u0645\u0644\u064a \u0628\u064a\u0627\u0646\u0627\u062a \u0637\u0644\u0628\u0643 \u0623\u062f\u0646\u0627\u0647',
         stepShipping: '\u0627\u0644\u0634\u062d\u0646',

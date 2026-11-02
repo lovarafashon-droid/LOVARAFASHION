@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
   <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet">
 
-<title>LOVARA – Orders Dashboard</title>
+<title>LOVARA FASHION – Orders Dashboard</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1879,7 +1879,7 @@
         const printWindow = window.open('', '_blank');
         if (!printWindow) { alert('Please allow popups to print invoices.'); return; }
         const printTitle = isFull ? 'الطلبات المؤكدة — طباعة كاملة' : 'الطلبات المؤكدة — طباعة للمكتب';
-        printWindow.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${printTitle}</title><style>
+        printWindow.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${printTitle} | LOVARA FASHION</title><style>
           @page { size: A5 portrait; margin: 8mm; } body { margin:0; font-family:Arial,"Noto Sans Arabic",sans-serif; color:#111; font-size:10px; } h1 { text-align:center; margin:0 0 3px; font-size:17px; } .subtitle { text-align:center; color:#666; margin-bottom:10px; font-size:9px; } .bulk-order { border:1px solid #222; padding:7px; margin-bottom:9px; page-break-inside:avoid; } .bulk-order-head { display:flex; justify-content:space-between; border-bottom:1px solid #222; padding-bottom:4px; margin-bottom:5px; font-size:11px; } .bulk-customer { line-height:1.5; border-bottom:1px dotted #888; padding-bottom:4px; margin-bottom:5px; } .bulk-summary { border:1px solid #444; background:#f7f7f7; padding:5px; margin:5px 0 7px; } .bulk-summary-title { font-weight:700; font-size:10px; margin-bottom:4px; } .bulk-summary-row { display:grid; grid-template-columns:1.5fr repeat(4,1fr); gap:4px; padding:3px 0; border-top:1px dotted #aaa; font-size:9px; align-items:center; } .bulk-item { position:relative; border-bottom:1px dotted #aaa; padding:4px 0 5px; } .bulk-item:last-child { border-bottom:0; } .bulk-item-title { font-weight:700; margin-bottom:3px; } .bulk-item-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:3px 5px; color:#444; font-size:9px; } .bulk-notes { background:#fff8e1; border:1px solid #e0c66c; padding:5px; margin-top:5px; min-height:14px; } .muted { color:#777; } .print-meta { text-align:center; color:#666; font-size:8px; margin-top:10px; } @media print { .bulk-order { break-inside:avoid; } }
         </style></head><body><h1>LOVARA — ${printTitle}</h1><div class="subtitle">عدد الطلبات: ${confirmedOrders.length}</div>${summaryHtml}${ordersHtml}<div class="print-meta">تمت الطباعة بتاريخ ${esc(new Date().toLocaleString('ar-EG'))}</div></body></html>`);
         const script = printWindow.document.createElement('script');
@@ -1982,7 +1982,7 @@
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Invoice #${safeOrderNum}</title>
+            <title>Invoice #${safeOrderNum} | LOVARA FASHION</title>
             <style>
               @page { size: 80mm auto; margin: 0; }
               body { margin: 0; padding: 0; font-family: 'Jost', sans-serif; background: #fff; color: #000; }

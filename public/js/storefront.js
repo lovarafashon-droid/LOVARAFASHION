@@ -521,7 +521,7 @@
       updateCartCount(storeCart);
       const productSnapshot = await firestore.collection('shops').doc(slug).collection('products').get();
       allProducts = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      document.title = `${store.storeName || 'متجر شريك'} | LOVARA`;
+      document.title = `${store.storeName || 'متجر شريك'} | LOVARA FASHION`;
       $('storeName').textContent = store.storeName || 'متجر شريك';
       const storeImage = $('storeImage');
       storeImage.src = store.imageUrl || '';

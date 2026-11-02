@@ -82,9 +82,9 @@ const CategoryApp = {
 
   translations: {
     en: {
-      pageTitleDresses: "LOVARA – Dresses", pageTitleTops: "LOVARA – Tops", pageTitlePants: "LOVARA – Pants",
-      pageTitleAccessories: "LOVARA – Accessories", pageTitleSets: "LOVARA – Sweatshirts", pageTitleSuits: "LOVARA – Suits", pageTitlePajamas: "LOVARA – Pajamas", pageTitleLingerie: "LOVARA – Lingerie",
-      pageTitleHijab: "LOVARA – Hijab", pageTitleWinter: "LOVARA – Winter",
+      pageTitleDresses: "LOVARA FASHION – Dresses", pageTitleTops: "LOVARA FASHION – Tops", pageTitlePants: "LOVARA FASHION – Pants",
+      pageTitleAccessories: "LOVARA FASHION – Accessories", pageTitleSets: "LOVARA FASHION – Sweatshirts", pageTitleSuits: "LOVARA FASHION – Suits", pageTitlePajamas: "LOVARA FASHION – Pajamas", pageTitleLingerie: "LOVARA FASHION – Lingerie",
+      pageTitleHijab: "LOVARA FASHION – Hijab", pageTitleWinter: "LOVARA FASHION – Winter",
       navHome: "Home", navShop: "Shop", navCategories: "Categories", navAbout: "About", navContact: "Contact",
       navLogin: "Login", navSignup: "Sign Up",
       catDresses: "Dresses", catTops: "Tops", catPants: "Pants", catAccessories: "Accessories", catSets: "Sweatshirts", catSuits: "Suits", catPajamas: "Pajamas", catLingerie: "Lingerie",
@@ -133,9 +133,9 @@ const CategoryApp = {
       subcatHalfSleeve: "Half Sleeve", subcatSleeveless: "Sleeveless / Tank", subcatLongSleeve: "Long Sleeve", subcatShoes: "Shoes", subcatJackets: "Jackets", subcatSweaters: "Sweaters", subcatHoodies: "Hoodies", subcatKnitwear: "Knitwear"
     },
     ar: {
-      pageTitleDresses: "LOVARA – فساتين", pageTitleTops: "LOVARA – بلوزات", pageTitlePants: "LOVARA – بناطيل",
-      pageTitleAccessories: "LOVARA – إكسسوارات", pageTitleSets: "LOVARA – سويت شرت", pageTitleSuits: "LOVARA – سوتات", pageTitlePajamas: "LOVARA – بيجامات", pageTitleLingerie: "LOVARA – ملابس داخلية",
-      pageTitleHijab: "LOVARA – محجبات", pageTitleWinter: "LOVARA – الشتوي",
+      pageTitleDresses: "LOVARA FASHION – فساتين", pageTitleTops: "LOVARA FASHION – بلوزات", pageTitlePants: "LOVARA FASHION – بناطيل",
+      pageTitleAccessories: "LOVARA FASHION – إكسسوارات", pageTitleSets: "LOVARA FASHION – سويت شرت", pageTitleSuits: "LOVARA FASHION – سوتات", pageTitlePajamas: "LOVARA FASHION – بيجامات", pageTitleLingerie: "LOVARA FASHION – ملابس داخلية",
+      pageTitleHijab: "LOVARA FASHION – محجبات", pageTitleWinter: "LOVARA FASHION – الشتوي",
       navHome: "الرئيسية", navShop: "المتجر", navCategories: "التصنيفات", navAbout: "من نحن", navContact: "تواصل معنا",
       navLogin: "تسجيل الدخول", navSignup: "إنشاء حساب",
       catDresses: "فساتين", catTops: "توبات", catPants: "بناطيل", catAccessories: "إكسسوارات", catSets: "سويت شرت", catSuits: "سوتات", catPajamas: "بيجامات", catLingerie: "ملابس داخلية",

@@ -33,7 +33,7 @@
       pages: firebase.firestore.FieldValue.arrayUnion(page),
       lastPage: page,
       path: location.pathname,
-      title: document.title || 'LOVARA',
+      title: document.title || 'LOVARA FASHION',
       referrer: document.referrer || '',
       userAgent: navigator.userAgent.slice(0, 240),
       language: navigator.language || '',
