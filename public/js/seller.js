@@ -89,10 +89,10 @@
   async function sendSellerOrderUpdate(orderId, status, reason = '') {
     if (!activeUser) throw new Error('سجّل الدخول مرة أخرى قبل تحديث الطلب.');
     const token = await activeUser.getIdToken();
-    const response = await fetch('/api/update-partner-order-status', {
+    const response = await fetch('/api/partner-orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ orderId, status, ...(reason ? { reason } : {}) })
+      body: JSON.stringify({ action: 'update-status', orderId, status, ...(reason ? { reason } : {}) })
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'تعذر تحديث الطلب. حاول مرة أخرى.');

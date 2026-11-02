@@ -1,16 +1,16 @@
-const { admin } = require('./_lib/firestore');
+const { admin } = require('./firestore');
 const {
   canTransitionSellerStatus,
   normalizeSellerStatus,
   isPaidPayment,
   normalizeCancellationReason
-} = require('./_lib/seller-order-status');
+} = require('./seller-order-status');
 
 function sendError(res, status, message) {
   return res.status(status).json({ error: message });
 }
 
-module.exports = async (req, res) => {
+module.exports = async function updateSellerOrderStatus(req, res) {
   if (req.method !== 'POST') return sendError(res, 405, 'طريقة الطلب غير مدعومة.');
 
   const token = String(req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
@@ -87,7 +87,6 @@ module.exports = async (req, res) => {
 
       const childUpdate = { sellerStatus: nextStatus, updatedAt: timestamp };
       const parentUpdate = { status: nextStatus, updatedAt: timestamp };
-
       if (nextStatus === 'cancelled') {
         const payment = parent.payment || child.payment || {};
         if (String(payment.method || '').toLowerCase() !== 'cod' || isPaidPayment(payment)) {

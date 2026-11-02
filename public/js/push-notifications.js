@@ -44,7 +44,7 @@
     const currentUser = firebase.auth && firebase.auth().currentUser;
     if (!currentUser) throw new Error('انتهت جلسة الأدمن. سجّل الدخول مرة أخرى.');
     const idToken = await currentUser.getIdToken(true);
-    const response = await fetch('/api/notifications/register', {
+    const response = await fetch('/api/notifications?action=register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
       body: JSON.stringify({ token, uid, userAgent: navigator.userAgent })
@@ -65,7 +65,7 @@
     const currentUser = firebase.auth && firebase.auth().currentUser;
     if (token && currentUser) {
       const idToken = await currentUser.getIdToken(true);
-      await fetch('/api/notifications/unregister', {
+      await fetch('/api/notifications?action=unregister', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({ token, uid })

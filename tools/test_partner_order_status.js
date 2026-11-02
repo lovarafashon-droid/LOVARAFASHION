@@ -54,7 +54,7 @@ const fakeAdmin = () => fakeAdminApp;
 const firestoreModulePath = require.resolve('../api/_lib/firestore');
 require.cache[firestoreModulePath] = { id: firestoreModulePath, filename: firestoreModulePath, loaded: true, exports: { admin: fakeAdmin } };
 
-const updateStatus = require('../api/update-partner-order-status');
+const updateStatus = require('../api/partner-orders');
 const { canTransitionSellerStatus, normalizeCancellationReason } = require('../api/_lib/seller-order-status');
 
 function responseRecorder() {
@@ -68,7 +68,7 @@ function responseRecorder() {
 
 async function call(body, authorization = 'Bearer seller-token', method = 'POST') {
   const response = responseRecorder();
-  await updateStatus({ method, headers: authorization ? { authorization } : {}, body }, response);
+  await updateStatus({ method, headers: authorization ? { authorization } : {}, body: { action: 'update-status', ...body } }, response);
   return response;
 }
 

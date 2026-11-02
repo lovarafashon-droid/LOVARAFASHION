@@ -6,6 +6,7 @@ const {
   canonicalizeCheckoutOrder,
   buildPartnerOrderRecords
 } = require('./_lib/partner-orders');
+const updateSellerOrderStatus = require('./_lib/update-seller-order-status');
 
 function sendError(res, error) {
   const status = error?.statusCode || 500;
@@ -48,6 +49,7 @@ function orderFingerprint(orderData) {
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.body?.action === 'update-status') return updateSellerOrderStatus(req, res);
   const submitted = req.body?.orderData;
   const orderNumber = String(submitted?.orderNumber || '').trim();
   if (!submitted || !validOrderNumber(orderNumber)) {
