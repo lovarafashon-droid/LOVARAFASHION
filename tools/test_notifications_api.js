@@ -25,6 +25,7 @@ fakeAdminApp.firestore.FieldValue = { serverTimestamp: () => ({ serverTimestamp:
 const fakeAdmin = () => fakeAdminApp;
 const firestorePath = require.resolve('../api/_lib/firestore');
 require.cache[firestorePath] = { id: firestorePath, filename: firestorePath, loaded: true, exports: { admin: fakeAdmin } };
+process.env.XPAY_WEBHOOK_SECRET = 'test-webhook-secret';
 const handler = require('../api/notifications');
 
 function responseRecorder() {
@@ -52,6 +53,9 @@ async function call(action, overrides = {}) {
 async function run() {
   let result = await call('unknown');
   assert.strictEqual(result.statusCode, 400, 'unknown actions are rejected');
+
+  result = await call('new-order', { headers: {} });
+  assert.strictEqual(result.statusCode, 401, 'the internal new-order notification endpoint rejects public callers');
 
   result = await call('register', { headers: {} });
   assert.strictEqual(result.statusCode, 401, 'unauthenticated device registrations are rejected');

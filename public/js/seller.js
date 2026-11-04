@@ -15,6 +15,54 @@
   const sellerTransitions = { new: ['confirmed'], confirmed: ['preparing', 'shipped'], preparing: ['shipped'], shipped: ['delivered'], delivered: [], cancelled: [] };
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const stampDate = value => value?.toDate ? value.toDate() : new Date(value || 0);
+  const partnerPlans = window.LovaraPartnerPlans || {};
+  let sellerProductCount = 0;
+  function activePlan() { return partnerPlans[activeShop?.subscriptionPlan] || null; }
+  async function partnerProductAction(action, extra = {}) {
+    if (!activeUser || !activeShop) throw new Error('تعذر التحقق من حساب المتجر.');
+    const token = await activeUser.getIdToken();
+    const response = await fetch('/api/partner-products', {
+      method: 'POST', cache: 'no-store',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, storeId: activeShop.id, ...extra })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'تعذر حفظ التغيير.');
+    return result;
+  }
+  function renderPlanEntitlements() {
+    const plan = activePlan();
+    if (!plan) {
+      $('sellerPlanDetails').textContent = 'تعذر التحقق من مزايا باقة المتجر. تواصلي مع إدارة LOVARA.';
+      $('storeSettingsPanel')?.classList.add('hidden');
+      return;
+    }
+    $('sellerPlanDetails').textContent = `${plan.name} · ${plan.durationMonths || plan.durationDays} ${plan.durationMonths ? (plan.durationMonths === 1 ? 'شهر' : 'أشهر') : 'أيام'} · حتى ${plan.productLimit} منتجًا`;
+    $('productSalePriceField')?.classList.toggle('hidden', !plan.discounts);
+    $('productSaleEndsField')?.classList.toggle('hidden', !plan.discounts);
+    $('storeSettingsPanel')?.classList.toggle('hidden', !plan.storeBranding && !plan.advancedStorefront);
+    $('storeSettingsPlanHint').textContent = plan.advancedStorefront
+      ? 'تتيح باقتك تخصيص اللون والرسالة والعنوان والوصف، كما يمكنك إعداد خصومات بموعد انتهاء وعدّاد.'
+      : 'تخصيص لون المتجر ورسالة الترحيب متاح في باقة 3 أشهر و6 أشهر.';
+    $('storeThemeColor').disabled = !plan.storeBranding;
+    $('storeAnnouncementText').disabled = !plan.storeBranding;
+    document.querySelectorAll('.premium-setting input, .premium-setting textarea').forEach(field => { field.disabled = !plan.advancedStorefront; });
+    document.querySelectorAll('.premium-setting').forEach(field => field.classList.toggle('hidden', !plan.advancedStorefront));
+    $('storeThemeColor').value = /^#[0-9a-f]{6}$/i.test(activeShop.themeColor || '') ? activeShop.themeColor : '#8c7355';
+    $('storeAnnouncementText').value = activeShop.announcementText || '';
+    $('storeHeroTitle').value = activeShop.heroTitle || '';
+    $('storeHeroDescription').value = activeShop.heroDescription || '';
+    renderProductQuota(sellerProductCount);
+  }
+  function renderProductQuota(count) {
+    sellerProductCount = count;
+    const plan = activePlan();
+    if (!plan || !$('sellerProductQuota')) return;
+    $('sellerProductQuota').textContent = `استخدمتِ ${count} من ${plan.productLimit} منتجًا في باقتك.`;
+    $('saveProduct').disabled = !editingProductId && count >= plan.productLimit;
+    if (!editingProductId && count >= plan.productLimit) $('saveProduct').textContent = 'وصلتِ إلى حد الباقة';
+    else if (!editingProductId) $('saveProduct').textContent = 'إضافة المنتج';
+  }
   function show(id) { $(id)?.classList.remove('hidden'); }
   function hide(id) { $(id)?.classList.add('hidden'); }
   function toast(el, text, error = false) { if (!el) return; el.textContent = text; el.className = error ? 'error' : 'ok'; }
@@ -325,27 +373,20 @@
     $('sellerStoreLink').href = href;
     $('sellerStoreLink').textContent = href;
     $('sellerExpiry').textContent = `تاريخ انتهاء الاشتراك: ${expiresAt.toLocaleDateString('ar-EG')}`;
+    renderPlanEntitlements();
     watchSellerOrders();
   }
 
   async function submitApplication(event) {
     event.preventDefault();
-    const button = $('applicationForm').querySelector('button[type="submit"]');
-    const note = $('applicationMessage');
-    const file = $('applicationImage').files?.[0];
-    if (!file) return toast(note, 'اختاري صورة للمتجر.', true);
-    button.disabled = true;
-    try {
-      await window.LovaraPartnerOnboarding.submitApplication($('applicationName').value, $('applicationPhone').value, file);
-      toast(note, 'تم إرسال الطلب للإدارة للمراجعة.');
-      $('applicationForm').reset();
-      $('applicationPreview').classList.add('hidden');
-      $('statusPanel').innerHTML = '<div class="notice"><strong>طلبك قيد المراجعة.</strong><br>سنرسل لك تحديثًا بعد مراجعة بيانات المتجر.</div>';
-      show('statusPanel');
-      hide('applyPanel');
-    } catch (error) {
-      toast(note, error.message || 'تعذر إرسال الطلب.', true);
-    } finally { button.disabled = false; }
+    const draft = {
+      storeName: String($('applicationName')?.value || '').trim(),
+      supportPhone: String($('applicationPhone')?.value || '').trim()
+    };
+    if (draft.storeName.length < 2) return toast($('applicationMessage'), 'اكتبي اسم المتجر أولاً.', true);
+    try { sessionStorage.setItem('lovara_partner_application_draft', JSON.stringify(draft)); }
+    catch (_) { /* the destination page still allows manual entry */ }
+    window.location.href = '/partnership.html';
   }
 
   async function loadProducts() {
@@ -353,6 +394,7 @@
     list.innerHTML = '<p class="muted">جارٍ تحميل المنتجات…</p>';
     try {
       const snapshot = await db.collection('shops').doc(activeShop.id).collection('products').get();
+      renderProductQuota(snapshot.size);
       if (snapshot.empty) { list.innerHTML = '<p class="muted">ما فيش منتجات مضافة لحد دلوقتي.</p>'; return; }
       list.innerHTML = '';
       snapshot.docs.forEach(doc => {
@@ -374,7 +416,8 @@
         if (!confirm('هل تريد حذف هذا المنتج؟')) return;
         button.disabled = true;
         try {
-          await db.collection('shops').doc(activeShop.id).collection('products').doc(button.dataset.delete).delete();
+          const result = await partnerProductAction('delete', { productId: button.dataset.delete });
+          activeShop.productCount = result.productCount;
           await loadProducts();
         } catch (error) { alert(error.message || 'تعذر حذف المنتج.'); button.disabled = false; }
       }));
@@ -391,12 +434,14 @@
     $('productCategory').value = product.category || '';
     $('productPrice').value = Number(product.price || 0);
     $('productDescription').value = product.description || '';
-    $('productSalePrice').value = Number(product.salePrice || 0) > 0 ? Number(product.salePrice) : '';
-    const endsAt = Number(product.saleEndsAt) || 0;
+    const canDiscount = !!activePlan()?.discounts;
+    $('productSalePrice').value = canDiscount && Number(product.salePrice || 0) > 0 ? Number(product.salePrice) : '';
+    const endsAt = canDiscount ? Number(product.saleEndsAt) || 0 : 0;
     $('productSaleEnds').value = endsAt ? new Date(endsAt - new Date(endsAt).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '';
     if (product.imageUrl) { $('productPreview').src = product.imageUrl; $('productPreview').classList.remove('hidden'); }
     $('productFormTitle').textContent = `تعديل المنتج: ${product.name || ''}`;
     $('saveProduct').textContent = 'حفظ التعديلات';
+    renderProductQuota(sellerProductCount);
     show('cancelProductEdit');
     $('productForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -408,6 +453,7 @@
     $('productPreview').classList.add('hidden');
     $('productFormTitle').textContent = 'إضافة منتج';
     $('saveProduct').textContent = 'إضافة المنتج';
+    renderProductQuota(sellerProductCount);
     hide('cancelProductEdit');
     toast($('productMessage'), 'تم إلغاء التعديل.');
   }
@@ -423,6 +469,11 @@
     const salePrice = saleValue ? Number(saleValue) : 0;
     const saleEndInput = $('productSaleEnds').value;
     const saleEndsAt = saleEndInput ? new Date(saleEndInput).getTime() : 0;
+    const plan = activePlan();
+    if (!editingProductId && plan && sellerProductCount >= plan.productLimit) {
+      return toast(note, `وصلتِ إلى حد باقتك وهو ${plan.productLimit} منتجًا. احذفي منتجًا أو غيّري الباقة.`, true);
+    }
+    if (saleValue && !plan?.discounts) return toast(note, 'إضافة الخصومات والعداد متاحة في باقة 6 أشهر فقط.', true);
     if (saleValue && (!Number.isFinite(salePrice) || salePrice <= 0 || salePrice >= price || !Number.isFinite(saleEndsAt) || saleEndsAt <= Date.now())) {
       return toast(note, 'سعر العرض يجب أن يكون أقل من السعر الأصلي، مع تحديد موعد انتهاء في المستقبل.', true);
     }
@@ -430,8 +481,6 @@
     button.disabled = true;
     button.textContent = 'جارٍ الحفظ…';
     try {
-      const productsRef = db.collection('shops').doc(activeShop.id).collection('products');
-      const productRef = editingProductId ? productsRef.doc(editingProductId) : productsRef.doc();
       const imageUrl = file
         ? await window.LovaraPartnerOnboarding.uploadImage(file, 'store-product', activeShop.id)
         : String(editingProduct?.imageUrl || '');
@@ -442,14 +491,13 @@
         salePrice,
         saleEndsAt: salePrice ? saleEndsAt : 0,
         description: $('productDescription').value.trim(),
-        imageUrl,
-        ownerUid: activeUser.uid,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        imageUrl
       };
-      if (!editingProductId) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      if (editingProductId) await productRef.update(data);
-      else await productRef.set(data);
       const wasEditing = !!editingProductId;
+      const result = await partnerProductAction(wasEditing ? 'update' : 'create', {
+        ...(wasEditing ? { productId: editingProductId } : {}), product: data
+      });
+      activeShop.productCount = result.productCount;
       $('productForm').reset();
       $('productPreview').classList.add('hidden');
       editingProductId = null;
@@ -465,6 +513,29 @@
     } finally { button.disabled = false; if (!editingProductId) button.textContent = 'إضافة المنتج'; else button.textContent = 'حفظ التعديلات'; }
   }
 
+  async function saveStoreSettings(event) {
+    event.preventDefault();
+    const plan = activePlan();
+    if (!plan?.storeBranding && !plan?.advancedStorefront) return toast($('storeSettingsMessage'), 'تخصيص الواجهة غير متاح في باقتك الحالية.', true);
+    const settings = {
+      themeColor: $('storeThemeColor').value,
+      announcementText: $('storeAnnouncementText').value.trim()
+    };
+    if (plan.advancedStorefront) {
+      settings.heroTitle = $('storeHeroTitle').value.trim();
+      settings.heroDescription = $('storeHeroDescription').value.trim();
+    }
+    const button = $('saveStoreSettings');
+    button.disabled = true;
+    try {
+      await partnerProductAction('update-settings', { settings });
+      Object.assign(activeShop, settings);
+      toast($('storeSettingsMessage'), 'تم حفظ تخصيص واجهة متجرك.');
+    } catch (error) {
+      toast($('storeSettingsMessage'), error.message || 'تعذر حفظ التخصيص.', true);
+    } finally { button.disabled = false; }
+  }
+
   $('loginForm')?.addEventListener('submit', async event => {
     event.preventDefault();
     $('loginError').textContent = '';
@@ -478,6 +549,7 @@
   $('backFromOrders')?.addEventListener('click', openSellerHome);
   $('applicationForm')?.addEventListener('submit', submitApplication);
   $('productForm')?.addEventListener('submit', saveProduct);
+  $('storeSettingsForm')?.addEventListener('submit', saveStoreSettings);
   $('cancelProductEdit')?.addEventListener('click', cancelProductEdit);
   preview('applicationImage', 'applicationPreview');
   preview('productImage', 'productPreview');

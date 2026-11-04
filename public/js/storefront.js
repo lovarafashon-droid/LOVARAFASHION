@@ -15,6 +15,7 @@
   let activeCategory = 'all';
   let toastTimer = null;
   let subscriptionTimer = null;
+  let saleCountdownTimer = null;
 
   function showMessage(title, body, icon = 'fa-circle-info') {
     if (subscriptionTimer) {
@@ -57,12 +58,43 @@
   }
 
   function currentProductPrice(product, now = Date.now()) {
+    const canDiscount = !!window.LovaraPartnerPlans?.[currentStore?.subscriptionPlan]?.discounts;
     const rawEnd = product?.saleEndsAt;
     const endsAt = rawEnd?.toMillis ? rawEnd.toMillis() : rawEnd?.toDate ? rawEnd.toDate().getTime() : Number(rawEnd) || 0;
     const salePrice = Number(product?.salePrice) || 0;
     const regularPrice = Number(product?.price) || 0;
-    const saleActive = salePrice > 0 && salePrice < regularPrice && endsAt > now;
+    const saleActive = canDiscount && salePrice > 0 && salePrice < regularPrice && endsAt > now;
     return { price: saleActive ? salePrice : regularPrice, saleActive, endsAt };
+  }
+
+  function countdownLabel(endTime) {
+    const remaining = Math.max(0, Number(endTime) - Date.now());
+    if (!remaining) return 'انتهى العرض';
+    const totalSeconds = Math.floor(remaining / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `ينتهي خلال ${days}ي ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  function startSaleCountdown() {
+    if (saleCountdownTimer) clearInterval(saleCountdownTimer);
+    const update = () => {
+      let expired = false;
+      document.querySelectorAll('[data-sale-countdown]').forEach(element => {
+        const end = Number(element.dataset.saleCountdown || 0);
+        element.textContent = countdownLabel(end);
+        if (end <= Date.now()) expired = true;
+      });
+      if (expired) {
+        clearInterval(saleCountdownTimer);
+        saleCountdownTimer = null;
+        renderProducts();
+      }
+    };
+    update();
+    if (document.querySelector('[data-sale-countdown]')) saleCountdownTimer = setInterval(update, 1000);
   }
 
   function listOptionValues(values, maximum = 30) {
@@ -122,7 +154,7 @@
           ${product.category ? `<span class="preview-category">${escapeHtml(product.category)}</span>` : ''}
           <h2 id="previewProductName">${escapeHtml(product.name || 'منتج')}</h2>
           ${product.description ? `<p class="preview-description">${escapeHtml(product.description)}</p>` : ''}
-          <div class="preview-price">${offer.saleActive ? `<del>EGP ${Number(product.price).toFixed(2)}</del>` : ''}<strong>EGP ${offer.price.toFixed(2)}</strong>${offer.saleActive ? '<span>عرض خاص</span>' : ''}</div>
+          <div class="preview-price">${offer.saleActive ? `<del>EGP ${Number(product.price).toFixed(2)}</del>` : ''}<strong>EGP ${offer.price.toFixed(2)}</strong>${offer.saleActive ? `<span>عرض خاص</span><small data-sale-countdown="${offer.endsAt}">${escapeHtml(countdownLabel(offer.endsAt))}</small>` : ''}</div>
           <div class="preview-variants">
             <label class="preview-quantity"><span>الكمية</span><input data-product-qty type="number" min="1" max="${colors.length ? 20 : 99}" step="1" value="1" aria-label="الكمية"></label>
             ${sizes.length ? `<label class="preview-size"><span>المقاس</span><select data-product-size aria-label="المقاس">${sizes.map(size => `<option value="${escapeHtml(size)}">${escapeHtml(size)}</option>`).join('')}</select></label>` : ''}
@@ -137,6 +169,7 @@
 
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
+    startSaleCountdown();
     renderColorSelectors(modal, colors, 1);
     modal.querySelector('[data-preview-close]')?.addEventListener('click', closeProductPreview);
     modal.addEventListener('click', event => {
@@ -184,7 +217,7 @@
         <div class="piece-colors" data-piece-colors></div>
         ${colors.length ? '<small class="variant-label">اختاري لونًا لكل قطعة.</small>' : ''}
       </div>`;
-    const saleBadge = offer.saleActive ? '<span class="sale-badge">عرض خاص</span>' : '';
+    const saleBadge = offer.saleActive ? `<span class="sale-badge">عرض خاص</span><small class="sale-countdown" data-sale-countdown="${offer.endsAt}">${escapeHtml(countdownLabel(offer.endsAt))}</small>` : '';
     const contactUrl = whatsappHref(store.supportPhone, store.storeName, product.name);
 
     card.innerHTML = `
@@ -252,6 +285,7 @@
     } else {
       products.forEach(product => productsEl.appendChild(renderProduct(product, currentStore)));
     }
+    startSaleCountdown();
     const count = $('storeResultCount');
     if (count) count.textContent = `${products.length} منتج`;
   }
@@ -543,12 +577,26 @@
       }
 
       currentStore = store;
+      const plan = window.LovaraPartnerPlans?.[store.subscriptionPlan];
+      if (plan?.storeBranding || plan?.advancedStorefront) {
+        if (/^#[0-9a-f]{6}$/i.test(store.themeColor || '')) {
+          document.documentElement.style.setProperty('--accent', store.themeColor);
+          document.documentElement.style.setProperty('--accent-soft', `${store.themeColor}1a`);
+        }
+        if (typeof store.announcementText === 'string' && store.announcementText.trim()) {
+          $('storeAnnouncement').textContent = store.announcementText;
+        }
+      }
+      if (plan?.advancedStorefront) {
+        if (typeof store.heroTitle === 'string' && store.heroTitle.trim()) $('storeName').textContent = store.heroTitle;
+        if (typeof store.heroDescription === 'string' && store.heroDescription.trim()) $('storeIntro').textContent = store.heroDescription;
+      }
       const storeCart = migrateLegacyPartnerCart(store.id, String(store.slug || store.id));
       updateCartCount(storeCart);
       const productSnapshot = await firestore.collection('shops').doc(slug).collection('products').get();
       allProducts = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       document.title = `${store.storeName || 'متجر شريك'} | LOVARA FASHION`;
-      $('storeName').textContent = store.storeName || 'متجر شريك';
+      if (!plan?.advancedStorefront || !String(store.heroTitle || '').trim()) $('storeName').textContent = store.storeName || 'متجر شريك';
       const storeImage = $('storeImage');
       storeImage.src = store.imageUrl || '';
       storeImage.alt = `صورة ${store.storeName || 'المتجر'}`;

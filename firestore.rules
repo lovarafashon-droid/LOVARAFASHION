@@ -93,50 +93,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
 
       // Each merchant writes only beneath their approved shop. The parent shop's active
-      // subscription is rechecked by Firestore on every write and public read.
+      // subscription is rechecked for reads; all writes go through the trusted API so it can
+      // atomically enforce the product quota and plan feature entitlements.
       match /products/{productId} {
         allow read: if isAdmin() || ownsShop(shopId) || isPublicShop(shopId);
-        allow create: if isAdmin()
-          || (ownsActiveShop(shopId)
-            && request.resource.data.ownerUid == request.auth.uid
-            && request.resource.data.name is string
-            && request.resource.data.name.size() > 0
-            && request.resource.data.name.size() <= 120
-            && request.resource.data.category is string
-            && request.resource.data.category.size() <= 60
-            && request.resource.data.price is number
-            && request.resource.data.price >= 0
-            && request.resource.data.salePrice is number
-            && request.resource.data.salePrice >= 0
-            && request.resource.data.saleEndsAt is number
-            && (request.resource.data.salePrice == 0 || request.resource.data.salePrice < request.resource.data.price)
-            && request.resource.data.description is string
-            && request.resource.data.description.size() <= 1000
-            && request.resource.data.imageUrl is string
-            && request.resource.data.keys().hasOnly([
-              'name', 'category', 'price', 'salePrice', 'saleEndsAt', 'description', 'imageUrl',
-              'ownerUid', 'createdAt', 'updatedAt'
-            ]));
-        allow update: if isAdmin()
-          || (ownsActiveShop(shopId)
-            && resource.data.ownerUid == request.auth.uid
-            && request.resource.data.ownerUid == request.auth.uid
-            && request.resource.data.name is string
-            && request.resource.data.category is string
-            && request.resource.data.price is number
-            && request.resource.data.price >= 0
-            && request.resource.data.salePrice is number
-            && request.resource.data.salePrice >= 0
-            && request.resource.data.saleEndsAt is number
-            && (request.resource.data.salePrice == 0 || request.resource.data.salePrice < request.resource.data.price)
-            && request.resource.data.description is string
-            && request.resource.data.description.size() <= 1000
-            && request.resource.data.imageUrl is string
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-              'name', 'category', 'price', 'salePrice', 'saleEndsAt', 'description', 'imageUrl', 'updatedAt'
-            ]));
-        allow delete: if isAdmin()
-          || (ownsActiveShop(shopId) && resource.data.ownerUid == request.auth.uid);
+        allow create, update, delete: if isAdmin();
       }
 
       // Partner checkout orders are created by trusted server endpoints/webhooks.

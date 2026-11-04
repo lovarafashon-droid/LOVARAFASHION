@@ -50,8 +50,8 @@ const addSource = storefront.slice(addStart, addEnd);
 assert(addSource.includes("localStorage.setItem(shopCartKey(currentStore.id)"), 'storefront writes to the current shop cart');
 assert(!addSource.includes("localStorage.setItem('lovara_cart'"), 'storefront never adds partner products to the LOVARA cart');
 assert(storeHtml.includes('href="/checkout"'), 'the store cart link has a safe fallback before JavaScript loads');
-assert(storeHtml.includes('storefront.js?v=shopify-style-9'), 'storefront cart logic uses a cache-busted asset URL');
-assert(storeHtml.includes('store-product-preview.css?v=2'), 'store preview and cart styles use a cache-busted asset URL');
+assert(storeHtml.includes('storefront.js?v=partner-plans-3'), 'storefront cart logic uses a cache-busted asset URL');
+assert(storeHtml.includes('store-product-preview.css?v=3'), 'store preview and cart styles use a cache-busted asset URL');
 assert(storeHtml.includes('id="storeCartModal"'), 'the partner storefront includes its own cart modal');
 assert(storefront.includes('openStoreCart();'), 'the cart control opens the cart modal instead of navigating immediately');
 assert(storefront.includes('/checkout?store=${storeId}'), 'partner checkout receives an explicit store identifier');
@@ -62,6 +62,8 @@ assert(!checkoutHtml.includes('src="js/firebase-config.js"'), 'no broken relativ
 assert(checkoutHtml.includes('this.renderUnavailableStoreCart();'), 'unavailable-store checkout keeps the cart visible');
 assert(!checkoutHtml.includes('this.cart = [];\n          document.getElementById(\'checkoutContent\')'), 'unavailable-store handling does not clear the shopper cart');
 const routes = JSON.parse(fs.readFileSync('vercel.json', 'utf8')).rewrites;
-assert.strictEqual(routes[0].source, '/store/:slug/checkout', 'the store checkout rewrite precedes the generic store route');
+const storeCheckoutRouteIndex = routes.findIndex(route => route.source === '/store/:slug/checkout');
+const genericStoreRouteIndex = routes.findIndex(route => route.source === '/store/:slug');
+assert(storeCheckoutRouteIndex >= 0 && genericStoreRouteIndex > storeCheckoutRouteIndex, 'the store checkout rewrite precedes the generic store route');
 
 console.log('shop cart isolation tests passed');

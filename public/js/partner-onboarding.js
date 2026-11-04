@@ -93,6 +93,18 @@
 
     const requestRef = db().collection('storeRequests').doc(user.uid);
     const old = await requestRef.get();
+    if (old.exists) {
+      const existing = old.data() || {};
+      if (existing.ownerUid !== user.uid) throw new Error(text('لا يمكن الوصول إلى طلب هذا المتجر.', 'This store request is not accessible.'));
+      if (existing.status === 'pending' && existing.imageUrl) {
+        if (existing.storeName !== name || normalizePhone(existing.supportPhone) !== phone) {
+          throw new Error(text('لديك طلب معلّق بالفعل. لا يمكن تغيير بياناته قبل مراجعة الإدارة.', 'You already have a pending request. Its details cannot be changed before review.'));
+        }
+        await db().collection('users').doc(user.uid).set({ partnerPromptAnswered: 'accepted' }, { merge: true });
+        return { imageUrl: existing.imageUrl, existing: true };
+      }
+    }
+    if (!file) throw new Error(text('اختاري صورة للمتجر.', 'Choose a store image.'));
     let requestData;
     if (!old.exists) {
       requestData = {
@@ -102,7 +114,6 @@
         supportPhone: phone,
         imageUrl: '',
         status: 'draft',
-        approvalMode: 'manual', paymentStatus: 'manual_review',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
@@ -119,7 +130,6 @@
         supportPhone: phone,
         imageUrl: '',
         status: 'draft',
-        approvalMode: 'manual', paymentStatus: 'manual_review',
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await requestRef.update(requestData);
@@ -128,6 +138,13 @@
     const imageUrl = await uploadImage(file, 'store-application', user.uid);
     await db().collection('users').doc(user.uid).set({ partnerPromptAnswered: 'accepted' }, { merge: true });
     return { imageUrl };
+  }
+
+  async function getApplication(user) {
+    const activeUser = user || auth().currentUser;
+    if (!activeUser) return null;
+    const snapshot = await db().collection('storeRequests').doc(activeUser.uid).get();
+    return snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null;
   }
 
   async function answerPrompt(answer, user) {
@@ -208,7 +225,7 @@
     });
   }
 
-  window.LovaraPartnerOnboarding = { offer, submitApplication, uploadImage, showModal, hideModal };
+  window.LovaraPartnerOnboarding = { offer, submitApplication, getApplication, uploadImage, showModal, hideModal };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();

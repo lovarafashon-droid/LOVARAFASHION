@@ -29,6 +29,34 @@
   function showLogin() { $('loginPanel').classList.remove('hidden'); $('dashboard').classList.add('hidden'); }
   function showDashboard(user) { $('loginPanel').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('logoutButton').classList.remove('hidden'); $('adminIdentity').textContent = user.email || 'Admin'; loadRequests(); loadShops(); }
   function dateLabel(value) { const date = asDate(value); return Number.isFinite(date.getTime()) ? date.toLocaleDateString('ar-EG') : 'غير محدد'; }
+  const planInfo = Object.fromEntries(Object.values(window.LovaraPartnerPlans || {}).map(plan => [plan.id, {
+    id: plan.id, name: plan.name, days: plan.durationDays, months: plan.durationMonths, price: plan.amount,
+    productLimit: plan.productLimit, storeBranding: plan.storeBranding, advancedStorefront: plan.advancedStorefront,
+    discounts: plan.discounts, prioritySupport24h: plan.prioritySupport24h
+  }]));
+  function canApproveRequest(request) {
+    if (request.planId === 'free_trial') return request.paymentStatus === 'free_trial';
+    if (request.paymentMethod === 'visa') return request.paymentStatus === 'paid';
+    return request.paymentMethod === 'vodafone_cash' && request.paymentStatus === 'manual_review';
+  }
+  function renderRequest(request) {
+    const plan = planInfo[request.planId] || { name: 'غير محددة', days: 0, months: 0, price: Number(request.amountMinor || 0) / 100 };
+    const payment = request.paymentStatus === 'paid' ? 'مدفوع عبر Visa'
+      : request.paymentStatus === 'paid_manual' ? 'تم تأكيد التحويل يدويًا'
+      : request.paymentStatus === 'manual_review' ? 'فودافون كاش — بانتظار مراجعة الإيصال'
+      : request.paymentStatus === 'free_trial' ? 'تجربة مجانية — بلا دفع'
+      : request.paymentStatus === 'awaiting_payment' || request.paymentStatus === 'creating_checkout' ? 'Visa — الدفع قيد الانتظار'
+      : request.paymentStatus === 'checkout_error' || request.paymentStatus === 'failed' ? 'تعذر الدفع — يلزم إعادة المحاولة'
+      : 'لم تُسجّل طريقة دفع';
+    const eligible = canApproveRequest(request);
+    const paymentInProgress = ['creating_checkout', 'awaiting_payment', 'manual_review'].includes(String(request.paymentStatus || ''));
+    const cannotReject = paymentInProgress || request.paymentStatus === 'paid' || request.paymentStatus === 'paid_manual';
+    const approvalLabel = request.planId === 'free_trial' ? 'موافقة — 7 أيام'
+      : request.paymentMethod === 'vodafone_cash' ? 'تأكيد التحويل والموافقة'
+      : 'موافقة بعد الدفع';
+    const term = plan.days ? `${plan.days} أيام` : `${plan.months || 0} ${Number(plan.months) === 1 ? 'شهر' : 'أشهر'}`;
+    return `<article class="card"><img src="${escapeHtml(request.imageUrl || '')}" alt="${escapeHtml(request.storeName)}"><div><h2>${escapeHtml(request.storeName)}</h2><div class="meta">صاحب الطلب: ${escapeHtml(request.ownerEmail || request.ownerUid)}<br>رقم الدعم: ${escapeHtml(request.supportPhone)}<br>تاريخ الطلب: ${dateLabel(request.createdAt)}<br>الباقة: ${escapeHtml(plan.name)} — ${escapeHtml(term)} — ${escapeHtml(plan.price)} جنيه<br>الحد: ${escapeHtml(plan.productLimit || 0)} منتجًا<br>طريقة الدفع والحالة: ${escapeHtml(payment)}</div><div class="subscription"><strong>تفعيل المتجر بعد مراجعة الطلب والدفع.</strong></div><div class="card-actions"><button class="btn" data-approve="${escapeHtml(request.id)}" ${eligible ? '' : 'disabled'}>${escapeHtml(approvalLabel)}</button><button class="btn red" data-reject="${escapeHtml(request.id)}" ${cannotReject ? 'disabled title="لا يمكن رفض طلب أثناء الدفع أو المراجعة"' : ''}>رفض</button><a class="btn green" href="${escapeHtml(waLink(request.supportPhone, `مرحبًا ${request.storeName}، نتواصل معك بخصوص طلب الشراكة في LOVARA.`))}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> واتساب</a></div>${eligible ? '' : '<div class="meta">لا يمكن اعتماد الطلب حتى اختيار باقة وتأكيد الدفع أو التحويل.</div>'}</div></article>`;
+  }
 
   async function loadRequests() {
     const container = $('requestsList');
@@ -38,7 +66,7 @@
       const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(req => req.status === 'pending').sort((a,b) => asDate(b.createdAt) - asDate(a.createdAt));
       $('pendingCount').textContent = String(requests.length);
       if (!requests.length) { container.innerHTML = '<div class="empty">لا توجد طلبات معلّقة حاليًا.</div>'; return; }
-      container.innerHTML = requests.map(request => `<article class="card"><img src="${escapeHtml(request.imageUrl || '')}" alt="${escapeHtml(request.storeName)}"><div><h2>${escapeHtml(request.storeName)}</h2><div class="meta">صاحب الطلب: ${escapeHtml(request.ownerEmail || request.ownerUid)}<br>رقم الدعم: ${escapeHtml(request.supportPhone)}<br>تاريخ الطلب: ${dateLabel(request.createdAt)}<br>الموافقة: يدوية بعد مراجعة الدفع</div><div class="subscription"><strong>مدة الاشتراك: 30 يومًا من لحظة الموافقة</strong></div><div class="card-actions"><button class="btn" data-approve="${escapeHtml(request.id)}"><i class="fas fa-check"></i> موافقة يدوية</button><button class="btn red" data-reject="${escapeHtml(request.id)}"><i class="fas fa-xmark"></i> رفض</button><a class="btn green" href="${escapeHtml(waLink(request.supportPhone, `مرحبًا ${request.storeName}، نتواصل معك بخصوص طلب الشراكة في LOVARA.`))}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> واتساب</a></div></div></article>`).join('');
+      container.innerHTML = requests.map(renderRequest).join('');
       container.querySelectorAll('[data-approve]').forEach(button => button.addEventListener('click', () => approveRequest(button.dataset.approve, button)));
       container.querySelectorAll('[data-reject]').forEach(button => button.addEventListener('click', () => rejectRequest(button.dataset.reject, button)));
     } catch (error) {
@@ -54,19 +82,35 @@
       const snapshot = await requestRef.get();
       if (!snapshot.exists || snapshot.data().status !== 'pending') throw new Error('الطلب لم يعد معلقًا.');
       const request = snapshot.data();
+      const plan = planInfo[request.planId];
+      if (!plan || !canApproveRequest(request)) throw new Error('لا يمكن اعتماد الطلب قبل اختيار باقة والتحقق من الدفع أو التحويل.');
+      const manualTransfer = request.paymentMethod === 'vodafone_cash' && request.paymentStatus === 'manual_review';
+      if (manualTransfer && !confirm(`تأكيد استلام ${plan.price} جنيه من فودافون كاش بعد مراجعة صورة الإيصال على واتساب؟`)) { button.disabled = false; return; }
       let slug = slugify(request.storeName, uid);
       const base = slug;
       let suffix = 2;
       while ((await db.collection('shops').doc(slug).get()).exists) slug = `${base}-${suffix++}`;
-      const expiresAt = addDuration(new Date(), 0, 30);
+      const paidAt = request.paymentMethod === 'visa' && request.paidAt ? asDate(request.paidAt) : new Date();
+      const startAt = Number.isFinite(paidAt.getTime()) ? paidAt : new Date();
+      const expiresAt = addDuration(startAt, plan.months, plan.days);
       const batch = db.batch();
       batch.set(db.collection('shops').doc(slug), {
         slug, ownerUid: uid, ownerEmail: request.ownerEmail || '', storeName: request.storeName,
         supportPhone: request.supportPhone, imageUrl: request.imageUrl,
-        active: true, status: 'active', durationDays: 30, approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        active: true, status: 'active', subscriptionStatus: 'active', subscriptionPlan: request.planId,
+        durationDays: plan.days, durationMonths: plan.months, productLimit: plan.productLimit,
+        storeBranding: plan.storeBranding, advancedStorefront: plan.advancedStorefront,
+        discounts: plan.discounts, prioritySupport24h: plan.prioritySupport24h,
+        paymentMethod: request.paymentMethod,
+        ...(plan.months ? { subscriptionFirstPaymentAt: firebase.firestore.Timestamp.fromDate(startAt) } : {}),
+        approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
         expiresAt: firebase.firestore.Timestamp.fromDate(expiresAt), createdAt: request.createdAt || firebase.firestore.FieldValue.serverTimestamp()
       });
-      batch.update(requestRef, { status: 'approved', shopId: slug, reviewedAt: firebase.firestore.FieldValue.serverTimestamp(), reviewedBy: currentAdmin.uid });
+      batch.update(requestRef, {
+        status: 'approved', shopId: slug,
+        ...(manualTransfer ? { paymentStatus: 'paid_manual', paymentVerifiedAt: firebase.firestore.FieldValue.serverTimestamp(), paymentVerifiedBy: currentAdmin.uid } : {}),
+        reviewedAt: firebase.firestore.FieldValue.serverTimestamp(), reviewedBy: currentAdmin.uid
+      });
       batch.set(db.collection('users').doc(uid), { storeId: slug }, { merge: true });
       await batch.commit();
       await Promise.all([loadRequests(), loadShops()]);
@@ -81,7 +125,16 @@
     if (!confirm('تأكيد رفض طلب المتجر؟')) return;
     button.disabled = true;
     try {
-      await db.collection('storeRequests').doc(uid).update({ status: 'rejected', reviewedAt: firebase.firestore.FieldValue.serverTimestamp(), reviewedBy: currentAdmin.uid });
+      const requestRef = db.collection('storeRequests').doc(uid);
+      await db.runTransaction(async transaction => {
+        const snapshot = await transaction.get(requestRef);
+        if (!snapshot.exists || snapshot.data().status !== 'pending') throw new Error('الطلب لم يعد معلقًا.');
+        const request = snapshot.data();
+        if (['creating_checkout', 'awaiting_payment', 'manual_review', 'paid', 'paid_manual'].includes(String(request.paymentStatus || ''))) {
+          throw new Error('لا يمكن رفض الطلب أثناء الدفع أو مراجعة التحويل. انتظري اكتمال الحالة أولًا.');
+        }
+        transaction.update(requestRef, { status: 'rejected', reviewedAt: firebase.firestore.FieldValue.serverTimestamp(), reviewedBy: currentAdmin.uid });
+      });
       await loadRequests();
     } catch (error) { alert(error.message || 'تعذر رفض الطلب.'); button.disabled = false; }
   }
