@@ -99,6 +99,7 @@
         supportPhone: request.supportPhone, imageUrl: request.imageUrl,
         active: true, status: 'active', subscriptionStatus: 'active', subscriptionPlan: request.planId,
         durationDays: plan.days, durationMonths: plan.months, productLimit: plan.productLimit,
+        freeTrialUsed: request.planId === 'free_trial',
         storeBranding: plan.storeBranding, advancedStorefront: plan.advancedStorefront,
         discounts: plan.discounts, prioritySupport24h: plan.prioritySupport24h,
         paymentMethod: request.paymentMethod,

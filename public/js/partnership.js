@@ -24,6 +24,8 @@
   let paymentElement = null;
   let paymentReady = false;
   let lockedPlan = false;
+  let trialUsed = false;
+  let trialEligibilityError = false;
 
   function showNotice(message, isError = false) {
     notice.textContent = message;
@@ -35,6 +37,21 @@
   function clearNotice() {
     notice.textContent = '';
     notice.classList.remove('show');
+  }
+
+  function updateTrialCard() {
+    const button = document.querySelector('[data-plan="free_trial"]');
+    if (!button) return;
+    const selected = selectedPlan?.id === 'free_trial';
+    const unavailable = trialUsed || trialEligibilityError;
+    button.disabled = unavailable || (lockedPlan && !selected);
+    if (trialUsed) {
+      button.querySelector('small').textContent = 'تم استخدام التجربة المجانية لهذا الحساب';
+      button.title = 'التجربة المجانية متاحة مرة واحدة فقط لكل حساب';
+    } else if (trialEligibilityError) {
+      button.querySelector('small').textContent = 'تعذر التحقق من أهلية التجربة؛ أعيدي تحميل الصفحة';
+      button.title = 'تعذر التحقق من أهلية التجربة';
+    }
   }
 
   function amountText(plan) {
@@ -66,12 +83,17 @@
   function selectPlan(planId, clear = true) {
     const plan = plans[planId];
     if (!plan || (lockedPlan && selectedPlan && selectedPlan.id !== planId)) return;
+    if (planId === 'free_trial' && trialUsed && selectedPlan?.id !== 'free_trial') {
+      showNotice('تم استخدام التجربة المجانية لهذا الحساب من قبل. يمكنك اختيار إحدى الباقات المدفوعة.', true);
+      return;
+    }
     selectedPlan = plan;
     document.querySelectorAll('[data-plan]').forEach(button => {
       const active = button.dataset.plan === planId;
       button.setAttribute('aria-pressed', String(active));
       button.disabled = lockedPlan && !active;
     });
+    updateTrialCard();
     $('paymentArea').classList.remove('hidden');
     renderSummary(plan);
     if (plan.id === 'free_trial') {
@@ -128,6 +150,10 @@
         if (hasPaymentState) lockedPlan = true;
         if (plans[application.planId]) selectPlan(application.planId, false);
         if (application.paymentMethod === 'vodafone_cash') selectMethod('vodafone');
+        if (application.paymentStatus === 'free_trial') {
+          $('activateFreeTrial').disabled = true;
+          $('activateFreeTrial').textContent = 'تم إرسال طلب التجربة';
+        }
         showNotice(describeApplication(application), false);
       } else if (application.status === 'approved') {
         currentApplication = application;
@@ -140,6 +166,42 @@
       }
     } catch (error) {
       console.warn('[LOVARA partnership] Could not load existing request:', error.message);
+    }
+  }
+
+  async function loadTrialEligibility(user) {
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/xpay/create-partnership-checkout', {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'trial-status' })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'تعذر التحقق من أهلية التجربة.');
+      trialUsed = data.used === true;
+      trialEligibilityError = false;
+      updateTrialCard();
+      if (trialUsed && currentApplication?.paymentStatus === 'free_trial') {
+        $('activateFreeTrial').disabled = true;
+        $('activateFreeTrial').textContent = 'تم إرسال طلب التجربة';
+      } else if (trialUsed && selectedPlan?.id === 'free_trial') {
+        $('activateFreeTrial').disabled = true;
+        $('activateFreeTrial').textContent = 'التجربة مستخدمة سابقًا';
+      } else if (trialUsed && (!currentApplication || currentApplication.status === 'rejected')) {
+        showNotice('تم استخدام التجربة المجانية لهذا الحساب من قبل. يمكنك اختيار إحدى الباقات المدفوعة.', true);
+      }
+    } catch (error) {
+      trialEligibilityError = true;
+      updateTrialCard();
+      if (selectedPlan?.id === 'free_trial' && currentApplication?.paymentStatus !== 'free_trial') {
+        $('activateFreeTrial').disabled = true;
+        $('activateFreeTrial').textContent = 'تعذر التحقق من الأهلية';
+      }
+      if (!currentApplication || currentApplication.status !== 'approved') {
+        showNotice(error.message || 'تعذر التحقق من أهلية التجربة. أعيدي المحاولة لاحقًا.', true);
+      }
     }
   }
 
@@ -283,10 +345,20 @@
       currentApplication = { ...(currentApplication || {}), planId: 'free_trial', paymentMethod: 'free_trial', paymentStatus: 'free_trial', status: 'pending' };
       lockedPlan = true;
       document.querySelectorAll('[data-plan]').forEach(item => { item.disabled = item.dataset.plan !== 'free_trial'; });
+      button.disabled = true;
+      button.textContent = 'تم إرسال طلب التجربة';
       showNotice('تم إرسال طلب الباقة المجانية لمدة 7 أيام. ستفعّل الإدارة المتجر بعد مراجعة الطلب.');
     } catch (error) {
+      const alreadyUsed = String(error.message || '').includes('التجربة المجانية');
+      if (alreadyUsed) {
+        trialUsed = true;
+        updateTrialCard();
+        button.disabled = true;
+        button.textContent = 'التجربة مستخدمة سابقًا';
+      } else {
+        button.disabled = false;
+      }
       showNotice(error.message || 'تعذر إرسال طلب الباقة المجانية.', true);
-      button.disabled = false;
     }
   }
 
@@ -305,7 +377,10 @@
 
   firebase.auth().onAuthStateChanged(async user => {
     currentUser = user;
-    if (user) await loadApplication(user);
+    if (user) {
+      await loadApplication(user);
+      await loadTrialEligibility(user);
+    }
     else showNotice('سجّلي الدخول إلى حساب LOVARA لإرسال طلب الشراكة.', true);
   });
 

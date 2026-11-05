@@ -164,6 +164,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Free-trial claims are written only by the trusted server API and cannot be reset by users.
+    match /partnerTrialClaims/{userId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

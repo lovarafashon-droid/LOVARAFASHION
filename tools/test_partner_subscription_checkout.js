@@ -21,7 +21,17 @@ class Ref {
 }
 const db = {
   records,
-  collection(name) { return { doc: id => new Ref(this, `${name}/${id}`) }; },
+  collection(name) {
+    const instance = this;
+    return {
+      doc: id => new Ref(instance, `${name}/${id}`),
+      where: (field, operator, value) => ({
+        get: async () => ({ docs: [...instance.records.entries()]
+          .filter(([path, data]) => path.startsWith(`${name}/`) && operator === '==' && data[field] === value)
+          .map(([path, data]) => ({ id: path.slice(name.length + 1), data: () => data })) })
+      })
+    };
+  },
   async runTransaction(callback) {
     const pending = [];
     const tx = {
@@ -117,10 +127,43 @@ function seedRequest(extra = {}) {
   assert.strictEqual(checkoutCalls, firstCheckoutCalls, 'retrying an active checkout reuses its existing XPay session');
 
   seedRequest();
+  const firstEligibility = await call({ action: 'trial-status' });
+  assert.strictEqual(firstEligibility.body.used, false, 'an account with no prior trial remains eligible');
+  assert.strictEqual(records.has('partnerTrialClaims/user-1'), false, 'checking eligibility does not reserve the trial');
   const free = await call({ action: 'free-trial', planId: 'free_trial', amountMinor: 999999 });
   assert.strictEqual(free.statusCode, 200);
   assert.strictEqual(records.get('storeRequests/user-1').paymentStatus, 'free_trial');
   assert.strictEqual(records.get('storeRequests/user-1').durationDays, 7);
+  assert.strictEqual(records.get('partnerTrialClaims/user-1').status, 'reserved', 'the first trial permanently reserves the account claim');
+
+  seedRequest();
+  const eligibility = await call({ action: 'trial-status' });
+  assert.strictEqual(eligibility.statusCode, 200);
+  assert.strictEqual(eligibility.body.used, true, 'the authenticated status endpoint reports a prior trial');
+  const repeatedFree = await call({ action: 'free-trial', planId: 'free_trial' });
+  assert.strictEqual(repeatedFree.statusCode, 409, 'a user cannot request the free trial again after the request document changes');
+  assert.strictEqual(records.get('storeRequests/user-1').paymentStatus, undefined, 'a repeated request does not modify the new application');
+
+  records.delete('partnerTrialClaims/user-1');
+  seedRequest();
+  const concurrentTrials = await Promise.all([
+    call({ action: 'free-trial', planId: 'free_trial' }),
+    call({ action: 'free-trial', planId: 'free_trial' })
+  ]);
+  assert.deepStrictEqual(concurrentTrials.map(result => result.statusCode).sort(), [200, 409], 'concurrent requests can reserve only one trial');
+
+  records.delete('partnerTrialClaims/user-1');
+  seedRequest({ planId: 'free_trial', paymentMethod: 'free_trial', paymentStatus: 'free_trial' });
+  const legacyRequestStatus = await call({ action: 'trial-status' });
+  assert.strictEqual(legacyRequestStatus.body.used, true, 'an older trial request is detected and migrated to a permanent claim');
+  assert.strictEqual(records.get('partnerTrialClaims/user-1').source, 'legacy_request');
+
+  records.delete('partnerTrialClaims/user-1');
+  seedRequest({ planId: 'plus' });
+  records.set('shops/old-trial-shop', { ownerUid: 'user-1', subscriptionPlan: 'free_trial' });
+  const legacyShopStatus = await call({ action: 'trial-status' });
+  assert.strictEqual(legacyShopStatus.body.used, true, 'an existing approved trial shop is detected even if the request no longer says free_trial');
+  assert.strictEqual(records.get('partnerTrialClaims/user-1').source, 'legacy_shop');
 
   console.log('partner subscription checkout tests passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

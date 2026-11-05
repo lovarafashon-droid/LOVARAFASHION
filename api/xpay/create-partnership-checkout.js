@@ -21,6 +21,48 @@ function isPendingRequest(request, uid) {
     && typeof request.imageUrl === 'string' && request.imageUrl.startsWith('https://ik.imagekit.io/');
 }
 
+function hasFreeTrialMarker(value) {
+  return !!value && (value.freeTrialUsed === true || value.planId === 'free_trial'
+    || value.subscriptionPlan === 'free_trial' || value.paymentMethod === 'free_trial'
+    || value.paymentStatus === 'free_trial');
+}
+
+async function getFreeTrialUsage(db, uid, request, serverTimestamp) {
+  const claimRef = db.collection('partnerTrialClaims').doc(uid);
+  const claimSnapshot = await claimRef.get();
+  if (claimSnapshot.exists) return { used: true, source: claimSnapshot.data()?.source || 'claim' };
+
+  let source = hasFreeTrialMarker(request) ? 'legacy_request' : '';
+  let shopId = '';
+  if (!source) {
+    const shopsSnapshot = await db.collection('shops').where('ownerUid', '==', uid).get();
+    const priorTrialShop = shopsSnapshot.docs.find(doc => hasFreeTrialMarker(doc.data()));
+    if (priorTrialShop) {
+      source = 'legacy_shop';
+      shopId = priorTrialShop.id;
+    }
+  }
+  if (!source) return { used: false };
+
+  try {
+    await claimRef.create({
+      ownerUid: uid,
+      planId: 'free_trial',
+      status: 'used',
+      source,
+      ...(shopId ? { shopId } : {}),
+      createdAt: serverTimestamp()
+    });
+  } catch (error) {
+    if (error?.code !== 6 && error?.code !== 'already-exists') throw error;
+  }
+  return { used: true, source };
+}
+
+function alreadyUsedTrialResponse(res) {
+  return res.status(409).json({ error: 'تم استخدام التجربة المجانية لهذا الحساب من قبل، ويمكنك اختيار إحدى الباقات المدفوعة.' });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.setHeader?.('Allow', 'POST');
@@ -36,15 +78,15 @@ module.exports = async (req, res) => {
   if (!token) return res.status(401).json({ error: 'سجّلي الدخول إلى حساب LOVARA أولاً.' });
 
   const action = String(req.body?.action || 'create-checkout');
-  const plan = getPartnerPlan(req.body?.planId);
-  if (!plan) return res.status(400).json({ error: 'اختاري باقة صحيحة.' });
-  if (!['free-trial', 'manual-vodafone', 'create-checkout'].includes(action)) {
+  if (!['trial-status', 'free-trial', 'manual-vodafone', 'create-checkout'].includes(action)) {
     return res.status(400).json({ error: 'طريقة الدفع غير مدعومة.' });
   }
+  const plan = action === 'trial-status' ? null : getPartnerPlan(req.body?.planId);
+  if (action !== 'trial-status' && !plan) return res.status(400).json({ error: 'اختاري باقة صحيحة.' });
   if (action === 'free-trial' && plan.id !== 'free_trial') {
     return res.status(400).json({ error: 'اختاري الباقة المجانية لإرسال طلب التجربة.' });
   }
-  if (action !== 'free-trial' && plan.id === 'free_trial') {
+  if (action !== 'trial-status' && action !== 'free-trial' && plan.id === 'free_trial') {
     return res.status(400).json({ error: 'الباقة المجانية لا تحتاج إلى تحويل أو بوابة دفع.' });
   }
 
@@ -70,26 +112,73 @@ module.exports = async (req, res) => {
   const db = app.firestore();
   const requestRef = db.collection('storeRequests').doc(uid);
   try {
+    if (action === 'trial-status') {
+      const snapshot = await requestRef.get();
+      const request = snapshot.exists ? snapshot.data() || {} : null;
+      const usage = await getFreeTrialUsage(db, uid, request, app.firestore.FieldValue.serverTimestamp);
+      return res.status(200).json({ used: usage.used });
+    }
+
     const requestSnapshot = await requestRef.get();
     if (!requestSnapshot.exists) return res.status(404).json({ error: 'أكملي بيانات المتجر والصورة أولاً.' });
     const request = requestSnapshot.data() || {};
     if (!isPendingRequest(request, uid)) return res.status(409).json({ error: 'طلب الشراكة غير جاهز للدفع أو تمت مراجعته بالفعل.' });
 
     if (action === 'free-trial') {
-      if (isPaidStatus(request.paymentStatus)) return res.status(409).json({ error: 'تم دفع اشتراك لهذا الطلب بالفعل.' });
-      if (request.paymentStatus === 'awaiting_payment' || request.paymentStatus === 'creating_checkout' || request.paymentStatus === 'manual_review') {
-        return res.status(409).json({ error: 'هناك طريقة دفع أخرى مسجلة لهذا الطلب. تواصلي مع إدارة LOVARA قبل تغييرها.' });
+      const usage = await getFreeTrialUsage(db, uid, request, app.firestore.FieldValue.serverTimestamp);
+      if (usage.used) return alreadyUsedTrialResponse(res);
+
+      const claimRef = db.collection('partnerTrialClaims').doc(uid);
+      let result;
+      try {
+        result = await db.runTransaction(async transaction => {
+          const [claimSnapshot, currentSnapshot] = await Promise.all([
+            transaction.get(claimRef),
+            transaction.get(requestRef)
+          ]);
+          if (claimSnapshot.exists) return { used: true };
+          if (!currentSnapshot.exists || !isPendingRequest(currentSnapshot.data() || {}, uid)) {
+            throw Object.assign(new Error('طلب الشراكة غير متاح.'), { statusCode: 409 });
+          }
+          const current = currentSnapshot.data() || {};
+          if (hasFreeTrialMarker(current)) {
+            transaction.create(claimRef, {
+              ownerUid: uid, planId: 'free_trial', status: 'used', source: 'legacy_request',
+              createdAt: app.firestore.FieldValue.serverTimestamp()
+            });
+            return { used: true };
+          }
+          if (isPaidStatus(current.paymentStatus)) {
+            throw Object.assign(new Error('تم دفع اشتراك لهذا الطلب بالفعل.'), { statusCode: 409 });
+          }
+          if (['awaiting_payment', 'creating_checkout', 'manual_review'].includes(String(current.paymentStatus || ''))) {
+            throw Object.assign(new Error('هناك طريقة دفع أخرى مسجلة لهذا الطلب. تواصلي مع إدارة LOVARA قبل تغييرها.'), { statusCode: 409 });
+          }
+          const timestamp = app.firestore.FieldValue.serverTimestamp();
+          transaction.create(claimRef, {
+            ownerUid: uid,
+            planId: 'free_trial',
+            status: 'reserved',
+            source: 'self_service',
+            createdAt: timestamp
+          });
+          transaction.update(requestRef, {
+            planId: plan.id,
+            paymentMethod: 'free_trial',
+            paymentStatus: 'free_trial',
+            amountMinor: 0,
+            currency: 'EGP',
+            durationDays: plan.durationDays,
+            durationMonths: 0,
+            updatedAt: timestamp
+          });
+          return { used: false };
+        });
+      } catch (error) {
+        if (error?.code === 6 || error?.code === 'already-exists') return alreadyUsedTrialResponse(res);
+        throw error;
       }
-      await requestRef.update({
-        planId: plan.id,
-        paymentMethod: 'free_trial',
-        paymentStatus: 'free_trial',
-        amountMinor: 0,
-        currency: 'EGP',
-        durationDays: plan.durationDays,
-        durationMonths: 0,
-        updatedAt: app.firestore.FieldValue.serverTimestamp()
-      });
+      if (result.used) return alreadyUsedTrialResponse(res);
       return res.status(200).json({ success: true, planId: plan.id, paymentStatus: 'free_trial' });
     }
 
