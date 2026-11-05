@@ -55,12 +55,13 @@ function seed(paymentId) {
   records.clear();
   records.set(`pendingStoreSubscriptions/${paymentId}`, {
     type: 'store_subscription', paymentId, requestUid: 'partner-1', ownerUid: 'partner-1',
-    planId: 'super_plus', amountMinor: 22500, currency: 'EGP', durationMonths: 3, durationDays: 0,
+    storeName: 'Test Boutique', planId: 'super_plus', amountMinor: 22500, currency: 'EGP', durationMonths: 3, durationDays: 0,
     status: 'awaiting_payment', paid: false
   });
   records.set('storeRequests/partner-1', {
     ownerUid: 'partner-1', status: 'pending', planId: 'super_plus', paymentMethod: 'visa',
-    paymentStatus: 'awaiting_payment', paymentId
+    paymentStatus: 'awaiting_payment', paymentId, storeName: 'Test Boutique',
+    ownerEmail: 'partner@example.com', supportPhone: '+201234567890', imageUrl: 'https://ik.imagekit.io/test/store.jpg'
   });
 }
 
@@ -79,6 +80,17 @@ function seed(paymentId) {
   assert.strictEqual(wrongAmount.statusCode, 409, 'wrong price is rejected before marking the request paid');
   assert.strictEqual(records.get('storeRequests/partner-1').paymentStatus, 'awaiting_payment');
 
+  const failedEvent = {
+    id: 'evt-failed', type: 'checkout.session.async_payment_failed',
+    data: { object: { id: 'cs_test_failed', status: 'failed', amountTotal: 22500, currency: 'EGP', metadata: { type: 'store_subscription', paymentId } } }
+  };
+  const failed = await send(failedEvent);
+  assert.strictEqual(failed.statusCode, 200);
+  assert.strictEqual(failed.body.paid, false);
+  assert.strictEqual(records.get('storeRequests/partner-1').status, 'pending');
+  assert.strictEqual(records.get('storeRequests/partner-1').paymentStatus, 'failed');
+  assert.strictEqual([...records.keys()].some(path => path.startsWith('shops/')), false, 'a failed payment never creates or activates a store');
+
   const paidEvent = {
     id: 'evt-paid', type: 'checkout.session.completed',
     data: { object: { id: 'cs_test_paid', status: 'complete', paymentStatus: 'paid', amountTotal: 22500, currency: 'EGP', paymentIntent: { id: 'pi-1' }, metadata: { type: 'store_subscription', paymentId } } }
@@ -87,11 +99,44 @@ function seed(paymentId) {
   assert.strictEqual(paid.statusCode, 200);
   assert.strictEqual(paid.body.paid, true);
   assert.strictEqual(records.get('storeRequests/partner-1').paymentStatus, 'paid');
+  assert.strictEqual(records.get('storeRequests/partner-1').status, 'approved', 'successful XPay automatically approves the store request');
   assert.strictEqual(records.get('pendingStoreSubscriptions/' + paymentId).status, 'paid');
-  assert.strictEqual(records.has('shops/super_plus'), false, 'a payment event does not bypass the admin approval gate');
+  const shopId = 'test-boutique-partner-1';
+  const shop = records.get(`shops/${shopId}`);
+  assert.ok(shop, 'a successful verified payment creates the partner shop');
+  assert.strictEqual(shop.active, true, 'a successful verified payment automatically activates the shop');
+  assert.strictEqual(shop.status, 'active');
+  assert.strictEqual(shop.subscriptionPlan, 'super_plus');
+  assert.strictEqual(shop.productLimit, 75);
+  assert.strictEqual(shop.adminFinancials.amountDueMinor, 22500);
+  assert.strictEqual(shop.adminFinancials.amountReceivedMinor, 22500);
+  assert.strictEqual(shop.adminFinancials.balanceDueMinor, 0);
+  assert.strictEqual(records.get('users/partner-1').storeId, shopId, 'the new shop is linked to the partner profile');
+  const expiryBeforeReplay = shop.expiresAt.toDate().getTime();
   const replay = await send(paidEvent);
   assert.strictEqual(replay.statusCode, 200);
   assert.strictEqual(replay.body.paid, false, 'duplicate event delivery is idempotent');
+  assert.strictEqual(records.get(`shops/${shopId}`).expiresAt.toDate().getTime(), expiryBeforeReplay, 'a duplicate webhook does not extend the subscription twice');
+
+  const legacyPaymentId = 'SUB-ABCDEF0123456789ABCDEF01';
+  seed(legacyPaymentId);
+  records.set(`pendingStoreSubscriptions/${legacyPaymentId}`, {
+    ...records.get(`pendingStoreSubscriptions/${legacyPaymentId}`), status: 'paid', paid: true, providerStatus: 'paid'
+  });
+  records.set('storeRequests/partner-1', {
+    ...records.get('storeRequests/partner-1'), status: 'pending', paymentStatus: 'paid'
+  });
+  const legacyPaidEvent = {
+    id: 'evt-legacy-paid', type: 'checkout.session.completed',
+    data: { object: { status: 'complete', paymentStatus: 'paid', amountTotal: 22500, currency: 'EGP', metadata: { type: 'store_subscription', paymentId: legacyPaymentId } } }
+  };
+  const legacyEventKey = crypto.createHash('sha256').update(legacyPaidEvent.id).digest('hex');
+  records.set(`xpayWebhookEvents/${legacyEventKey}`, { paymentId: legacyPaymentId, status: 'paid' });
+  const recovered = await send(legacyPaidEvent);
+  assert.strictEqual(recovered.statusCode, 200);
+  assert.strictEqual(recovered.body.paid, true, 'a prior paid but unapproved request is safely completed on webhook replay');
+  assert.strictEqual(records.get('storeRequests/partner-1').status, 'approved');
+  assert.strictEqual(records.get(`shops/${shopId}`).active, true);
 
   console.log('XPay partner subscription webhook tests passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -101,6 +101,13 @@ function addCalendarMonths(date, months) {
   return result;
 }
 
+function partnerShopId(storeName, uid) {
+  const base = String(storeName || '').toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'shop';
+  const suffix = String(uid || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 28) || 'store';
+  return `${base}-${suffix}`.slice(0, 60);
+}
+
 async function handleStoreSubscriptionEvent(event, res, status, paymentId) {
   const paid = ['paid', 'succeeded', 'success', 'completed', 'approved'].includes(status);
   const failed = ['failed', 'cancelled', 'canceled', 'declined', 'expired'].includes(status);
@@ -123,11 +130,12 @@ async function handleStoreSubscriptionEvent(event, res, status, paymentId) {
     const currency = String(paymentSession.currency || event.currency || event.data?.currency || '').toUpperCase();
     const plan = getPartnerPlan(initialData.planId);
     if (paid) {
-      const expectedByPlan = plan ? plan.amountMinor : expectedAmount;
-      if (!Number.isFinite(expectedAmount) || expectedAmount <= 0 || (plan && expectedByPlan !== expectedAmount) || !amountMatches(expectedAmount, amounts)) {
+      const expectedByPlan = plan?.amountMinor;
+      if (!plan || !Number.isFinite(expectedAmount) || expectedAmount <= 0 || expectedByPlan !== expectedAmount || !amountMatches(expectedAmount, amounts)) {
         return res.status(409).json({ error: 'Paid subscription event is missing a verifiable amount.' });
       }
       if (currency !== 'EGP') return res.status(409).json({ error: 'Subscription payment currency does not match EGP.' });
+      if (String(initialData.currency || '').toUpperCase() !== 'EGP') return res.status(409).json({ error: 'Subscription payment record currency does not match EGP.' });
     }
 
     let transitionedToPaid = false;
@@ -135,11 +143,10 @@ async function handleStoreSubscriptionEvent(event, res, status, paymentId) {
       transitionedToPaid = false;
       const eventSnapshot = await transaction.get(eventRef);
       const paymentSnapshot = await transaction.get(paymentRef);
-      if (eventSnapshot.exists) return;
       if (!paymentSnapshot.exists) throw Object.assign(new Error('Subscription payment not found.'), { statusCode: 404 });
       const payment = paymentSnapshot.data() || {};
       const paymentPlan = getPartnerPlan(payment.planId);
-      const validAmount = Number(payment.amountMinor) > 0 && (!paymentPlan || paymentPlan.amountMinor === Number(payment.amountMinor));
+      const validAmount = !!paymentPlan && Number(payment.amountMinor) > 0 && paymentPlan.amountMinor === Number(payment.amountMinor);
       if (payment.type !== 'store_subscription' || payment.paymentId !== paymentId || !validAmount) {
         throw Object.assign(new Error('Subscription payment record is invalid.'), { statusCode: 409 });
       }
@@ -151,18 +158,30 @@ async function handleStoreSubscriptionEvent(event, res, status, paymentId) {
       if (!targetSnapshot.exists) throw Object.assign(new Error(requestUid ? 'Store request not found.' : 'Store not found.'), { statusCode: 404 });
       const target = targetSnapshot.data() || {};
       if (target.ownerUid !== payment.ownerUid) throw Object.assign(new Error('Store owner does not match payment.'), { statusCode: 403 });
-      if (requestUid && (target.status !== 'pending' || (target.paymentId && target.paymentId !== paymentId))) {
+      if (requestUid && (!['pending', 'approved'].includes(target.status) || (target.paymentId && target.paymentId !== paymentId))) {
         throw Object.assign(new Error('Store request is no longer awaiting this payment.'), { statusCode: 409 });
+      }
+      const requestedShopId = target.status === 'approved' ? String(target.shopId || '') : '';
+      const resolvedShopId = requestUid
+        ? (/^[a-z0-9-]{1,60}$/i.test(requestedShopId) ? requestedShopId : partnerShopId(target.storeName, requestUid))
+        : shopId;
+      const shopRef = requestUid ? db.collection('shops').doc(resolvedShopId) : targetRef;
+      const shopSnapshot = requestUid ? await transaction.get(shopRef) : targetSnapshot;
+      const shop = shopSnapshot.exists ? shopSnapshot.data() || {} : {};
+      if (shopSnapshot.exists && shop.ownerUid !== payment.ownerUid) {
+        throw Object.assign(new Error('Store owner does not match payment.'), { statusCode: 403 });
       }
       const oldStatus = String(payment.status || '').toLowerCase();
       const alreadyPaid = payment.paid === true || ['paid', 'succeeded', 'success', 'completed', 'approved'].includes(oldStatus);
+      const recoverPaidRequest = paid && alreadyPaid && requestUid && target.status === 'pending'
+        && target.paymentId === paymentId;
       const timestamp = app.firestore.FieldValue.serverTimestamp();
-      if (alreadyPaid) {
-        transaction.create(eventRef, { paymentId, status, transactionId, processedAt: timestamp });
+      if (alreadyPaid && !recoverPaidRequest) {
+        if (!eventSnapshot.exists) transaction.create(eventRef, { paymentId, status, transactionId, processedAt: timestamp });
         return;
       }
       if (!paid) {
-        transaction.create(eventRef, { paymentId, status, transactionId, processedAt: timestamp });
+        if (!eventSnapshot.exists) transaction.create(eventRef, { paymentId, status, transactionId, processedAt: timestamp });
         transaction.set(paymentRef, { status: 'failed', providerStatus: status, paid: false, ...(transactionId ? { transactionId } : {}), updatedAt: timestamp }, { merge: true });
         if (requestUid && target.paymentId === paymentId) {
           transaction.set(targetRef, { paymentStatus: 'failed', paymentProviderStatus: status, updatedAt: timestamp }, { merge: true });
@@ -170,35 +189,84 @@ async function handleStoreSubscriptionEvent(event, res, status, paymentId) {
         return;
       }
 
-      transaction.create(eventRef, { paymentId, status, transactionId, processedAt: timestamp });
+      if (!eventSnapshot.exists) transaction.create(eventRef, { paymentId, status, transactionId, processedAt: timestamp });
+      const now = new Date();
+      const oldExpiry = shop.expiresAt?.toDate ? shop.expiresAt.toDate() : new Date(shop.expiresAt || 0);
+      const start = shopSnapshot.exists && Number.isFinite(oldExpiry.getTime()) && oldExpiry > now ? oldExpiry : now;
+      const durationMonths = Number(paymentPlan.durationMonths || 0);
+      const durationDays = Number(paymentPlan.durationDays || 0);
+      const newExpiry = durationMonths > 0 ? addCalendarMonths(start, durationMonths)
+        : new Date(start.getTime() + Math.max(1, durationDays || 30) * 86400000);
+      const expiresAt = app.firestore.Timestamp.fromDate(newExpiry);
+      const suspended = shop.status === 'suspended' || shop.subscriptionStatus === 'suspended';
+      const deleted = shop.deleted === true || shop.status === 'deleted';
+      const shopStatus = deleted ? 'deleted' : suspended ? 'suspended' : 'active';
+      const financials = {
+        amountDueMinor: Number(payment.amountMinor),
+        amountReceivedMinor: Number(payment.amountMinor),
+        balanceDueMinor: 0,
+        currency: 'EGP',
+        paymentMethod: 'visa',
+        paymentId,
+        transactionId: transactionId || '',
+        recordedBy: 'xpay',
+        updatedAt: timestamp
+      };
       transaction.set(paymentRef, {
         status: 'paid', paid: true, providerStatus: status, ...(transactionId ? { transactionId } : {}),
-        termMonths: Number(payment.durationMonths || 0), termDays: Number(payment.durationDays || 0), paidAt: timestamp,
+        shopId: resolvedShopId,
+        termMonths: durationMonths, termDays: durationDays,
+        subscriptionStartsAt: app.firestore.Timestamp.fromDate(start), expiresAt, paidAt: timestamp,
         updatedAt: timestamp
       }, { merge: true });
       if (requestUid) {
+        transaction.set(shopRef, {
+          slug: resolvedShopId,
+          ownerUid: payment.ownerUid,
+          ownerEmail: target.ownerEmail || shop.ownerEmail || '',
+          storeName: target.storeName || payment.storeName || 'متجر شريك',
+          supportPhone: target.supportPhone || shop.supportPhone || '',
+          imageUrl: target.imageUrl || shop.imageUrl || '',
+          active: !suspended && !deleted,
+          status: shopStatus,
+          subscriptionStatus: deleted ? 'cancelled' : shopStatus,
+          subscriptionPlan: payment.planId,
+          durationDays,
+          durationMonths,
+          productLimit: paymentPlan.productLimit,
+          storeBranding: paymentPlan.storeBranding,
+          advancedStorefront: paymentPlan.advancedStorefront,
+          discounts: paymentPlan.discounts,
+          prioritySupport24h: paymentPlan.prioritySupport24h,
+          freeTrialUsed: target.freeTrialUsed === true || shop.freeTrialUsed === true,
+          paymentMethod: 'visa',
+          paymentStatus: 'paid',
+          paymentId,
+          paymentTransactionId: transactionId || '',
+          adminFinancials: financials,
+          ...(shop.subscriptionFirstPaymentAt ? {} : { subscriptionFirstPaymentAt: timestamp }),
+          approvedAt: shop.approvedAt || timestamp,
+          expiresAt,
+          createdAt: shop.createdAt || target.createdAt || timestamp,
+          updatedAt: timestamp
+        }, { merge: true });
         transaction.set(targetRef, {
+          status: 'approved',
+          shopId: resolvedShopId,
           planId: payment.planId,
           paymentMethod: 'visa', paymentStatus: 'paid', paymentId,
           amountMinor: payment.amountMinor, currency: payment.currency || 'EGP',
           durationDays: Number(payment.durationDays || 0), durationMonths: Number(payment.durationMonths || 0),
-          paidAt: timestamp, paymentTransactionId: transactionId || '', updatedAt: timestamp
+          adminFinancials: financials,
+          paidAt: timestamp, paymentTransactionId: transactionId || '', autoActivatedAt: timestamp, updatedAt: timestamp
         }, { merge: true });
+        transaction.set(db.collection('users').doc(requestUid), { storeId: resolvedShopId }, { merge: true });
       } else {
-        const shop = target;
-        const now = new Date();
-        const oldExpiry = shop.expiresAt?.toDate ? shop.expiresAt.toDate() : new Date(shop.expiresAt || 0);
-        const start = Number.isFinite(oldExpiry.getTime()) && oldExpiry > now ? oldExpiry : now;
-        const firstPaidTerm = !shop.subscriptionFirstPaymentAt;
-        const termMonths = Number(payment.durationMonths) > 0 ? Number(payment.durationMonths) : (firstPaidTerm ? 3 : 1);
-        const newExpiry = termMonths > 0 ? addCalendarMonths(start, termMonths) : new Date(start.getTime() + Math.max(1, Number(payment.durationDays) || 30) * 86400000);
-        const suspended = shop.status === 'suspended' || shop.subscriptionStatus === 'suspended';
-        const expiresAt = app.firestore.Timestamp.fromDate(newExpiry);
-        transaction.set(paymentRef, { termMonths, subscriptionStartsAt: app.firestore.Timestamp.fromDate(start), expiresAt }, { merge: true });
         transaction.set(targetRef, {
-          ...(firstPaidTerm ? { subscriptionFirstPaymentAt: timestamp } : {}),
-          expiresAt, active: !suspended, status: suspended ? 'suspended' : 'active',
-          subscriptionStatus: suspended ? 'suspended' : 'active', updatedAt: timestamp
+          ...(shop.subscriptionFirstPaymentAt ? {} : { subscriptionFirstPaymentAt: timestamp }),
+          expiresAt, active: !suspended && !deleted, status: shopStatus,
+          subscriptionStatus: deleted ? 'cancelled' : shopStatus,
+          paymentStatus: 'paid', paymentMethod: 'visa', adminFinancials: financials, updatedAt: timestamp
         }, { merge: true });
       }
       transitionedToPaid = true;

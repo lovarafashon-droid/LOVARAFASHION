@@ -111,9 +111,9 @@
 
   function describeApplication(application) {
     const paymentStatus = String(application.paymentStatus || '');
-    if (application.status === 'approved') return 'تمت الموافقة على طلبك. يمكنك فتح لوحة الشريك لإدارة متجرك.';
+    if (application.status === 'approved') return 'تمت الموافقة على طلبك وتفعيل متجرك. افتحي لوحة الشريك لإدارته.';
     if (application.status === 'rejected') return 'تم رفض الطلب السابق. يمكنك تعديل البيانات وإرسال طلب جديد.';
-    if (paymentStatus === 'paid') return 'تم تأكيد الدفع الإلكتروني. طلبك بانتظار مراجعة إدارة LOVARA.';
+    if (paymentStatus === 'paid') return 'تم تأكيد الدفع الإلكتروني وتفعيل المتجر تلقائيًا. افتحي لوحة الشريك لإدارته.';
     if (paymentStatus === 'manual_review') return 'تم تسجيل تحويل فودافون كاش. أرسلي صورة الإيصال على واتساب وانتظري مراجعة الإدارة.';
     if (paymentStatus === 'free_trial') return 'تم إرسال طلب الباقة المجانية لمدة 7 أيام. ينتظر مراجعة الإدارة.';
     if (paymentStatus === 'awaiting_payment' || paymentStatus === 'creating_checkout') return 'هناك عملية دفع Visa قيد الانتظار. لا تبدئي عملية دفع أخرى حتى تتضح حالتها.';
