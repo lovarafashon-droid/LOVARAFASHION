@@ -13,8 +13,6 @@ const redirects = config.redirects || [];
 assert.equal(config.cleanUrls, true);
 assert.equal(exists('public/admin.html'), false, 'old main-store admin file is gone, so /admin.html resolves to not found');
 assert.equal(exists(`public/${privatePath.slice(1)}.html`), true, 'new private main-store admin page exists');
-assert.equal(exists('public/admin-stores.html'), true, 'partner-store admin page remains in place');
-assert.ok(rewrites.some(rule => rule.source === '/admin/stores' && rule.destination === '/admin-stores'));
 assert.equal(rewrites.some(rule => rule.source === '/admin' || rule.source === '/admin.html'), false);
 assert.equal(redirects.some(rule => rule.source === '/admin' || rule.source === '/admin.html'), false);
 
@@ -33,11 +31,9 @@ assert.match(page, /data\(\)\.role === 'admin'/, 'Firebase admin role check rema
 const home = read('public/index.html');
 assert.match(home, new RegExp(`href="${privatePath}"`));
 assert.doesNotMatch(home, /href="\/admin(?:\.html)?"/);
-const partnerAdminPage = read('public/admin-stores.html');
-assert.match(partnerAdminPage, new RegExp(`href="${privatePath}"`), 'partner dashboard links back to the relocated main-store admin page');
 const manifest = JSON.parse(read('public/manifest.webmanifest'));
 assert.equal(manifest.start_url, privatePath);
 const robots = read('public/robots.txt');
 assert.doesNotMatch(robots, /^Disallow:\s*\/admin\s*$/m, 'crawlers can discover the old admin path is gone');
 
-console.log('main-store admin route tests passed; partner admin route unchanged');
+console.log('main-store admin route tests passed');

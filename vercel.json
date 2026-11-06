@@ -18,12 +18,11 @@
   "rewrites": [
     { "source": "/api/notifications/new-order", "destination": "/api/notifications?action=new-order" },
     { "source": "/store/:slug/checkout", "destination": "/checkout?store=:slug" },
-    { "source": "/store/:slug", "destination": "/store?slug=:slug" },
-    { "source": "/admin/stores", "destination": "/admin-stores" }
+    { "source": "/store/:slug", "destination": "/store?slug=:slug" }
   ],
   "headers": [
     {
-      "source": "/admin/stores",
+      "source": "/lvr-2a7f91d4c6b8e3051f9a6c3d",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive, nosnippet" },
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, private" }
@@ -37,7 +36,7 @@
       ]
     },
     {
-      "source": "/seller",
+      "source": "/lvr-6c4e91b7a2d8f305c6b18a2f",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive, nosnippet" },
         { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, private" }
