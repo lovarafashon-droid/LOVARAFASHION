@@ -425,13 +425,13 @@ const CategoryApp = {
   },
 
   setupAuthModalEvents() {
-    const mainAuthOwnsForms = document.body?.dataset.authController === 'main';
+    const externalAuthOwnsForms = ['main', 'legacy'].includes(document.body?.dataset.authController);
     const loginForm = document.getElementById('loginForm');
-    if (loginForm && !mainAuthOwnsForms) loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+    if (loginForm && !externalAuthOwnsForms) loginForm.addEventListener('submit', (e) => this.handleLogin(e));
     const signupForm = document.getElementById('signupForm');
-    if (signupForm && !mainAuthOwnsForms) signupForm.addEventListener('submit', (e) => this.handleSignup(e));
+    if (signupForm && !externalAuthOwnsForms) signupForm.addEventListener('submit', (e) => this.handleSignup(e));
     const forgotForm = document.getElementById('forgotForm');
-    if (forgotForm && !mainAuthOwnsForms) forgotForm.addEventListener('submit', (e) => this.handleForgot(e));
+    if (forgotForm && !externalAuthOwnsForms) forgotForm.addEventListener('submit', (e) => this.handleForgot(e));
 
     const switchToSignup = document.getElementById('switchToSignup');
     const switchToLogin = document.getElementById('switchToLogin');

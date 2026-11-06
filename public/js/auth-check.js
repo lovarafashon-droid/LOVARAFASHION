@@ -144,6 +144,7 @@
           closeModal('signupModal');
           signupForm.reset();
           showToast('Account created!');
+          setTimeout(() => window.LovaraOfferPartnerAfterSignup?.(cred.user), 350);
         } catch (err) {
           showToast('Error: ' + (err.message || 'Signup failed'));
         }
@@ -165,9 +166,10 @@
       btn.addEventListener('click', async () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         try {
-          await auth.signInWithPopup(provider);
+          const result = await auth.signInWithPopup(provider);
           closeModal('loginModal'); closeModal('signupModal');
           showToast('Welcome!');
+          if (result.additionalUserInfo?.isNewUser) setTimeout(() => window.LovaraOfferPartnerAfterSignup?.(result.user), 350);
         } catch (err) {
           showToast('Error: ' + err.message);
         }
