@@ -3,6 +3,48 @@
 // Auth, Cart, Wishlist, i18n, Products for ALL category pages
 // ============================================
 
+window.LovaraOfferPartnerAfterSignup = window.LovaraOfferPartnerAfterSignup || function (user) {
+  if (!user) return Promise.resolve(false);
+  if (window.LovaraPartnerOnboarding?.offer) return Promise.resolve(window.LovaraPartnerOnboarding.offer(user));
+  let pending = window.__lovaraPartnerOnboardingPromise;
+  if (!pending) {
+    pending = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = '/js/partner-onboarding.js?v=partner-prompt-2';
+      script.onload = () => resolve(window.LovaraPartnerOnboarding);
+      script.onerror = () => reject(new Error('Could not load partner signup prompt'));
+      document.head.appendChild(script);
+    });
+    window.__lovaraPartnerOnboardingPromise = pending;
+    pending.catch(() => { if (window.__lovaraPartnerOnboardingPromise === pending) delete window.__lovaraPartnerOnboardingPromise; });
+  }
+  return pending.then(() => window.LovaraPartnerOnboarding?.offer(user)).catch(error => {
+    console.warn('[LOVARA partner] Could not open signup offer:', error.message);
+    return false;
+  });
+};
+
+function ensurePartnershipFloatingButton() {
+  if (!document.body || document.getElementById('lovara-partnership-fab')) return;
+  if (!document.getElementById('lovara-partnership-fab-style')) {
+    const style = document.createElement('style');
+    style.id = 'lovara-partnership-fab-style';
+    style.textContent = '#lovara-partnership-fab{position:fixed;z-index:950;right:20px;bottom:calc(18px + env(safe-area-inset-bottom,0px));display:inline-flex;align-items:center;gap:9px;padding:11px 16px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:#b99a70;color:#fff;box-shadow:0 8px 24px rgba(68,48,25,.22);font:600 13px/1.2 "Noto Sans Arabic",Arial,sans-serif;text-decoration:none;transition:transform .18s,box-shadow .18s}#lovara-partnership-fab:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(68,48,25,.3)}#lovara-partnership-fab:focus-visible{outline:3px solid #252321;outline-offset:3px}#lovara-partnership-fab i{font-size:14px}html[dir="ltr"] #lovara-partnership-fab{right:auto;left:20px}@media(max-width:600px){#lovara-partnership-fab{right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));padding:10px 13px;font-size:12px}html[dir="ltr"] #lovara-partnership-fab{right:auto;left:12px}}';
+    document.head.appendChild(style);
+  }
+  const link = document.createElement('a');
+  const english = String(document.documentElement.lang || '').toLowerCase().startsWith('en');
+  link.id = 'lovara-partnership-fab';
+  link.href = '/partnership';
+  link.setAttribute('aria-label', english ? 'Become a LOVARA partner' : 'انضم كشريك في LOVARA');
+  link.title = link.getAttribute('aria-label');
+  link.innerHTML = `<i class="fas fa-store" aria-hidden="true"></i><span>${english ? 'Become a partner' : 'انضم كشريك'}</span>`;
+  document.body.appendChild(link);
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensurePartnershipFloatingButton, { once: true });
+else ensurePartnershipFloatingButton();
+
 // ============================================
 // LOVARA - Timed offer helpers
 // ============================================
@@ -383,12 +425,13 @@ const CategoryApp = {
   },
 
   setupAuthModalEvents() {
+    const mainAuthOwnsForms = document.body?.dataset.authController === 'main';
     const loginForm = document.getElementById('loginForm');
-    if (loginForm) loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+    if (loginForm && !mainAuthOwnsForms) loginForm.addEventListener('submit', (e) => this.handleLogin(e));
     const signupForm = document.getElementById('signupForm');
-    if (signupForm) signupForm.addEventListener('submit', (e) => this.handleSignup(e));
+    if (signupForm && !mainAuthOwnsForms) signupForm.addEventListener('submit', (e) => this.handleSignup(e));
     const forgotForm = document.getElementById('forgotForm');
-    if (forgotForm) forgotForm.addEventListener('submit', (e) => this.handleForgot(e));
+    if (forgotForm && !mainAuthOwnsForms) forgotForm.addEventListener('submit', (e) => this.handleForgot(e));
 
     const switchToSignup = document.getElementById('switchToSignup');
     const switchToLogin = document.getElementById('switchToLogin');
@@ -472,6 +515,7 @@ const CategoryApp = {
       this.closeModal('signupModal');
       this.showToast(this.t('toastDefault'));
       form.reset();
+      setTimeout(() => window.LovaraOfferPartnerAfterSignup?.(result.user), 350);
     } catch (error) { this.showToast(error.message, 'error'); }
   },
 
@@ -493,6 +537,7 @@ const CategoryApp = {
         } catch (_) {}
         result = await auth.signInWithPopup(provider);
       }
+      const isNewAccount = Boolean(result.additionalUserInfo?.isNewUser);
       await this.saveAuthUser(result.user, 'google');
       const userData = { uid: result.user.uid, email: result.user.email, displayName: result.user.displayName || result.user.email.split('@')[0], photoURL: result.user.photoURL };
       this.currentUser = userData;
@@ -500,6 +545,7 @@ const CategoryApp = {
       this.updateAuthUI(userData);
       this.closeModal(modalId);
       this.showToast(this.t('welcome') + '!');
+      if (isNewAccount) setTimeout(() => window.LovaraOfferPartnerAfterSignup?.(result.user), 350);
     } catch (error) { this.showToast(error.message, 'error'); }
   },
 

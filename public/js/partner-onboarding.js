@@ -8,6 +8,22 @@
   const isArabic = () => lang() !== 'en';
   const text = (ar, en) => isArabic() ? ar : en;
 
+  function ensureOfferModal() {
+    if ($('partnerOfferModal') || !document.body) return;
+    if (!$('partnerOfferModalStyles')) {
+      const style = document.createElement('style');
+      style.id = 'partnerOfferModalStyles';
+      style.textContent = `.partner-offer-dynamic{position:fixed;inset:0;z-index:12000;display:none;place-items:center;padding:18px;background:rgba(28,24,20,.58)}.partner-offer-dynamic.show,.partner-offer-dynamic.active{display:grid}.partner-offer-dynamic__card{position:relative;width:min(100%,460px);padding:34px 26px 25px;border:1px solid #eee5d8;border-radius:22px;background:#fffdf9;box-shadow:0 24px 70px rgba(0,0,0,.22);text-align:center;direction:rtl;font-family:'Noto Sans Arabic',Arial,sans-serif}.partner-offer-dynamic__close{position:absolute;top:12px;left:12px;width:34px;height:34px;border:0;border-radius:50%;background:#f3efe8;color:#5e5141;font-size:21px;cursor:pointer}.partner-offer-dynamic__brand{color:#c9a87c;font:600 15px Georgia,serif;letter-spacing:3px}.partner-offer-dynamic__card h2{margin:14px 0 9px;color:#252321;font-size:22px;line-height:1.6}.partner-offer-dynamic__card p{margin:0 auto 22px;max-width:370px;color:#6f6a63;font-size:13px;line-height:1.9}.partner-offer-dynamic__actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}.partner-offer-dynamic__actions button{min-height:44px;padding:10px 18px;border:1px solid #d8c9b4;border-radius:10px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}.partner-offer-dynamic__yes{background:#c9a87c;color:#fff}.partner-offer-dynamic__no{background:#fff;color:#554c42}.partner-offer-dynamic__actions button:disabled{opacity:.65;cursor:wait}@media(max-width:480px){.partner-offer-dynamic__card{padding:32px 19px 21px}.partner-offer-dynamic__card h2{font-size:19px}}`;
+      document.head.appendChild(style);
+    }
+    const modal = document.createElement('div');
+    modal.id = 'partnerOfferModal';
+    modal.className = 'partner-offer-dynamic';
+    modal.setAttribute('aria-hidden', 'true');
+    modal.innerHTML = `<section class="partner-offer-dynamic__card" role="dialog" aria-modal="true" aria-labelledby="partnerOfferTitle"><button class="partner-offer-dynamic__close" id="partnerOfferClose" type="button" aria-label="${text('إغلاق', 'Close')}">×</button><div class="partner-offer-dynamic__brand">LOVARA</div><h2 id="partnerOfferTitle">${text('هل تريد عمل شراكة مع LOVARA؟', 'Would you like to partner with LOVARA?')}</h2><p>${text('أنشئ متجرك واعرض منتجاتك على LOVARA. حسابك يظل حساب عميل عادي حتى مراجعة طلب الشراكة.', 'Create your store and list products on LOVARA. Your account remains a regular customer account while your partnership request is reviewed.')}</p><div class="partner-offer-dynamic__actions"><button class="partner-offer-dynamic__yes" id="partnerAccept" type="button">${text('نعم، أريد الشراكة', 'Yes, I want to partner')}</button><button class="partner-offer-dynamic__no" id="partnerDecline" type="button">${text('لا، شكرًا', 'No, thank you')}</button></div></section>`;
+    document.body.appendChild(modal);
+  }
+
   function notify(message, isError = false) {
     if (typeof window.showToast === 'function') {
       window.showToast(message, isError ? 'error' : 'success');
@@ -27,6 +43,7 @@
     const modal = $(id);
     if (!modal) return;
     modal.classList.add('show', 'active');
+    modal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
   }
 
@@ -34,6 +51,7 @@
     const modal = $(id);
     if (!modal) return;
     modal.classList.remove('show', 'active');
+    modal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
 
@@ -156,7 +174,8 @@
 
   async function offer(user) {
     try {
-      if (!$('partnerOfferModal') || !$('partnerApplicationModal')) return;
+      ensureOfferModal();
+      if (!$('partnerOfferModal')) return;
       const snapshot = await db().collection('users').doc(user.uid).get();
       const application = await db().collection('storeRequests').doc(user.uid).get();
       if (application.exists || snapshot.data()?.partnerPromptAnswered) return;
@@ -167,6 +186,7 @@
   }
 
   function init() {
+    ensureOfferModal();
     $('partnerDecline')?.addEventListener('click', async () => {
       try {
         await answerPrompt('declined');
@@ -175,10 +195,15 @@
     });
 
     $('partnerAccept')?.addEventListener('click', async () => {
+      const button = $('partnerAccept');
+      if (button) button.disabled = true;
       try {
         await answerPrompt('accepted');
-        window.location.href = '/partnership.html';
-      } catch (error) { notify(error.message, true); }
+        window.location.href = '/partnership';
+      } catch (error) {
+        if (button) button.disabled = false;
+        notify(error.message, true);
+      }
     });
 
     $('partnerOfferClose')?.addEventListener('click', () => hideModal('partnerOfferModal'));

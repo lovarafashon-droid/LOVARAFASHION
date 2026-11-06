@@ -379,7 +379,7 @@
   .pm-piece-color select { flex:1; min-height:36px; padding:6px 10px; border:1px solid #e5e5e5; border-radius:8px; background:#fff; font:inherit; }
 </style>
 </head>
-<body>
+<body data-auth-controller="main">
 
 
   
@@ -1081,12 +1081,12 @@
       <button class="modal-close" id="partnerOfferClose" type="button" aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
       <div class="modal-header">
         <div class="modal-logo">LOVARA</div>
-        <h2 id="partnerOfferTitle">هل تحب تكون شريكًا في LOVARA؟</h2>
-        <p>قدّم متجرك للبيع على LOVARA، وحسابك يظل حساب عميل عادي لحد موافقة الإدارة.</p>
+        <h2 id="partnerOfferTitle">هل تريد عمل شراكة مع LOVARA؟</h2>
+        <p>أنشئ متجرك واعرض منتجاتك على LOVARA. سيظل حسابك حساب عميل عادي حتى مراجعة طلب الشراكة.</p>
       </div>
       <div class="form-actions" style="display:flex;gap:12px;justify-content:center">
-        <button class="btn btn-primary" id="partnerAccept" type="button" onclick="window.location.href='/partnership.html'">موافق</button>
-        <button class="btn btn-outline" id="partnerDecline" type="button">رفض</button>
+        <button class="btn btn-primary" id="partnerAccept" type="button">نعم، أريد الشراكة</button>
+        <button class="btn btn-outline" id="partnerDecline" type="button">لا، شكرًا</button>
       </div>
     </div>
   </div>
@@ -1119,7 +1119,7 @@
 
   <!-- ===================== SCRIPTS ===================== -->
   <script src="js/pricing.js?v=quantity-discount1"></script>
-  <script src="categories-shared.js?v=timed-offers3"></script>
+  <script src="categories-shared.js?v=partner-signup-1"></script>
   <script src="js/main.js"></script>
   <script src="js/products-loader.js?v=timed-offers1"></script>
 
@@ -2548,7 +2548,7 @@
     })();
   </script>
 
-<script src="/js/partner-onboarding.js?v=partner-plans-3"></script>
+<script src="/js/partner-onboarding.js?v=partner-prompt-2"></script>
 
 <!-- ========== LOVARA Structured Data (JSON-LD) ========== -->
 <!-- ضيف الكود ده قبل إغلاق </body> في الصفحة الرئيسية -->
