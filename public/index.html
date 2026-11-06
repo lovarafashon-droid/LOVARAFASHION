@@ -1482,7 +1482,7 @@
       },
       async openPartnerDashboardIfApproved(user) {
         const path = window.location.pathname.replace(/\/$/, '') || '/';
-        if (!user || path === '/checkout' || path === '/seller' || path.startsWith('/admin') || path.startsWith('/orders')) return false;
+        if (!user || path === '/checkout' || path === '/seller' || path.startsWith('/lvr-8f3c1a7d9b2e6c40a5f18d7') || path.startsWith('/admin') || path.startsWith('/orders')) return false;
         try {
           const profile = await this.db.collection('users').doc(user.uid).get({ source: 'server' });
           const storeId = profile.exists ? String(profile.data().storeId || '') : '';
@@ -2447,7 +2447,7 @@
           <h3>صفحة الطلبات</h3>
           <p>عرض وإدارة طلبات العملاء</p>
         </a>
-        <a href="/admin" class="admin-portal-card">
+        <a href="/lvr-8f3c1a7d9b2e6c40a5f18d7" class="admin-portal-card">
           <div class="admin-portal-icon"><i class="fas fa-user-shield"></i></div>
           <h3>لوحة الأدمن</h3>
           <p>إدارة المنتجات والأقسام والمخزون</p>

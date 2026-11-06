@@ -1,6 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /admin
 Disallow: /orders
 Disallow: /checkout
 Disallow: /profile

@@ -30,6 +30,13 @@
       ]
     },
     {
+      "source": "/lvr-8f3c1a7d9b2e6c40a5f18d7",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive, nosnippet" },
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, private" }
+      ]
+    },
+    {
       "source": "/seller",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive, nosnippet" },
